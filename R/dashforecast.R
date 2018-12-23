@@ -1,7 +1,11 @@
-install.packages("h2o")
 library(h2o)
+library(shiny)
+library(shinydashboard)
+library(dygraphs)
+library(data.table)
+library(dplyr)
 
-dashforecast <- function(share_app = FALSE,port = NULL ){
+dashforecast <- function(data = data, share_app = FALSE,port = NULL ){
   
   app <- shinyApp(
     ui = dashboardPage(
@@ -32,6 +36,15 @@ dashforecast <- function(share_app = FALSE,port = NULL ){
         data <- histdata[seq_len(input$slider)]
         hist(data)
       })
+      
+      
+      output$input_curve <- renderDygraph({
+        
+        data <- as.data.table(data)
+        
+        if (lead(sequence_dates$Date,1)[1] - sequence_dates$Date[1] == 1){type_curve <- ""}
+        
+      })
     }
   )
   
@@ -51,5 +64,23 @@ dashforecast <- function(share_app = FALSE,port = NULL ){
   
   
 }
+
+
+dashforecast(share_app = TRUE ,port = 7895)
+
+sequence_dates <- seq.Date(from = as.Date("2017-01-01"),to = as.Date("2018-01-01"),by = "months") %>% 
+  as.data.table() %>% 
+  mutate(valeur = runif( row_number()) *100) %>% 
+  as.data.table()
+colnames(sequence_dates) <- c("Date","Valeur")
+
+plot(sequence_dates$Valeur)
+dygraph(sequence_dates[,.(Date,Valeur)]) %>% 
+  dyBarChart()
+?seq.Date
+
+sequence_dates$Date
+lead(sequence_dates$Date,1)[1] - sequence_dates$Date[1] > 1
+
 
 
