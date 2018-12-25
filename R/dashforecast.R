@@ -5,7 +5,7 @@ library(dygraphs)
 library(data.table)
 library(dplyr)
 
-dashforecast <- function(data = data, share_app = FALSE,port = NULL ){
+dashforecast <- function(data = data,y,date_column, share_app = FALSE,port = NULL ){
   
   app <- shinyApp(
     ui = dashboardPage(
@@ -18,11 +18,20 @@ dashforecast <- function(data = data, share_app = FALSE,port = NULL ){
       dashboardBody(
         # Boxes need to be put in a row (or column)
         fluidRow(
-          box(plotOutput("plot1", height = 250)),
+          #box(plotOutput("plot1", height = 250)),
+          box(dygraphOutput("input_curve", height = 250,width = 1100),width = 30),
+          
+          
+          
           
           box(
             title = "Controls",
-            sliderInput("slider", "Number of observations:", 1, 100, 50)
+            sliderInput("slider", "Number of observations:",
+                        eval(parse(text = paste0("min(data$",date_column,")"))),
+                        eval(parse(text = paste0("max(data$",date_column,")"))),  
+                        eval(parse(text = paste0("c(min(data$",date_column,"),max(data$",date_column,"-10),max(data$",date_column,"))"))))
+                        # as.Date("2015-01-01"), as.Date("2015-12-31"),
+                        # c(as.Date("2015-01-01"),as.Date("2015-06-01")))
           )
         )
       )
@@ -41,8 +50,22 @@ dashforecast <- function(data = data, share_app = FALSE,port = NULL ){
       output$input_curve <- renderDygraph({
         
         data <- as.data.table(data)
+        curve_entries <- dygraph(data = data) %>% dySeries(y,fillGraph = TRUE) 
         
-        if (lead(sequence_dates$Date,1)[1] - sequence_dates$Date[1] == 1){type_curve <- ""}
+        
+        # dyShading(from = data_index[cat_facturation == "sous facturation",]$Date[1], 
+        #           to = tail(data_index[cat_facturation == "sous facturation",]$Date,1), color = "lightyellow") %>%
+        #   #dyShading(from = "2017-1-1", to = "2018-1-1", color = "aliceblue") %>%
+        #   dyEvent("2016-01-01", "année 2016", labelLoc = "bottom") %>% 
+        #   dyEvent("2017-01-01", "année 2017", labelLoc = "bottom") %>% 
+          #eval(parse(text = paste0("dygraph(sequence_dates[,.(",date_column,",",y,")])")))
+
+          
+        
+        # if (lead(data$date_column,1)[1] - data$date_column[1] == 1){
+        #   curve_entries <- curve_entries %>% dyBarChart()
+        # }
+        curve_entries
         
       })
     }
@@ -66,7 +89,15 @@ dashforecast <- function(data = data, share_app = FALSE,port = NULL ){
 }
 
 
-dashforecast(share_app = TRUE ,port = 7895)
+dashforecast(share_app = TRUE ,port = 7895,data =sequence_dates ,y = "Valeur",date_column = "Date")
+
+
+
+
+
+
+
+
 
 sequence_dates <- seq.Date(from = as.Date("2017-01-01"),to = as.Date("2018-01-01"),by = "months") %>% 
   as.data.table() %>% 
@@ -79,8 +110,21 @@ dygraph(sequence_dates[,.(Date,Valeur)]) %>%
   dyBarChart()
 ?seq.Date
 
+
+
+
+
+
 sequence_dates$Date
 lead(sequence_dates$Date,1)[1] - sequence_dates$Date[1] > 1
+sapply(sequence_dates, function(x) !all(is.na(as.Date(as.character(x),format="%d/%m/%Y"))))
+
+
+nom_variable <- "Valeur"
+dygraph(sequence_dates[,.(Date,Valeur)])
+eval(parse(text = paste0("dygraph(sequence_dates[,.(Date,Valeur)])")))
 
 
 
+
+class(sequence_dates$Date) =="Date"
