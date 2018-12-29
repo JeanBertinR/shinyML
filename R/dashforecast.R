@@ -5,6 +5,15 @@ library(dygraphs)
 library(data.table)
 library(dplyr)
 
+
+sequence_dates <- seq.Date(from = as.Date("2017-01-01"),to = as.Date("2018-01-01"),by = "months") %>% 
+  as.data.table() %>% 
+  mutate(valeur = runif( row_number()) *100) %>% 
+  as.data.table()
+colnames(sequence_dates) <- c("Date","Valeur")
+
+
+
 dashforecast <- function(data = data,y,date_column, share_app = FALSE,port = NULL ){
   
   app <- shinyApp(
@@ -100,7 +109,11 @@ h2o.init(nthreads = -1)
 h2o_data <- as.h2o(iris)
 splits <- h2o.splitFrame(data = h2o_data,ratios = 0.75,seed = 1234)
 model <- h2o.gbm(x = 1:3,y = "Petal.Width",training_frame = splits[[1]])
-h2o.predict(model, splits[[2]])
+h2o.predict(model, splits[[2]]) %>% 
+  as.data.table() %>% 
+  cbind(.,as.data.table(splits[[2]]["Petal.Width"])) %>% 
+  summarise(mape = 100 * mean(abs((Petal.Width - predict) / predict)),
+            rmse = sqrt(mean((Petal.Width - predict)**2)))
 
 
 # Package sparklyr
@@ -110,21 +123,23 @@ data_conso_sparklyr <- copy_to(sc, iris, "iris", overwrite = TRUE)
 partitions <- sdf_partition(x =data_conso_sparklyr,training = 0.75,test = 0.25 )
 
 
-fit <- train %>%
-  ml_linear_regression(normal  ~ jour + mois ,   type = "regression")
+fit <- ml_gra(x = partitions$training,
+                                 formula = "Petal_Width ~Sepal_Length+Sepal_Width+Petal_Length",type = "regression")
 
 
-pred <- sdf_predict(fit, test) %>% collect %>% as.data.table()
-erreur_prev <- pred %>% summarise(mape = 100 * mean(abs((normal - prediction) / prediction)),
-                                  rmse = sqrt(mean((normal - prediction)**2)))
+pred <- sdf_predict(fit, partitions$test) %>% collect %>% as.data.table()
 
-iris
 
-sequence_dates <- seq.Date(from = as.Date("2017-01-01"),to = as.Date("2018-01-01"),by = "months") %>% 
-  as.data.table() %>% 
-  mutate(valeur = runif( row_number()) *100) %>% 
-  as.data.table()
-colnames(sequence_dates) <- c("Date","Valeur")
+
+erreur_prev <- pred %>% summarise(mape = 100 * mean(abs((Petal_Width - prediction) / prediction)),
+                                  rmse = sqrt(mean((Petal_Width - prediction)**2)))
+
+
+
+
+
+
+
 
 plot(sequence_dates$Valeur)
 dygraph(sequence_dates[,.(Date,Valeur)]) %>% 
