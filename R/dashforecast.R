@@ -1,20 +1,32 @@
+## x Optional) A vector containing the names or indices of the predictor variables to use in building the model. 
+#If x is missing, then all columns except y are used.
+
+# y The name or column index of the response variable in the data.
+# The response must be either a numeric or a categorical/factor variable. 
+#If the response is numeric, then a regression model will be trained, otherwise it will train a classification model.
+
+
 library(h2o)
 library(shiny)
 library(shinydashboard)
 library(dygraphs)
 library(data.table)
 library(dplyr)
+library(timeDate)
+library(lubridate)
 
 
-sequence_dates <- seq.Date(from = as.Date("2017-01-01"),to = as.Date("2018-01-01"),by = "months") %>% 
+sequence_dates <- seq.Date(from = as.Date("2017-01-01"),to = as.Date("2018-01-01"),by = "days") %>% 
   as.data.table() %>% 
   mutate(valeur = runif( row_number()) *100) %>% 
   as.data.table()
 colnames(sequence_dates) <- c("Date","Valeur")
+sequence_dates <- sequence_dates %>% 
+  mutate(jour = day(Date),mois = month(Date)) %>% 
+  as.data.table()
 
 
-
-dashforecast <- function(data = data,y,date_column, share_app = FALSE,port = NULL ){
+dashforecast <- function(data = data,x,y,date_column, share_app = FALSE,port = NULL ){
   
   app <- shinyApp(
     ui = dashboardPage(
@@ -28,7 +40,11 @@ dashforecast <- function(data = data,y,date_column, share_app = FALSE,port = NUL
         # Boxes need to be put in a row (or column)
         fluidRow(
           #box(plotOutput("plot1", height = 250)),
-          box(dygraphOutput("input_curve", height = 250,width = 1100),width = 30),
+          box(dygraphOutput("input_curve", height = 250,width = 1100),
+              dygraphOutput("output_curve",height = 250,width = 700),
+              
+              width = 30),
+          
           
           
           
@@ -37,11 +53,18 @@ dashforecast <- function(data = data,y,date_column, share_app = FALSE,port = NUL
             title = "Controls",
             sliderInput("range_selector", "Choose train and test period:",
                         eval(parse(text = paste0("min(data$",date_column,")"))),
-                        eval(parse(text = paste0("max(data$",date_column,")"))),  
-                        eval(parse(text = paste0("c(min(data$",date_column,"),max(data$",date_column,"-10),max(data$",date_column,"))"))))
+                        eval(parse(text = paste0("max(data$",date_column,")"))),  dragRange = FALSE,
+                        eval(parse(text = paste0("c(min(data$",date_column,"),mean(data$",date_column,"),max(data$",date_column,"))")))),
+            
+            actionButton("run","Run forecast models!",style = 'color:white; background-color:darkgreen; padding:4px; font-size:150%',
+                         icon = icon("users",lib = "font-awesome"))
             # as.Date("2015-01-01"), as.Date("2015-12-31"),
             # c(as.Date("2015-01-01"),as.Date("2015-06-01")))
           )
+          #tags$style(HTML('#run{background-color:orange}')),
+          
+        
+
         )
       )
     ),
@@ -66,19 +89,19 @@ dashforecast <- function(data = data,y,date_column, share_app = FALSE,port = NUL
           dySeries(y,fillGraph = TRUE) 
         
         
-        # dyShading(from = data_index[cat_facturation == "sous facturation",]$Date[1], 
-        #           to = tail(data_index[cat_facturation == "sous facturation",]$Date,1), color = "lightyellow") %>%
-        #   #dyShading(from = "2017-1-1", to = "2018-1-1", color = "aliceblue") %>%
-        #   dyEvent("2016-01-01", "année 2016", labelLoc = "bottom") %>% 
-        #   dyEvent("2017-01-01", "année 2017", labelLoc = "bottom") %>% 
-        #eval(parse(text = paste0("dygraph(sequence_dates[,.(",date_column,",",y,")])")))
-        
-        
-        
-        # if (lead(data$date_column,1)[1] - data$date_column[1] == 1){
-        #   curve_entries <- curve_entries %>% dyBarChart()
-        # }
         curve_entries
+        
+      })
+      
+      output$output_curve <- renderDygraph({
+        data_output_curve <- data %>% filter(date_column >= input$range_selector[1]) %>% 
+          as.data.table()
+        data_output_curve <- eval(parse(text = paste0(
+                                          "data %>% filter(",date_column,">= as.date(input$range_selector[1])) %>% as.data.table()"
+        )
+       ))
+        
+        dygraph(data_output_curve)
         
       })
     }
@@ -105,42 +128,68 @@ dashforecast <- function(data = data,y,date_column, share_app = FALSE,port = NUL
 dashforecast(share_app = TRUE ,port = 7895,data =sequence_dates ,y = "Valeur",date_column = "Date")
 
 # Package h2o
+t <- Sys.time()
 h2o.init(nthreads = -1)
-h2o_data <- as.h2o(iris)
+h2o_data <- as.h2o(sequence_dates)
 splits <- h2o.splitFrame(data = h2o_data,ratios = 0.75,seed = 1234)
-model <- h2o.gbm(x = 1:3,y = "Petal.Width",training_frame = splits[[1]])
+model <- h2o.xgboost(x = 1:3,y = "Valeur",training_frame = splits[[1]])
+model <- h2o.gbm(x = 3:4,y = "Valeur",training_frame = splits[[1]])
+
 h2o.predict(model, splits[[2]]) %>% 
   as.data.table() %>% 
-  cbind(.,as.data.table(splits[[2]]["Petal.Width"])) %>% 
-  summarise(mape = 100 * mean(abs((Petal.Width - predict) / predict)),
-            rmse = sqrt(mean((Petal.Width - predict)**2)))
+  cbind(.,as.data.table(splits[[2]]["Valeur"])) %>% 
+  summarise(mape = 100 * mean(abs((Valeur - predict) / predict)),
+            rmse = sqrt(mean((Valeur - predict)**2)))
 
-
+t2 <- Sys.time()
+?h2o.xgboost
+t2 - t
 # Package sparklyr
 library(sparklyr)
+t <- Sys.time()
 sc <- spark_connect(master = "local")
 data_conso_sparklyr <- copy_to(sc, iris, "iris", overwrite = TRUE)
 partitions <- sdf_partition(x =data_conso_sparklyr,training = 0.75,test = 0.25 )
 
 
-fit <- ml_gra(x = partitions$training,
+fit <- ml_gradient_boosted_trees(x = partitions$training,
                                  formula = "Petal_Width ~Sepal_Length+Sepal_Width+Petal_Length",type = "regression")
+
+fit <- ml_multilayer_perceptron_classifier(x = partitions$training,
+                                    formula = "Petal_Width ~Sepal_Length+Sepal_Width+Petal_Length",layers = c(2,2))
+
 
 
 pred <- sdf_predict(fit, partitions$test) %>% collect %>% as.data.table()
 
 
 
-erreur_prev <- pred %>% summarise(mape = 100 * mean(abs((Petal_Width - prediction) / prediction)),
+pred %>% summarise(mape = 100 * mean(abs((Petal_Width - prediction) / prediction)),
                                   rmse = sqrt(mean((Petal_Width - prediction)**2)))
 
+T1 <- Sys.time()
+
+T1 - t
 
 
 
+# Package xgboost 
+library(xgboost)
+iris_xg <- iris %>% mutate(Petal.Width = as.numeric(Petal.Width))
+model <- xgboost(data = as.matrix(iris_xg[1:100,1:4]),label = as.matrix(iris_xg[1:100,4]),nrounds = 100)
+prediction <- predict(model,as.matrix(iris_xg[101:150,4])) %>% 
+  as.data.table() %>% 
+  cbind(.,iris[,"Petal.Width"] %>% as.data.table())
 
+colnames(prediction) <- c("predict","Petal.Width")
 
-
-
+resultats <- prediction %>% 
+  summarise(mape = 100 * mean(abs((Petal.Width - predict) / predict)),
+            rmse = sqrt(mean((Petal.Width - predict)**2)))
+  
+  
+ 
+  
 plot(sequence_dates$Valeur)
 dygraph(sequence_dates[,.(Date,Valeur)]) %>% 
   dyBarChart()
