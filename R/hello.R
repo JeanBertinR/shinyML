@@ -17,3 +17,6 @@ hello <- function() {
   print("Hello, world!")
 }
 # Modification 
+
+data()
+WorldPhones
