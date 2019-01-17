@@ -1,7 +1,9 @@
-install.packages("h2o")
 library(h2o)
+library(shiny)
+library(shinydashboard)
+library(plotly)
 
-dashforecast <- function(share_app = FALSE,port = NULL ){
+dashforecast <- function(data,x,y, share_app = FALSE,port = NULL ){
   
   app <- shinyApp(
     ui = dashboardPage(
@@ -12,7 +14,6 @@ dashforecast <- function(share_app = FALSE,port = NULL ){
         )),
       
       dashboardBody(
-        # Boxes need to be put in a row (or column)
         fluidRow(
           box(plotOutput("plot1", height = 250)),
           
@@ -32,6 +33,13 @@ dashforecast <- function(share_app = FALSE,port = NULL ){
         data <- histdata[seq_len(input$slider)]
         hist(data)
       })
+      
+      
+      output$plot2 <- renderPlotly({
+        plot_ly(data = data,x = iris$Sepal.Width,y = iris$Petal.Length)
+        })
+      
+      
     }
   )
   
@@ -52,4 +60,11 @@ dashforecast <- function(share_app = FALSE,port = NULL ){
   
 }
 
+dashforecast(share_app = TRUE,port = 4655)
+plot_ly(data = iris,x = eval(parse(text = paste0(data,"$",x))), y = eval(parse(text = paste0(data,"$",y))))
 
+
+y <- "Petal.Length"
+
+x <- "Sepal.Width"
+data <- "iris"
