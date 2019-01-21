@@ -7,7 +7,8 @@ library(dplyr)
 library(timeDate)
 library(lubridate)
 library(plotly)
-
+library(sparklyr)
+library(DT)
 
 ## x Optional) A vector containing the names or indices of the predictor variables to use in building the model. 
 #If x is missing, then all columns except y are used.
@@ -17,7 +18,7 @@ library(plotly)
 #If the response is numeric, then a regression model will be trained, otherwise it will train a classification model.
 
 
-
+sc <- spark_connect(master = "local")
 
 sequence_dates <- seq.Date(from = as.Date("2017-01-01"),to = as.Date("2018-01-01"),by = "days") %>% 
   as.data.table() %>% 
@@ -25,12 +26,12 @@ sequence_dates <- seq.Date(from = as.Date("2017-01-01"),to = as.Date("2018-01-01
   as.data.table()
 colnames(sequence_dates) <- c("Date","Valeur")
 sequence_dates <- sequence_dates %>% 
-  mutate(jour = day(Date),mois = month(Date)) %>% 
+  mutate(jour = day(Date),mois = month(Date),numero_jour = row_number()) %>% 
   as.data.table()
 
 
 dashforecast <- function(data = data,x,y,date_column, share_app = FALSE,port = NULL ){
-
+  sc <- spark_connect(master = "local")
   app <- shinyApp(
     ui = dashboardPage(
       dashboardHeader(title = "Compare forecast models"),
@@ -43,7 +44,10 @@ dashforecast <- function(data = data,x,y,date_column, share_app = FALSE,port = N
         fluidRow(
           #box(plotOutput("plot1", height = 250)),
           box(dygraphOutput("input_curve", height = 250,width = 1100),
-              dygraphOutput("output_curve",height = 250,width = 700),
+              
+              column(
+                dygraphOutput("output_curve",height = 250,width = 700),
+              dataTableOutput("results_table"),width = 10),
               
               width = 30),
           
@@ -53,6 +57,12 @@ dashforecast <- function(data = data,x,y,date_column, share_app = FALSE,port = N
           
           box(
             title = "Controls",
+            
+            selectInput( inputId  = "input_variables",label = "Input variables: ",
+                         choices = x,
+                         multiple = TRUE,selected = x),
+            
+            
             sliderInput("train_selector", "Choose train period:",
                         min = eval(parse(text = paste0("min(data$",date_column,")"))),
                         max = eval(parse(text = paste0("max(data$",date_column,")"))),
@@ -62,7 +72,19 @@ dashforecast <- function(data = data,x,y,date_column, share_app = FALSE,port = N
                         max = eval(parse(text = paste0("max(data$",date_column,")"))),
                         value = eval(parse(text = paste0("c(mean(data$",date_column,"),max(data$",date_column,"))")))),
             
-            actionButton("run","Run forecast models!",style = 'color:white; background-color:darkgreen; padding:4px; font-size:150%',
+            
+            actionButton("train_all","Train all models",style = 'color:white; background-color:red; padding:4px; font-size:150%',
+                         icon = icon("cogs",lib = "font-awesome"))
+            ),
+          
+          box(
+            title = "Gradient boosting trees",
+            
+            
+            sliderInput(label = "Step size",min = 0,max = 1, inputId = "step_size_gbm",value = 0.1),
+            sliderInput(label = "Subsampling rate",min = 0,max = 1, inputId = "subsampling_rate_gbm",value = 1),
+            
+            actionButton("run","Run gradient boosting model",style = 'color:white; background-color:darkgreen; padding:4px; font-size:150%',
                          icon = icon("users",lib = "font-awesome"))
             # as.Date("2015-01-01"), as.Date("2015-12-31"),
             # c(as.Date("2015-01-01"),as.Date("2015-06-01")))
@@ -79,17 +101,24 @@ dashforecast <- function(data = data,x,y,date_column, share_app = FALSE,port = N
       set.seed(122)
       histdata <- rnorm(500)
       
-      output$plot1 <- renderPlot({
-        data <- histdata[seq_len(input$slider)]
-        hist(data)
+      
+      r <- reactiveValues(model = NULL)
+      t <- reactiveValues(step_size_gbm = 0.1)
+      v <- reactiveValues(subsampling_rate_gbm = 1)
+      
+      observeEvent(input$run,{
+        r$model <- "prediction"
       })
       
+      observeEvent(input$run,{
+        t$step_size_gbm <- input$step_size_gbm
+      })
+
+      observeEvent(input$run,{
+        v$subsampling_rate_gbm <- input$subsampling_rate_gbm
+      })
       
-      output$plot2 <- renderPlotly({
-        plot_ly(data = data,x = iris$Sepal.Width,y = iris$Petal.Length)
-        })
-      
-      
+
       output$input_curve <- renderDygraph({
         
         data <- as.data.table(data)
@@ -108,17 +137,77 @@ dashforecast <- function(data = data,x,y,date_column, share_app = FALSE,port = N
         
       })
       
-      output$output_curve <- renderDygraph({
-        data_output_curve <- data %>% filter(date_column >= input$range_selector[1]) %>% 
-          as.data.table()
-        data_output_curve <- eval(parse(text = paste0(
-                                          "data %>% filter(",date_column,">= as.date(input$range_selector[1])) %>% as.data.table()"
-        )
-       ))
+      
+      
+      table_forecast <- reactive({
         
-        dygraph(data_output_curve)
+        chaine_variable <- "mois"
+        
+        if (length(input$input_variables) > 1 ){
+          for (i in 1:length(input$input_variables)){chaine_variable <- paste(chaine_variable,"+",input$input_variables[i])}
+        }
+        
+        
+        data_spark_train <- eval(parse(text = paste0( "data %>% filter(",date_column,"<= input$train_selector[2]) %>% as.data.table()")))
+        data_spark_test <- eval(parse(text = paste0("data %>% filter(",date_column,"> input$test_selector[1]) %>% as.data.table()")))
+        
+        data_spark_train <- copy_to(sc, data_spark_train, "data_spark_train", overwrite = TRUE)
+        data_spark_test <- copy_to(sc, data_spark_test, "data_spark_test", overwrite = TRUE)
+        
+        
+        eval(parse(text = paste0("fit <- data_spark_train %>%","ml_gradient_boosted_trees","(", y ," ~ " ,chaine_variable ,",step_size =",t$step_size_gbm,
+                                 ",subsampling_rate =",v$subsampling_rate_gbm," )")))
+        
+        
+        
+        sdf_predict(data_spark_test, fit) %>% collect %>% as.data.frame()
+        
         
       })
+      
+      
+      
+      output$output_curve <- renderDygraph({
+
+        # chaine_variable <- "mois"
+        # 
+        # if (length(input$input_variables) > 1 ){
+        #   for (i in 1:length(input$input_variables)){chaine_variable <- paste(chaine_variable,"+",input$input_variables[i])}
+        # }
+        # 
+        # 
+        # data_spark_train <- eval(parse(text = paste0( "data %>% filter(",date_column,"<= input$train_selector[2]) %>% as.data.table()")))
+        # data_spark_test <- eval(parse(text = paste0("data %>% filter(",date_column,"> input$test_selector[1]) %>% as.data.table()")))
+        # 
+        # data_spark_train <- copy_to(sc, data_spark_train, "data_spark_train", overwrite = TRUE)
+        # data_spark_test <- copy_to(sc, data_spark_test, "data_spark_test", overwrite = TRUE)
+        # 
+        # 
+        # eval(parse(text = paste0("fit <- data_spark_train %>%","ml_gradient_boosted_trees","(", y ," ~ " ,chaine_variable ,",step_size =",t$step_size_gbm,
+        #                          ",subsampling_rate =",v$subsampling_rate_gbm," )")))
+        # 
+        # 
+        # 
+        # pred <- sdf_predict(data_spark_test, fit) %>% collect %>% as.data.frame()
+
+        
+        
+  
+        dygraph(table_forecast()[c(date_column,"Valeur",r$model)])
+        
+      })
+      
+      output$results_table <- renderDataTable(
+        
+
+        
+        
+        
+        DT::datatable(table_forecast() %>% summarise(mape = 100 * median(abs((Valeur - prediction) / prediction)),rmse = sqrt(mean((Valeur - prediction)**2))),
+                      options = list(searching = FALSE,paging = FALSE,columnDefs = list(list(width = '200px',targets = "_all"))))
+        )
+      
+
       
       
       observeEvent(input$train_selector,{
@@ -148,8 +237,7 @@ dashforecast <- function(data = data,x,y,date_column, share_app = FALSE,port = N
   
 }
 
-dashforecast(share_app = TRUE ,port = 7895,data =sequence_dates ,y = "Valeur",date_column = "Date")
-
+dashforecast(share_app = TRUE ,port = 7895,data =sequence_dates ,x = c("jour","mois","numero_jour"), y = "Valeur",date_column = "Date")
 
 
 
@@ -179,6 +267,11 @@ h2o.predict(model, splits[[2]]) %>%
 t2 <- Sys.time()
 ?h2o.xgboost
 t2 - t
+
+
+
+
+
 # Package sparklyr
 library(sparklyr)
 t <- Sys.time()
@@ -200,14 +293,6 @@ mlp_model <- iris_training %>%
 pred <- sdf_predict(iris_test, mlp_model)
 
 ml_multiclass_classification_evaluator(pred)
-
-
-
-
-
-
-
-
 
 
 
@@ -278,5 +363,4 @@ eval(parse(text = paste0("dygraph(sequence_dates[,.(Date,Valeur)])")))
 
 
 
-class(sequence_dates$Date) =="Date"
->>>>>>> 1fa2bb36fca043fddd05b571c30d8488dd621536
+
