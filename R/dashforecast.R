@@ -30,6 +30,12 @@ sequence_dates <- sequence_dates %>%
   as.data.table()
 
 
+
+
+
+
+
+
 dashforecast <- function(data = data,x,y,date_column, share_app = FALSE,port = NULL ){
   sc <- spark_connect(master = "local")
   app <- shinyApp(
@@ -84,13 +90,28 @@ dashforecast <- function(data = data,x,y,date_column, share_app = FALSE,port = N
             sliderInput(label = "Step size",min = 0,max = 1, inputId = "step_size_gbm",value = 0.1),
             sliderInput(label = "Subsampling rate",min = 0,max = 1, inputId = "subsampling_rate_gbm",value = 1),
             
-            actionButton("run","Run gradient boosting model",style = 'color:white; background-color:darkgreen; padding:4px; font-size:150%',
+            
+            actionButton("run_gradient_boosting","Run gradient boosting model",style = 'color:white; background-color:darkgreen; padding:4px; font-size:150%',
                          icon = icon("users",lib = "font-awesome"))
             # as.Date("2015-01-01"), as.Date("2015-12-31"),
             # c(as.Date("2015-01-01"),as.Date("2015-06-01")))
-          )
+          ),
           #tags$style(HTML('#run{background-color:orange}')),
-          
+          box(
+            title = "Random Forest",
+            
+            sliderInput(label = "Number of trees",min = 1,max = 100, inputId = "num_tree_random_forest",value = 20),
+            sliderInput(label = "Subsampling rate",min = 0,max = 1, inputId = "subsampling_rate_random_forest",value = 1),
+            sliderInput(label = "Max depth",min = 0,max = 20, inputId = "max_depth_random_forest",value = 5),
+            
+            # sliderInput(label = "Step size",min = 0,max = 1, inputId = "step_size_gbm",value = 0.1),
+            # sliderInput(label = "Subsampling rate",min = 0,max = 1, inputId = "subsampling_rate_gbm",value = 1),
+            
+            actionButton("run_random_forest","Run random forest model model",style = 'color:white; background-color:darkblue; padding:4px; font-size:150%',
+                         icon = icon("users",lib = "font-awesome"))
+            # as.Date("2015-01-01"), as.Date("2015-12-31"),
+            # c(as.Date("2015-01-01"),as.Date("2015-06-01")))
+          )  
         
 
         )
@@ -102,21 +123,34 @@ dashforecast <- function(data = data,x,y,date_column, share_app = FALSE,port = N
       histdata <- rnorm(500)
       
       
-      r <- reactiveValues(model = NULL)
+      #r <- reactiveValues(model = NULL)
       t <- reactiveValues(step_size_gbm = 0.1)
       v <- reactiveValues(subsampling_rate_gbm = 1)
+      u <- reactiveValues(type_model = "ml_gradient_boosted_trees")
+      x <- reactiveValues(max_depth_random_forest = 5)
       
-      observeEvent(input$run,{
-        r$model <- "prediction"
-      })
-      
-      observeEvent(input$run,{
+      observeEvent(input$run_gradient_boosting,{
+        #r$model <- "gradient_boosting"
         t$step_size_gbm <- input$step_size_gbm
-      })
-
-      observeEvent(input$run,{
         v$subsampling_rate_gbm <- input$subsampling_rate_gbm
+        u$type_model <- "ml_gradient_boosted_trees"
+        
       })
+      
+      
+      observeEvent(input$run_random_forest,{
+        #r$model <- "random_forest"
+        t$num_tree_random_forest <- input$num_tree_random_forest
+        v$subsampling_rate_random_forest <- input$subsampling_rate_random_forest
+        x$max_depth_random_forest <-  input$max_depth_random_forest
+        
+        u$type_model <- "ml_random_forest"
+        
+      })
+      
+      
+      
+      
       
 
       output$input_curve <- renderDygraph({
@@ -142,6 +176,8 @@ dashforecast <- function(data = data,x,y,date_column, share_app = FALSE,port = N
       table_forecast <- reactive({
         
         chaine_variable <- "mois"
+        complete_result_table <- data.table()
+        
         
         if (length(input$input_variables) > 1 ){
           for (i in 1:length(input$input_variables)){chaine_variable <- paste(chaine_variable,"+",input$input_variables[i])}
@@ -154,14 +190,36 @@ dashforecast <- function(data = data,x,y,date_column, share_app = FALSE,port = N
         data_spark_train <- copy_to(sc, data_spark_train, "data_spark_train", overwrite = TRUE)
         data_spark_test <- copy_to(sc, data_spark_test, "data_spark_test", overwrite = TRUE)
         
-        
-        eval(parse(text = paste0("fit <- data_spark_train %>%","ml_gradient_boosted_trees","(", y ," ~ " ,chaine_variable ,",step_size =",t$step_size_gbm,
-                                 ",subsampling_rate =",v$subsampling_rate_gbm," )")))
+        if (u$type_model == "ml_gradient_boosted_trees"){
         
         
+        eval(parse(text = paste0("fit <- data_spark_train %>%",u$type_model,"(", y ," ~ " ,chaine_variable ,
+                                 ",step_size =",t$step_size_gbm,
+                                 ",subsampling_rate =",v$subsampling_rate_gbm,
+                                 " )")))
+          
+          table_ml_model <- sdf_predict(data_spark_test, fit) %>% collect %>% as.data.frame()  
+
+        }
         
-        sdf_predict(data_spark_test, fit) %>% collect %>% as.data.frame()
+        else if (u$type_model == "ml_random_forest"){
+          
+          eval(parse(text = paste0("fit <- data_spark_train %>%",u$type_model,"(", y ," ~ " ,chaine_variable ,
+                                    ",num_trees  =",t$num_tree_random_forest,
+                                    ",subsampling_rate =",v$subsampling_rate_random_forest,
+                                    ",max_depth  =",x$max_depth_random_forest,
+                                   ")")))
+          
+          table_ml_model <- sdf_predict(data_spark_test, fit) %>% collect %>% as.data.frame()  
+          
+          
+        }
         
+        if (!is.na(u$type_model)){names(table_ml_model)[names(table_ml_model) == 'prediction'] <- u$type_model}
+        table_ml_model
+        # complete_result_table <- merge(complete_result_table, table_ml_model ,by = )
+        # 
+        # complete_result_table
         
       })
       
@@ -193,7 +251,7 @@ dashforecast <- function(data = data,x,y,date_column, share_app = FALSE,port = N
         
         
   
-        dygraph(table_forecast()[c(date_column,"Valeur",r$model)])
+        dygraph(table_forecast()[c(date_column,"Valeur",u$type_model)])
         
       })
       
@@ -203,7 +261,8 @@ dashforecast <- function(data = data,x,y,date_column, share_app = FALSE,port = N
         
         
         
-        DT::datatable(table_forecast() %>% summarise(mape = 100 * median(abs((Valeur - prediction) / prediction)),rmse = sqrt(mean((Valeur - prediction)**2))),
+        DT::datatable(table_forecast() %>% summarise(mape = 100 * median(abs((Valeur - eval(parse(text = u$type_model))) /eval(parse(text =  u$type_model)))),
+                                                     rmse = sqrt(mean((Valeur - eval(parse(text =  u$type_model)))**2))),
                       options = list(searching = FALSE,paging = FALSE,columnDefs = list(list(width = '200px',targets = "_all"))))
         )
       
@@ -271,7 +330,6 @@ t2 - t
 
 
 
-
 # Package sparklyr
 library(sparklyr)
 t <- Sys.time()
@@ -281,14 +339,19 @@ sc <- spark_connect(master = "local")
 
 
 iris_tbl <- sdf_copy_to(sc, iris, name = "iris_tbl", overwrite = TRUE)
+
+
+
+
 partitions <- iris_tbl %>%
   sdf_partition(training = 0.7, test = 0.3, seed = 1111)
 
 iris_training <- partitions$training
 iris_test <- partitions$test
 
-mlp_model <- iris_training %>%
-  ml_multilayer_perceptron_classifier(Species ~ ., layers = c(4,3,3))
+mlp_model <- iris_tbl %>%
+  #ml_random_forest(formula = Species ~ . )
+  ml_multilayer_perceptron_classifier(Sepal_Length ~ Petal_Length, layers = c(4,3,3))
 
 pred <- sdf_predict(iris_test, mlp_model)
 
@@ -298,7 +361,32 @@ ml_multiclass_classification_evaluator(pred)
 
 
 
+data_spark_train <- sequence_dates[Date <= "2017-08-01",][1:10,] %>% 
+  mutate(Valeur = as.integer(Valeur)) %>% 
+  mutate(Valeur = round(Valeur,0)) %>% 
+  mutate(ordi = ifelse(jour == 1,"oui","non"))
 
+
+data_spark_test <- sequence_dates[Date >= "2017-08-01",][1:10,] %>% 
+  mutate(Valeur = as.integer(Valeur)) %>% 
+  mutate(Valeur = round(Valeur,0)) %>% 
+  mutate(ordi = ifelse(jour == 1,"oui","non"))
+
+
+data_spark_test <- eval(parse(text = paste0("data %>% filter(",date_column,"> input$test_selector[1]) %>% as.data.table()")))
+
+data_spark_train <- copy_to(sc, data_spark_train, "data_spark_train2", overwrite = TRUE)
+data_spark_test <- copy_to(sc, data_spark_test, "data_spark_test", overwrite = TRUE)
+
+
+
+
+
+fit <- data_spark_train %>% ml_random_forest(Valeur ~ numero_jour,ladyers = c(1,2))
+sdf_predict(data_spark_test, fit) %>% collect %>% as.data.frame()
+class(data_spark_train)
+
+?ml_multilayer_perceptron
 data_conso_sparklyr <- copy_to(sc, iris, "iris", overwrite = TRUE)
 partitions <- sdf_partition(x =data_conso_sparklyr,training = 0.75,test = 0.25 )
 
@@ -361,6 +449,6 @@ dygraph(sequence_dates[,.(Date,Valeur)])
 eval(parse(text = paste0("dygraph(sequence_dates[,.(Date,Valeur)])")))
 
 
-
+ml_random_forest()
 
 
