@@ -18,7 +18,6 @@ library(DT)
 #If the response is numeric, then a regression model will be trained, otherwise it will train a classification model.
 
 
-sc <- spark_connect(master = "local")
 
 sequence_dates <- seq.Date(from = as.Date("2017-01-01"),to = as.Date("2018-01-01"),by = "days") %>% 
   as.data.table() %>% 
@@ -37,7 +36,11 @@ sequence_dates <- sequence_dates %>%
 
 
 dashforecast <- function(data = data,x,y,date_column, share_app = FALSE,port = NULL ){
+  spark_disconnect(sc)
   sc <- spark_connect(master = "local")
+  
+  
+  
   app <- shinyApp(
     ui = dashboardPage(
       dashboardHeader(title = "Compare forecast models"),
@@ -53,7 +56,8 @@ dashforecast <- function(data = data,x,y,date_column, share_app = FALSE,port = N
               
               column(
                 dygraphOutput("output_curve",height = 250,width = 700),
-              dataTableOutput("results_table"),width = 10),
+                #dataTableOutput("results_table"),
+                width = 10),
               
               width = 30),
           
@@ -81,7 +85,7 @@ dashforecast <- function(data = data,x,y,date_column, share_app = FALSE,port = N
             
             actionButton("train_all","Train all models",style = 'color:white; background-color:red; padding:4px; font-size:150%',
                          icon = icon("cogs",lib = "font-awesome"))
-            ),
+          ),
           
           box(
             title = "Gradient boosting trees",
@@ -103,6 +107,7 @@ dashforecast <- function(data = data,x,y,date_column, share_app = FALSE,port = N
             sliderInput(label = "Number of trees",min = 1,max = 100, inputId = "num_tree_random_forest",value = 20),
             sliderInput(label = "Subsampling rate",min = 0,max = 1, inputId = "subsampling_rate_random_forest",value = 1),
             sliderInput(label = "Max depth",min = 0,max = 20, inputId = "max_depth_random_forest",value = 5),
+            dataTableOutput("test_result"),
             
             # sliderInput(label = "Step size",min = 0,max = 1, inputId = "step_size_gbm",value = 0.1),
             # sliderInput(label = "Subsampling rate",min = 0,max = 1, inputId = "subsampling_rate_gbm",value = 1),
@@ -112,8 +117,8 @@ dashforecast <- function(data = data,x,y,date_column, share_app = FALSE,port = N
             # as.Date("2015-01-01"), as.Date("2015-12-31"),
             # c(as.Date("2015-01-01"),as.Date("2015-06-01")))
           )  
-        
-
+          
+          
         )
       )
     ),
@@ -123,17 +128,20 @@ dashforecast <- function(data = data,x,y,date_column, share_app = FALSE,port = N
       histdata <- rnorm(500)
       
       
-      #r <- reactiveValues(model = NULL)
+      
+      
       t <- reactiveValues(step_size_gbm = 0.1)
       v <- reactiveValues(subsampling_rate_gbm = 1)
-      u <- reactiveValues(type_model = "ml_gradient_boosted_trees")
+      
+      v_grad <- reactiveValues(type_model = NA)
+      v_random <- reactiveValues(type_model = NA)
+      
       x <- reactiveValues(max_depth_random_forest = 5)
       
       observeEvent(input$run_gradient_boosting,{
-        #r$model <- "gradient_boosting"
         t$step_size_gbm <- input$step_size_gbm
         v$subsampling_rate_gbm <- input$subsampling_rate_gbm
-        u$type_model <- "ml_gradient_boosted_trees"
+        v_grad$type_model <- "ml_gradient_boosted_trees"
         
       })
       
@@ -144,7 +152,7 @@ dashforecast <- function(data = data,x,y,date_column, share_app = FALSE,port = N
         v$subsampling_rate_random_forest <- input$subsampling_rate_random_forest
         x$max_depth_random_forest <-  input$max_depth_random_forest
         
-        u$type_model <- "ml_random_forest"
+        v_random$type_model <- "ml_random_forest"
         
       })
       
@@ -152,7 +160,7 @@ dashforecast <- function(data = data,x,y,date_column, share_app = FALSE,port = N
       
       
       
-
+      
       output$input_curve <- renderDygraph({
         
         data <- as.data.table(data)
@@ -175,9 +183,13 @@ dashforecast <- function(data = data,x,y,date_column, share_app = FALSE,port = N
       
       table_forecast <- reactive({
         
-        chaine_variable <- "mois"
-        complete_result_table <- data.table()
         
+        table_ml_gradient_boosted <- data.table(ml_gradient_boosted_trees = NA)
+        table_ml_random_forest <- data.table(ml_random_forest = NA)
+        
+        data_results = eval(parse(text = paste0("data[,.(",date_column,",",y,")][",date_column,">","'",input$test_selector[1],"',]")))
+        
+        chaine_variable <- "mois"
         
         if (length(input$input_variables) > 1 ){
           for (i in 1:length(input$input_variables)){chaine_variable <- paste(chaine_variable,"+",input$input_variables[i])}
@@ -190,83 +202,62 @@ dashforecast <- function(data = data,x,y,date_column, share_app = FALSE,port = N
         data_spark_train <- copy_to(sc, data_spark_train, "data_spark_train", overwrite = TRUE)
         data_spark_test <- copy_to(sc, data_spark_test, "data_spark_test", overwrite = TRUE)
         
-        if (u$type_model == "ml_gradient_boosted_trees"){
         
-        
-        eval(parse(text = paste0("fit <- data_spark_train %>%",u$type_model,"(", y ," ~ " ,chaine_variable ,
-                                 ",step_size =",t$step_size_gbm,
-                                 ",subsampling_rate =",v$subsampling_rate_gbm,
-                                 " )")))
+        if (!is.na(v_grad$type_model) & v_grad$type_model == "ml_gradient_boosted_trees"){
           
-          table_ml_model <- sdf_predict(data_spark_test, fit) %>% collect %>% as.data.frame()  
-
+          
+          eval(parse(text = paste0("fit <- data_spark_train %>%",v_grad$type_model,"(", y ," ~ " ,chaine_variable ,
+                                   ",step_size =",t$step_size_gbm,
+                                   ",subsampling_rate =",v$subsampling_rate_gbm,
+                                   " )")))
+          
+          table_ml_gradient_boosted <- sdf_predict(data_spark_test, fit) %>% collect %>% as.data.frame() %>% select(prediction)
+          names(table_ml_gradient_boosted)[names(table_ml_gradient_boosted) == 'prediction'] <- v_grad$type_model
         }
         
-        else if (u$type_model == "ml_random_forest"){
+        
+        
+        
+        if (!is.na(v_random$type_model) & v_random$type_model == "ml_random_forest"){
           
-          eval(parse(text = paste0("fit <- data_spark_train %>%",u$type_model,"(", y ," ~ " ,chaine_variable ,
-                                    ",num_trees  =",t$num_tree_random_forest,
-                                    ",subsampling_rate =",v$subsampling_rate_random_forest,
-                                    ",max_depth  =",x$max_depth_random_forest,
+          eval(parse(text = paste0("fit <- data_spark_train %>%",v_random$type_model,"(", y ," ~ " ,chaine_variable ,
+                                   ",num_trees  =",t$num_tree_random_forest,
+                                   ",subsampling_rate =",v$subsampling_rate_random_forest,
+                                   ",max_depth  =",x$max_depth_random_forest,
                                    ")")))
           
-          table_ml_model <- sdf_predict(data_spark_test, fit) %>% collect %>% as.data.frame()  
-          
+          table_ml_random_forest <- sdf_predict(data_spark_test, fit) %>% collect %>% as.data.frame() %>% select(prediction)
+          names(table_ml_random_forest)[names(table_ml_random_forest) == 'prediction'] <- v_random$type_model
           
         }
         
-        if (!is.na(u$type_model)){names(table_ml_model)[names(table_ml_model) == 'prediction'] <- u$type_model}
-        table_ml_model
-        # complete_result_table <- merge(complete_result_table, table_ml_model ,by = )
-        # 
-        # complete_result_table
+        
+        cbind(data_results,table_ml_gradient_boosted,table_ml_random_forest)
         
       })
       
       
       
       output$output_curve <- renderDygraph({
-
-        # chaine_variable <- "mois"
-        # 
-        # if (length(input$input_variables) > 1 ){
-        #   for (i in 1:length(input$input_variables)){chaine_variable <- paste(chaine_variable,"+",input$input_variables[i])}
-        # }
-        # 
-        # 
-        # data_spark_train <- eval(parse(text = paste0( "data %>% filter(",date_column,"<= input$train_selector[2]) %>% as.data.table()")))
-        # data_spark_test <- eval(parse(text = paste0("data %>% filter(",date_column,"> input$test_selector[1]) %>% as.data.table()")))
-        # 
-        # data_spark_train <- copy_to(sc, data_spark_train, "data_spark_train", overwrite = TRUE)
-        # data_spark_test <- copy_to(sc, data_spark_test, "data_spark_test", overwrite = TRUE)
-        # 
-        # 
-        # eval(parse(text = paste0("fit <- data_spark_train %>%","ml_gradient_boosted_trees","(", y ," ~ " ,chaine_variable ,",step_size =",t$step_size_gbm,
-        #                          ",subsampling_rate =",v$subsampling_rate_gbm," )")))
-        # 
-        # 
-        # 
-        # pred <- sdf_predict(data_spark_test, fit) %>% collect %>% as.data.frame()
-
-        
-        
-  
-        dygraph(table_forecast()[c(date_column,"Valeur",u$type_model)])
-        
+        dygraph(data = table_forecast())
       })
+      
+      
+      output$test_result <- renderDataTable({table_forecast()})
+      
       
       output$results_table <- renderDataTable(
         
-
+        
         
         
         
         DT::datatable(table_forecast() %>% summarise(mape = 100 * median(abs((Valeur - eval(parse(text = u$type_model))) /eval(parse(text =  u$type_model)))),
                                                      rmse = sqrt(mean((Valeur - eval(parse(text =  u$type_model)))**2))),
                       options = list(searching = FALSE,paging = FALSE,columnDefs = list(list(width = '200px',targets = "_all"))))
-        )
+      )
       
-
+      
       
       
       observeEvent(input$train_selector,{
@@ -274,9 +265,9 @@ dashforecast <- function(data = data,x,y,date_column, share_app = FALSE,port = N
                           value= c(input$train_selector[2],input$test_selector[2]) ) 
       })
       
-
       
-          }
+      
+    }
   )
   
   if (share_app == TRUE){
@@ -395,7 +386,7 @@ fit <- ml_gradient_boosted_trees(x = partitions$training,
                                  formula = "Petal_Width ~Sepal_Length+Sepal_Width+Petal_Length",type = "regression")
 
 fit <- ml_multilayer_perceptron_classifier(x = partitions$training,
-                                    formula = "Petal_Width ~Sepal_Length+Sepal_Width+Petal_Length",layers = c(2,2))
+                                           formula = "Petal_Width ~Sepal_Length+Sepal_Width+Petal_Length",layers = c(2,2))
 
 
 
@@ -404,7 +395,7 @@ pred <- sdf_predict(fit, partitions$test) %>% collect %>% as.data.table()
 
 
 pred %>% summarise(mape = 100 * mean(abs((Petal_Width - prediction) / prediction)),
-                                  rmse = sqrt(mean((Petal_Width - prediction)**2)))
+                   rmse = sqrt(mean((Petal_Width - prediction)**2)))
 
 T1 <- Sys.time()
 
@@ -425,10 +416,10 @@ colnames(prediction) <- c("predict","Petal.Width")
 resultats <- prediction %>% 
   summarise(mape = 100 * mean(abs((Petal.Width - predict) / predict)),
             rmse = sqrt(mean((Petal.Width - predict)**2)))
-  
-  
- 
-  
+
+
+
+
 plot(sequence_dates$Valeur)
 dygraph(sequence_dates[,.(Date,Valeur)]) %>% 
   dyBarChart()
