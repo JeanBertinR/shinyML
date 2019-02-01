@@ -1,6 +1,7 @@
 library(h2o)
 library(shiny)
 library(shinydashboard)
+library(shinyWidgets)
 library(dygraphs)
 library(data.table)
 library(dplyr)
@@ -49,17 +50,31 @@ dashforecast <- function(data = data,x,y,date_column, share_app = FALSE,port = N
   
   
   
+  
+  
   app <- shinyApp(
     ui = dashboardPage(
       dashboardHeader(title = "Compare forecast models"),
       dashboardSidebar(    
         sidebarMenu(
-          menuItem("Dashboard", tabName = "dashboard", icon = icon("dashboard"))
+          menuItem("Dashboard", tabName = "dashboard", icon = icon("dashboard"),
+                   materialSwitch(inputId = "bar_chart_mode",label = "Bar chart mode",status = "primary",value = TRUE)
+                   )
         )),
       
       dashboardBody(
+        
+        # if ("dashboardthemes" %in% rownames(installed.packages())){ 
+        #   
+        #   library(dashboardthemes)
+        #   shinyDashboardThemes(theme = "blue_gradient"
+        #   )
+        # },
+        
+        
         fluidRow(
           #box(plotOutput("plot1", height = 250)),
+          
           box(dygraphOutput("input_curve", height = 250,width = 1100),
               
               column(
@@ -130,50 +145,29 @@ dashforecast <- function(data = data,x,y,date_column, share_app = FALSE,port = N
             
             selectInput(label = "Family",inputId = "glm_family",choices = c("gaussian","poisson"),selected = "gaussian"),
             
-            # sliderInput(label = "Number of trees",min = 1,max = 100, inputId = "num_tree_random_forest",value = 20),
-            # sliderInput(label = "Subsampling rate",min = 0,max = 1, inputId = "subsampling_rate_random_forest",value = 1),
-            # sliderInput(label = "Max depth",min = 0,max = 20, inputId = "max_depth_random_forest",value = 5),
-            # dataTableOutput("test_result"),
-            # dataTableOutput("date_essai"),
-            
-            
+
             actionButton("run_glm","Run generalized linear regression",style = 'color:white; background-color:orange; padding:4px; font-size:150%',
                          icon = icon("cogs",lib = "font-awesome"))
-            # as.Date("2015-01-01"), as.Date("2015-12-31"),
-            # c(as.Date("2015-01-01"),as.Date("2015-06-01")))
           ),
           
           
           box(
             title = "Decision tree",
             
-            # sliderInput(label = "Number of trees",min = 1,max = 100, inputId = "num_tree_random_forest",value = 20),
-            # sliderInput(label = "Subsampling rate",min = 0,max = 1, inputId = "subsampling_rate_random_forest",value = 1),
-            # sliderInput(label = "Max depth",min = 0,max = 20, inputId = "max_depth_random_forest",value = 5),
-            # dataTableOutput("test_result"),
-            # dataTableOutput("date_essai"),
-            
+
             
             actionButton("run_decision_tree","Run decision tree regression",style = 'color:white; background-color:purple; padding:4px; font-size:150%',
                          icon = icon("cogs",lib = "font-awesome"))
-            # as.Date("2015-01-01"), as.Date("2015-12-31"),
-            # c(as.Date("2015-01-01"),as.Date("2015-06-01")))
+
           ),
           
           box(
             title = "Isotonic regression",
             
-            # sliderInput(label = "Number of trees",min = 1,max = 100, inputId = "num_tree_random_forest",value = 20),
-            # sliderInput(label = "Subsampling rate",min = 0,max = 1, inputId = "subsampling_rate_random_forest",value = 1),
-            # sliderInput(label = "Max depth",min = 0,max = 20, inputId = "max_depth_random_forest",value = 5),
-            # dataTableOutput("test_result"),
-            # dataTableOutput("date_essai"),
-            
-            
+
             actionButton("run_isotonic_regression","Run isotonic regression",style = 'color:white; background-color:cyan; padding:4px; font-size:150%',
                          icon = icon("cogs",lib = "font-awesome"))
-            # as.Date("2015-01-01"), as.Date("2015-12-31"),
-            # c(as.Date("2015-01-01"),as.Date("2015-06-01")))
+
           )
           
           
@@ -264,10 +258,18 @@ dashforecast <- function(data = data,x,y,date_column, share_app = FALSE,port = N
           dyEvent(x = input$train_selector[1]) %>%
           dyEvent(x = input$train_selector[2]) %>%
           dyEvent(x = input$test_selector[2]) %>%
-          dySeries(y,fillGraph = TRUE)
+          dySeries(y,fillGraph = TRUE) %>% 
+          dyAxis("y",valueRange = c(0,1.5 * max(eval(parse(text =paste0("data$",y))))))
         
+        
+        
+        if (input$bar_chart_mode == TRUE){
+          curve_entries <- curve_entries %>% dyBarChart()
+        }
         
         curve_entries
+        
+        
         
       })
       
@@ -380,17 +382,23 @@ dashforecast <- function(data = data,x,y,date_column, share_app = FALSE,port = N
           
         }
         
-        
-        
-        
-        cbind(data_results,table_ml_gradient_boosted,table_ml_random_forest,table_ml_glm,table_ml_decision_tree,table_ml_isotonic_regression)
+        cbind(data_results,table_ml_gradient_boosted,table_ml_random_forest,table_ml_glm,table_ml_decision_tree,table_ml_isotonic_regression) %>% 
+          as.data.table()
         
       })
       
       
-      
       output$output_curve <- renderDygraph({
-        dygraph(data = table_forecast())
+        
+        output_dygraph <- dygraph(data = table_forecast()) %>% 
+          dyAxis("y",valueRange = c(0,1.5 * max(eval(parse(text =paste0("table_forecast()$",y))))))
+        
+        if (input$bar_chart_mode == TRUE){
+          output_dygraph <- output_dygraph %>% dyBarChart()
+        }
+        
+        output_dygraph
+          
       })
       
       
@@ -409,8 +417,6 @@ dashforecast <- function(data = data,x,y,date_column, share_app = FALSE,port = N
       )
       
       
-      
-      
       observeEvent(input$train_selector,{
         updateSliderInput(session,'test_selector',
                           value= c(input$train_selector[2],input$test_selector[2]) ) 
@@ -420,7 +426,6 @@ dashforecast <- function(data = data,x,y,date_column, share_app = FALSE,port = N
         updateSliderInput(session,'train_selector',
                           value= c(input$train_selector[1],input$test_selector[1]) ) 
       })
-      
       
       
     }
@@ -485,13 +490,17 @@ data_spark_test <- copy_to(sc, data_spark_test, "data_spark_test", overwrite = T
 
 
 fit <- data_spark_train %>% ml_generalized_linear_regression(Valeur ~ jour + numero_jour,family = "gaussian")
-fit <- data_spark_train %>% ml_isotonic_regression(Valeur ~ jour + numero_jour)
+fit <- data_spark_train %>% ml_decision_tree(Valeur ~ jour + numero_jour + mois)
 
+
+fit <- data_spark_train %>% ml_gaussian_mixture(Valeur ~ jour + numero_jour)
+
+ml_feature_importances(fit)
 fit <- data_spark_train %>% ml_logistic_regression(Valeur ~ jour + numero_jour)
 fit <- data_spark_train %>% ml_mul(Valeur ~ jour + numero_jour)
-
-
-sdf_predict(data_spark_test, fit) %>% collect %>% as.data.frame()
+ml_tree_feature_importance(fit)
+ml_mutl
+fdk <- sdf_predict(data_spark_test, fit) %>% collect %>% as.data.frame()
 
 ?ml_generalized_linear_regression
 # iris_tbl <- sdf_copy_to(sc, iris, name = "iris_tbl", overwrite = TRUE)
