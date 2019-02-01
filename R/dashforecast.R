@@ -19,14 +19,22 @@ library(DT)
 
 
 
-sequence_dates <- seq.Date(from = as.Date("2017-01-01"),to = as.Date("2018-01-01"),by = "days") %>% 
-  as.data.table() %>% 
-  mutate(valeur = runif( row_number()) *100) %>% 
-  as.data.table()
-colnames(sequence_dates) <- c("Date","Valeur")
-sequence_dates <- sequence_dates %>% 
+# sequence_dates <- seq.Date(from = as.Date("2017-01-01"),to = as.Date("2018-01-01"),by = "days") %>% 
+#   as.data.table() %>% 
+#   mutate(valeur = runif( row_number()) *100) %>% 
+#   as.data.table()
+# colnames(sequence_dates) <- c("Date","Valeur")
+# sequence_dates <- sequence_dates %>% 
+#   mutate(jour = day(Date),mois = month(Date),numero_jour = row_number()) %>% 
+#   as.data.table()
+
+sequence_dates <- read.csv2("data_test_package.csv") %>% 
+  mutate(mois = as.Date(paste0(mois,"-01"))) %>% 
+  rename(Date = mois,Valeur = Vol_conso) %>% 
   mutate(jour = day(Date),mois = month(Date),numero_jour = row_number()) %>% 
   as.data.table()
+
+
 
 
 
@@ -120,6 +128,8 @@ dashforecast <- function(data = data,x,y,date_column, share_app = FALSE,port = N
           box(
             title = "Generalized linear regresion",
             
+            selectInput(label = "Family",inputId = "glm_family",choices = c("gaussian","poisson"),selected = "gaussian"),
+            
             # sliderInput(label = "Number of trees",min = 1,max = 100, inputId = "num_tree_random_forest",value = 20),
             # sliderInput(label = "Subsampling rate",min = 0,max = 1, inputId = "subsampling_rate_random_forest",value = 1),
             # sliderInput(label = "Max depth",min = 0,max = 20, inputId = "max_depth_random_forest",value = 5),
@@ -128,6 +138,39 @@ dashforecast <- function(data = data,x,y,date_column, share_app = FALSE,port = N
             
             
             actionButton("run_glm","Run generalized linear regression",style = 'color:white; background-color:orange; padding:4px; font-size:150%',
+                         icon = icon("cogs",lib = "font-awesome"))
+            # as.Date("2015-01-01"), as.Date("2015-12-31"),
+            # c(as.Date("2015-01-01"),as.Date("2015-06-01")))
+          ),
+          
+          
+          box(
+            title = "Decision tree",
+            
+            # sliderInput(label = "Number of trees",min = 1,max = 100, inputId = "num_tree_random_forest",value = 20),
+            # sliderInput(label = "Subsampling rate",min = 0,max = 1, inputId = "subsampling_rate_random_forest",value = 1),
+            # sliderInput(label = "Max depth",min = 0,max = 20, inputId = "max_depth_random_forest",value = 5),
+            # dataTableOutput("test_result"),
+            # dataTableOutput("date_essai"),
+            
+            
+            actionButton("run_decision_tree","Run decision tree regression",style = 'color:white; background-color:purple; padding:4px; font-size:150%',
+                         icon = icon("cogs",lib = "font-awesome"))
+            # as.Date("2015-01-01"), as.Date("2015-12-31"),
+            # c(as.Date("2015-01-01"),as.Date("2015-06-01")))
+          ),
+          
+          box(
+            title = "Isotonic regression",
+            
+            # sliderInput(label = "Number of trees",min = 1,max = 100, inputId = "num_tree_random_forest",value = 20),
+            # sliderInput(label = "Subsampling rate",min = 0,max = 1, inputId = "subsampling_rate_random_forest",value = 1),
+            # sliderInput(label = "Max depth",min = 0,max = 20, inputId = "max_depth_random_forest",value = 5),
+            # dataTableOutput("test_result"),
+            # dataTableOutput("date_essai"),
+            
+            
+            actionButton("run_isotonic_regression","Run isotonic regression",style = 'color:white; background-color:cyan; padding:4px; font-size:150%',
                          icon = icon("cogs",lib = "font-awesome"))
             # as.Date("2015-01-01"), as.Date("2015-12-31"),
             # c(as.Date("2015-01-01"),as.Date("2015-06-01")))
@@ -148,10 +191,13 @@ dashforecast <- function(data = data,x,y,date_column, share_app = FALSE,port = N
       
       t <- reactiveValues(step_size_gbm = 0.1)
       v <- reactiveValues(subsampling_rate_gbm = 1)
+      f <- reactiveValues(family_glm = "gaussian")
       
       v_grad <- reactiveValues(type_model = NA)
       v_random <- reactiveValues(type_model = NA)
       v_glm <- reactiveValues(type_model = NA)
+      v_decision_tree <- reactiveValues(type_model = NA)
+      v_isotonic_regression <- reactiveValues(type_model = NA)
       
       x <- reactiveValues(max_depth_random_forest = 5)
       
@@ -174,18 +220,39 @@ dashforecast <- function(data = data,x,y,date_column, share_app = FALSE,port = N
       })
       
       observeEvent(input$run_glm,{
+        
         #r$model <- "random_forest"
         # t$num_tree_random_forest <- input$num_tree_random_forest
         # v$subsampling_rate_random_forest <- input$subsampling_rate_random_forest
         # x$max_depth_random_forest <-  input$max_depth_random_forest
         
+        f$family_glm <- input$glm_family
         v_glm$type_model <- "ml_generalized_linear_regression"
         
       })
       
+      observeEvent(input$run_decision_tree,{
+        #r$model <- "random_forest"
+        # t$num_tree_random_forest <- input$num_tree_random_forest
+        # v$subsampling_rate_random_forest <- input$subsampling_rate_random_forest
+        # x$max_depth_random_forest <-  input$max_depth_random_forest
+        
+        v_decision_tree$type_model <- "ml_decision_tree"
+        
+      })
       
+      observeEvent(input$run_isotonic_regression,{
+        #r$model <- "random_forest"
+        # t$num_tree_random_forest <- input$num_tree_random_forest
+        # v$subsampling_rate_random_forest <- input$subsampling_rate_random_forest
+        # x$max_depth_random_forest <-  input$max_depth_random_forest
+        
+        v_isotonic_regression$type_model <- "ml_isotonic_regression"
+        
+      })
+     
       
-      
+    
       output$input_curve <- renderDygraph({
         
         data <- as.data.table(data)
@@ -227,6 +294,8 @@ dashforecast <- function(data = data,x,y,date_column, share_app = FALSE,port = N
         table_ml_gradient_boosted <- data.table(ml_gradient_boosted_trees = NA)
         table_ml_random_forest <- data.table(ml_random_forest = NA)
         table_ml_glm <- data.table(ml_generalized_linear_regression = NA)
+        table_ml_decision_tree <- data.table(ml_decision_tree = NA)
+        table_ml_isotonic_regression <- data.table(ml_isotonic_regression = NA)
         
         data_results = eval(parse(text = paste0("data[,.(",date_column,",",y,")][",date_column,">","'",test_1$date,"',]")))
         
@@ -236,7 +305,7 @@ dashforecast <- function(data = data,x,y,date_column, share_app = FALSE,port = N
           for (i in 1:length(input$input_variables)){chaine_variable <- paste(chaine_variable,"+",input$input_variables[i])}
         }
         
-        
+       
         data_spark_train <- eval(parse(text = paste0( "data %>% filter(",date_column,"<='", test_1$date,"') %>% as.data.table()")))
         data_spark_test <- eval(parse(text = paste0("data %>% filter(",date_column,">'", test_1$date,"') %>% as.data.table()")))
         
@@ -275,7 +344,7 @@ dashforecast <- function(data = data,x,y,date_column, share_app = FALSE,port = N
         if (!is.na(v_glm$type_model) & v_glm$type_model == "ml_generalized_linear_regression"){
           
           eval(parse(text = paste0("fit <- data_spark_train %>%",v_glm$type_model,"(", y ," ~ " ,chaine_variable ,
-                                   # ",num_trees  =",t$num_tree_random_forest,
+                                    ",family  =",f$family_glm,
                                    # ",subsampling_rate =",v$subsampling_rate_random_forest,
                                    # ",max_depth  =",x$max_depth_random_forest,
                                    ")")))
@@ -285,8 +354,36 @@ dashforecast <- function(data = data,x,y,date_column, share_app = FALSE,port = N
           
         }
         
+        if (!is.na(v_decision_tree$type_model) & v_decision_tree$type_model == "ml_decision_tree"){
+          
+          eval(parse(text = paste0("fit <- data_spark_train %>%",v_decision_tree$type_model,"(", y ," ~ " ,chaine_variable ,
+                                   # ",num_trees  =",t$num_tree_random_forest,
+                                   # ",subsampling_rate =",v$subsampling_rate_random_forest,
+                                   # ",max_depth  =",x$max_depth_random_forest,
+                                   ")")))
+          
+          table_ml_decision_tree <- sdf_predict(data_spark_test, fit) %>% collect %>% as.data.frame() %>% select(prediction)
+          names(table_ml_decision_tree)[names(table_ml_decision_tree) == 'prediction'] <- v_decision_tree$type_model
+          
+        }
         
-        cbind(data_results,table_ml_gradient_boosted,table_ml_random_forest,table_ml_glm)
+        if (!is.na(v_isotonic_regression$type_model) & v_isotonic_regression$type_model == "ml_isotonic_regression"){
+          
+          eval(parse(text = paste0("fit <- data_spark_train %>%",v_isotonic_regression$type_model,"(", y ," ~ " ,chaine_variable ,
+                                   # ",num_trees  =",t$num_tree_random_forest,
+                                   # ",subsampling_rate =",v$subsampling_rate_random_forest,
+                                   # ",max_depth  =",x$max_depth_random_forest,
+                                   ")")))
+          
+          table_ml_isotonic_regression <- sdf_predict(data_spark_test, fit) %>% collect %>% as.data.frame() %>% select(prediction)
+          names(table_ml_isotonic_regression)[names(table_ml_isotonic_regression) == 'prediction'] <- v_isotonic_regression$type_model
+          
+        }
+        
+        
+        
+        
+        cbind(data_results,table_ml_gradient_boosted,table_ml_random_forest,table_ml_glm,table_ml_decision_tree,table_ml_isotonic_regression)
         
       })
       
@@ -359,23 +456,7 @@ y <- "Petal.Length"
 x <- "Sepal.Width"
 data <- "iris"
 
-# Package h2o
-t <- Sys.time()
-h2o.init(nthreads = -1)
-h2o_data <- as.h2o(sequence_dates)
-splits <- h2o.splitFrame(data = h2o_data,ratios = 0.75,seed = 1234)
-model <- h2o.xgboost(x = 1:3,y = "Valeur",training_frame = splits[[1]])
-model <- h2o.gbm(x = 3:4,y = "Valeur",training_frame = splits[[1]])
 
-h2o.predict(model, splits[[2]]) %>% 
-  as.data.table() %>% 
-  cbind(.,as.data.table(splits[[2]]["Valeur"])) %>% 
-  summarise(mape = 100 * mean(abs((Valeur - predict) / predict)),
-            rmse = sqrt(mean((Valeur - predict)**2)))
-
-t2 <- Sys.time()
-?h2o.xgboost
-t2 - t
 
 
 
@@ -386,58 +467,52 @@ t <- Sys.time()
 sc <- spark_connect(master = "local")
 
 
-
-
-iris_tbl <- sdf_copy_to(sc, iris, name = "iris_tbl", overwrite = TRUE)
-
-
-
-
-partitions <- iris_tbl %>%
-  sdf_partition(training = 0.7, test = 0.3, seed = 1111)
-
-iris_training <- partitions$training
-iris_test <- partitions$test
-
-mlp_model <- iris_tbl %>%
-  #ml_random_forest(formula = Species ~ . )
-  ml_multilayer_perceptron_classifier(Sepal_Length ~ Petal_Length, layers = c(4,3,3))
-
-pred <- sdf_predict(iris_test, mlp_model)
-
-ml_multiclass_classification_evaluator(pred)
-
-
-
-
-
-data_spark_train <- sequence_dates[Date <= "2017-08-01",][1:10,] %>% 
+data_spark_train <- sequence_dates[Date <= "2017-08-01",] %>% 
   mutate(Valeur = as.integer(Valeur)) %>% 
   mutate(Valeur = round(Valeur,0)) %>% 
   mutate(ordi = ifelse(jour == 1,"oui","non"))
 
 
-data_spark_test <- sequence_dates[Date >= "2017-08-01",][1:10,] %>% 
+data_spark_test <- sequence_dates[Date >= "2017-08-01",] %>% 
   mutate(Valeur = as.integer(Valeur)) %>% 
   mutate(Valeur = round(Valeur,0)) %>% 
   mutate(ordi = ifelse(jour == 1,"oui","non"))
 
 
-data_spark_test <- eval(parse(text = paste0("data %>% filter(",date_column,"> input$test_selector[1]) %>% as.data.table()")))
 
-data_spark_train <- copy_to(sc, data_spark_train, "data_spark_train2", overwrite = TRUE)
+data_spark_train <- copy_to(sc, data_spark_train, "data_spark_train", overwrite = TRUE)
 data_spark_test <- copy_to(sc, data_spark_test, "data_spark_test", overwrite = TRUE)
 
 
+fit <- data_spark_train %>% ml_generalized_linear_regression(Valeur ~ jour + numero_jour,family = "gaussian")
+fit <- data_spark_train %>% ml_isotonic_regression(Valeur ~ jour + numero_jour)
 
-
-
-fit <- data_spark_train %>% ml_generalized_linear_regression(Valeur ~ jour + numero_jour)
 fit <- data_spark_train %>% ml_logistic_regression(Valeur ~ jour + numero_jour)
-
+fit <- data_spark_train %>% ml_mul(Valeur ~ jour + numero_jour)
 
 
 sdf_predict(data_spark_test, fit) %>% collect %>% as.data.frame()
+
+?ml_generalized_linear_regression
+# iris_tbl <- sdf_copy_to(sc, iris, name = "iris_tbl", overwrite = TRUE)
+# 
+# 
+# 
+# 
+# partitions <- iris_tbl %>%
+#   sdf_partition(training = 0.7, test = 0.3, seed = 1111)
+# 
+# iris_training <- partitions$training
+# iris_test <- partitions$test
+# 
+# mlp_model <- iris_tbl %>%
+#   #ml_random_forest(formula = Species ~ . )
+#   ml_multilayer_perceptron_classifier(Sepal_Length ~ Petal_Length, layers = c(4,3,3))
+# 
+# pred <- sdf_predict(iris_test, mlp_model)
+# 
+# ml_multiclass_classification_evaluator(pred)
+
 class(data_spark_train)
 
 ?ml_multilayer_perceptron
@@ -464,6 +539,26 @@ T1 <- Sys.time()
 
 T1 - t
 
+
+
+
+# Package h2o
+t <- Sys.time()
+h2o.init(nthreads = -1)
+h2o_data <- as.h2o(sequence_dates)
+splits <- h2o.splitFrame(data = h2o_data,ratios = 0.75,seed = 1234)
+model <- h2o.xgboost(x = 1:3,y = "Valeur",training_frame = splits[[1]])
+model <- h2o.gbm(x = 3:4,y = "Valeur",training_frame = splits[[1]])
+
+h2o.predict(model, splits[[2]]) %>% 
+  as.data.table() %>% 
+  cbind(.,as.data.table(splits[[2]]["Valeur"])) %>% 
+  summarise(mape = 100 * mean(abs((Valeur - predict) / predict)),
+            rmse = sqrt(mean((Valeur - predict)**2)))
+
+t2 <- Sys.time()
+?h2o.xgboost
+t2 - t
 
 
 # Package xgboost 
