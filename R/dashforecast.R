@@ -38,7 +38,7 @@ sequence_dates <- read.csv2("data_test_package.csv") %>%
 
 
 
-
+spark_disconnect_all()
 
 
 
@@ -59,7 +59,7 @@ dashforecast <- function(data = data,x,y,date_column, share_app = FALSE,port = N
         sidebarMenu(
           menuItem("Dashboard", tabName = "dashboard", icon = icon("dashboard"),
                    materialSwitch(inputId = "bar_chart_mode",label = "Bar chart mode",status = "primary",value = TRUE)
-                   )
+          )
         )),
       
       dashboardBody(
@@ -106,7 +106,7 @@ dashforecast <- function(data = data,x,y,date_column, share_app = FALSE,port = N
                         value = eval(parse(text = paste0("c(mean(data$",date_column,"),max(data$",date_column,"))")))),
             
             
-            actionButton("train_all","Run !",style = 'color:white; background-color:red; padding:4px; font-size:150%',
+            actionButton("train_all","Run all models !",style = 'color:white; background-color:red; padding:4px; font-size:150%',
                          icon = icon("cogs",lib = "font-awesome"))
           ),
           
@@ -143,9 +143,10 @@ dashforecast <- function(data = data,x,y,date_column, share_app = FALSE,port = N
           box(
             title = "Generalized linear regresion",
             
-            selectInput(label = "Family",inputId = "glm_family",choices = c("gaussian","poisson"),selected = "gaussian"),
+            radioButtons(label = "Family",inputId = "glm_family",choices = c("gaussian","Gamma","tweedie","poisson"),selected = "gaussian"),
+            radioButtons(label = "Link",inputId = "glm_link",choices = c("identity","log"),selected = "identity"),
+            materialSwitch(label = "Intercept terme",inputId = "intercept_term_glm",status = "primary",value = TRUE),
             
-
             actionButton("run_glm","Run generalized linear regression",style = 'color:white; background-color:orange; padding:4px; font-size:150%',
                          icon = icon("cogs",lib = "font-awesome"))
           ),
@@ -154,20 +155,20 @@ dashforecast <- function(data = data,x,y,date_column, share_app = FALSE,port = N
           box(
             title = "Decision tree",
             
-
+            
             
             actionButton("run_decision_tree","Run decision tree regression",style = 'color:white; background-color:purple; padding:4px; font-size:150%',
                          icon = icon("cogs",lib = "font-awesome"))
-
+            
           ),
           
           box(
             title = "Isotonic regression",
             
-
+            
             actionButton("run_isotonic_regression","Run isotonic regression",style = 'color:white; background-color:cyan; padding:4px; font-size:150%',
                          icon = icon("cogs",lib = "font-awesome"))
-
+            
           )
           
           
@@ -180,12 +181,22 @@ dashforecast <- function(data = data,x,y,date_column, share_app = FALSE,port = N
       set.seed(122)
       histdata <- rnorm(500)
       
+      table_ml_gradient_boosted <- data.table(ml_gradient_boosted_trees = NA)
+      table_ml_random_forest <- data.table(ml_random_forest = NA)
+      table_ml_glm <- data.table(ml_generalized_linear_regression = NA)
+      table_ml_decision_tree <- data.table(ml_decision_tree = NA)
+      table_ml_isotonic_regression <- data.table(ml_isotonic_regression = NA)
       
+      model <- reactiveValues(train_variables = NA)
       
       
       t <- reactiveValues(step_size_gbm = 0.1)
       v <- reactiveValues(subsampling_rate_gbm = 1)
+      
       f <- reactiveValues(family_glm = "gaussian")
+      l <- reactiveValues(link_glm = "identity")
+      i <- reactiveValues(intercept_glm = TRUE) 
+      
       
       v_grad <- reactiveValues(type_model = NA)
       v_random <- reactiveValues(type_model = NA)
@@ -195,58 +206,86 @@ dashforecast <- function(data = data,x,y,date_column, share_app = FALSE,port = N
       
       x <- reactiveValues(max_depth_random_forest = 5)
       
+      
       observeEvent(input$run_gradient_boosting,{
+        
+        test_1$date <- input$test_selector[1]
+        model$train_variables <- input$input_variables
         t$step_size_gbm <- input$step_size_gbm
         v$subsampling_rate_gbm <- input$subsampling_rate_gbm
         v_grad$type_model <- "ml_gradient_boosted_trees"
+        
+        v_random$type_model <- NA
+        v_glm$type_model <- NA
+        v_decision_tree$type_model <- NA
+        v_isotonic_regression$type_model <- NA
         
       })
       
       
       observeEvent(input$run_random_forest,{
-        #r$model <- "random_forest"
+        
+        test_1$date <- input$test_selector[1]
+        model$train_variables <- input$input_variables
         t$num_tree_random_forest <- input$num_tree_random_forest
         v$subsampling_rate_random_forest <- input$subsampling_rate_random_forest
         x$max_depth_random_forest <-  input$max_depth_random_forest
         
         v_random$type_model <- "ml_random_forest"
         
+        v_grad$type_model <- NA
+        v_glm$type_model <- NA
+        v_decision_tree$type_model <- NA
+        v_isotonic_regression$type_model <- NA
+        
       })
       
       observeEvent(input$run_glm,{
         
-        #r$model <- "random_forest"
-        # t$num_tree_random_forest <- input$num_tree_random_forest
-        # v$subsampling_rate_random_forest <- input$subsampling_rate_random_forest
-        # x$max_depth_random_forest <-  input$max_depth_random_forest
-        
+        test_1$date <- input$test_selector[1]
+        model$train_variables <- input$input_variables
         f$family_glm <- input$glm_family
+        l$link_glm <- input$glm_link
+        i$intercept_glm <- input$intercept_term_glm
+        
         v_glm$type_model <- "ml_generalized_linear_regression"
+        
+        v_grad$type_model <- NA
+        v_random$type_model <- NA
+        v_decision_tree$type_model <- NA
+        v_isotonic_regression$type_model <- NA
         
       })
       
       observeEvent(input$run_decision_tree,{
-        #r$model <- "random_forest"
-        # t$num_tree_random_forest <- input$num_tree_random_forest
-        # v$subsampling_rate_random_forest <- input$subsampling_rate_random_forest
-        # x$max_depth_random_forest <-  input$max_depth_random_forest
         
+        test_1$date <- input$test_selector[1]
+        model$train_variables <- input$input_variables
         v_decision_tree$type_model <- "ml_decision_tree"
+        
+        v_glm$type_model <- NA
+        v_grad$type_model <- NA
+        v_random$type_model <- NA
+        v_isotonic_regression$type_model <- NA
         
       })
       
       observeEvent(input$run_isotonic_regression,{
-        #r$model <- "random_forest"
-        # t$num_tree_random_forest <- input$num_tree_random_forest
-        # v$subsampling_rate_random_forest <- input$subsampling_rate_random_forest
-        # x$max_depth_random_forest <-  input$max_depth_random_forest
         
+        test_1$date <- input$test_selector[1]
+        model$train_variables <- input$input_variables
         v_isotonic_regression$type_model <- "ml_isotonic_regression"
         
+        
+        v_decision_tree$type_model <- NA
+        v_glm$type_model <- NA
+        v_grad$type_model <- NA
+        v_random$type_model <- NA
+        
       })
-     
       
-    
+      
+      
       output$input_curve <- renderDygraph({
         
         data <- as.data.table(data)
@@ -279,106 +318,137 @@ dashforecast <- function(data = data,x,y,date_column, share_app = FALSE,port = N
       observeEvent(input$train_all,{
         
         test_1$date <- input$test_selector[1]
+        model$train_variables <- input$input_variables
+        v_decision_tree$type_model <- "ml_decision_tree"
+        v_glm$type_model <- "ml_generalized_linear_regression"
         v_grad$type_model <- "ml_gradient_boosted_trees"
+        v_random$type_model <- "ml_random_forest"
+        v_isotonic_regression$type_model <- "ml_isotonic_regression"
         
       })
       
       
       output$date_essai <- renderDataTable({
-        test_1$date %>% as.data.table()
+        
+        
+        
+        chaine_variable <- ""
+        
+        #if (length(model$train_variables) >= 1 ){
+        
+        for (i in 1:length(model$train_variables)){chaine_variable <- paste0(chaine_variable,"+",model$train_variables[i])}
+        chaine_variable <- ifelse(startsWith(chaine_variable,"+"),substr(chaine_variable,2,nchar(chaine_variable)),chaine_variable)
+        
+        #}
+        
+        chaine_variable %>% as.data.table()
+        
+        #input$intercept_term_glm %>% as.data.table()
       })
+      
+      
+      # entree <- c("")
+      # 
+      # for (i in 1:length(entree)){
+      # chaine_variable <- paste0(chaine_variable,"+",entree[i])
+      # chaine_variable <- ifelse(startsWith(chaine_variable,"+"),substr(chaine_variable,2,nchar(chaine_variable)),chaine_variable)
+      #   
+      # }
       
       
       
       table_forecast <- reactive({
         
         
-        table_ml_gradient_boosted <- data.table(ml_gradient_boosted_trees = NA)
-        table_ml_random_forest <- data.table(ml_random_forest = NA)
-        table_ml_glm <- data.table(ml_generalized_linear_regression = NA)
-        table_ml_decision_tree <- data.table(ml_decision_tree = NA)
-        table_ml_isotonic_regression <- data.table(ml_isotonic_regression = NA)
+        
         
         data_results = eval(parse(text = paste0("data[,.(",date_column,",",y,")][",date_column,">","'",test_1$date,"',]")))
         
-        chaine_variable <- "mois"
-        
-        if (length(input$input_variables) > 1 ){
-          for (i in 1:length(input$input_variables)){chaine_variable <- paste(chaine_variable,"+",input$input_variables[i])}
-        }
-        
-       
-        data_spark_train <- eval(parse(text = paste0( "data %>% filter(",date_column,"<='", test_1$date,"') %>% as.data.table()")))
-        data_spark_test <- eval(parse(text = paste0("data %>% filter(",date_column,">'", test_1$date,"') %>% as.data.table()")))
-        
-        data_spark_train <- copy_to(sc, data_spark_train, "data_spark_train", overwrite = TRUE)
-        data_spark_test <- copy_to(sc, data_spark_test, "data_spark_test", overwrite = TRUE)
+        chaine_variable <- ""
         
         
-        if (!is.na(v_grad$type_model) & v_grad$type_model == "ml_gradient_boosted_trees"){
-          
-          
-          eval(parse(text = paste0("fit <- data_spark_train %>%",v_grad$type_model,"(", y ," ~ " ,chaine_variable ,
-                                   ",step_size =",t$step_size_gbm,
-                                   ",subsampling_rate =",v$subsampling_rate_gbm,
-                                   " )")))
-          
-          table_ml_gradient_boosted <- sdf_predict(data_spark_test, fit) %>% collect %>% as.data.frame() %>% select(prediction)
-          names(table_ml_gradient_boosted)[names(table_ml_gradient_boosted) == 'prediction'] <- v_grad$type_model
-        }
+        for (i in 1:length(model$train_variables)){chaine_variable <- paste0(chaine_variable,"+",model$train_variables[i])}
+        chaine_variable <- ifelse(startsWith(chaine_variable,"+"),substr(chaine_variable,2,nchar(chaine_variable)),chaine_variable)
         
-        
-        
-        
-        if (!is.na(v_random$type_model) & v_random$type_model == "ml_random_forest"){
+        if (chaine_variable != "+"){  
           
-          eval(parse(text = paste0("fit <- data_spark_train %>%",v_random$type_model,"(", y ," ~ " ,chaine_variable ,
-                                   ",num_trees  =",t$num_tree_random_forest,
-                                   ",subsampling_rate =",v$subsampling_rate_random_forest,
-                                   ",max_depth  =",x$max_depth_random_forest,
-                                   ")")))
           
-          table_ml_random_forest <- sdf_predict(data_spark_test, fit) %>% collect %>% as.data.frame() %>% select(prediction)
-          names(table_ml_random_forest)[names(table_ml_random_forest) == 'prediction'] <- v_random$type_model
+          data_spark_train <- eval(parse(text = paste0( "data %>% filter(",date_column,"<='", test_1$date,"') %>% as.data.table()")))
+          data_spark_test <- eval(parse(text = paste0("data %>% filter(",date_column,">'", test_1$date,"') %>% as.data.table()")))
           
-        }
-        
-        if (!is.na(v_glm$type_model) & v_glm$type_model == "ml_generalized_linear_regression"){
+          data_spark_train <- copy_to(sc, data_spark_train, "data_spark_train", overwrite = TRUE)
+          data_spark_test <- copy_to(sc, data_spark_test, "data_spark_test", overwrite = TRUE)
           
-          eval(parse(text = paste0("fit <- data_spark_train %>%",v_glm$type_model,"(", y ," ~ " ,chaine_variable ,
-                                    ",family  =",f$family_glm,
-                                   # ",subsampling_rate =",v$subsampling_rate_random_forest,
-                                   # ",max_depth  =",x$max_depth_random_forest,
-                                   ")")))
           
-          table_ml_glm <- sdf_predict(data_spark_test, fit) %>% collect %>% as.data.frame() %>% select(prediction)
-          names(table_ml_glm)[names(table_ml_glm) == 'prediction'] <- v_glm$type_model
+          if (!is.na(v_grad$type_model) & v_grad$type_model == "ml_gradient_boosted_trees"){
+            
+            
+            eval(parse(text = paste0("fit <- data_spark_train %>%",v_grad$type_model,"(", y ," ~ " ,chaine_variable ,
+                                     ",step_size =",t$step_size_gbm,
+                                     ",subsampling_rate =",v$subsampling_rate_gbm,
+                                     " )")))
+            
+            table_ml_gradient_boosted <- sdf_predict(data_spark_test, fit) %>% collect %>% as.data.frame() %>% select(prediction)
+            names(table_ml_gradient_boosted)[names(table_ml_gradient_boosted) == 'prediction'] <- v_grad$type_model
+            
+          }
           
-        }
-        
-        if (!is.na(v_decision_tree$type_model) & v_decision_tree$type_model == "ml_decision_tree"){
           
-          eval(parse(text = paste0("fit <- data_spark_train %>%",v_decision_tree$type_model,"(", y ," ~ " ,chaine_variable ,
-                                   # ",num_trees  =",t$num_tree_random_forest,
-                                   # ",subsampling_rate =",v$subsampling_rate_random_forest,
-                                   # ",max_depth  =",x$max_depth_random_forest,
-                                   ")")))
           
-          table_ml_decision_tree <- sdf_predict(data_spark_test, fit) %>% collect %>% as.data.frame() %>% select(prediction)
-          names(table_ml_decision_tree)[names(table_ml_decision_tree) == 'prediction'] <- v_decision_tree$type_model
           
-        }
-        
-        if (!is.na(v_isotonic_regression$type_model) & v_isotonic_regression$type_model == "ml_isotonic_regression"){
+          if (!is.na(v_random$type_model) & v_random$type_model == "ml_random_forest"){
+            
+            eval(parse(text = paste0("fit <- data_spark_train %>%",v_random$type_model,"(", y ," ~ " ,chaine_variable ,
+                                     ",num_trees  =",t$num_tree_random_forest,
+                                     ",subsampling_rate =",v$subsampling_rate_random_forest,
+                                     ",max_depth  =",x$max_depth_random_forest,
+                                     ")")))
+            
+            table_ml_random_forest <- sdf_predict(data_spark_test, fit) %>% collect %>% as.data.frame() %>% select(prediction)
+            names(table_ml_random_forest)[names(table_ml_random_forest) == 'prediction'] <- v_random$type_model
+            
+          }
           
-          eval(parse(text = paste0("fit <- data_spark_train %>%",v_isotonic_regression$type_model,"(", y ," ~ " ,chaine_variable ,
-                                   # ",num_trees  =",t$num_tree_random_forest,
-                                   # ",subsampling_rate =",v$subsampling_rate_random_forest,
-                                   # ",max_depth  =",x$max_depth_random_forest,
-                                   ")")))
+          if (!is.na(v_glm$type_model) & v_glm$type_model == "ml_generalized_linear_regression"){
+            
+            eval(parse(text = paste0("fit <- data_spark_train %>%",v_glm$type_model,"(", y ," ~ " ,chaine_variable ,
+                                     ",family  = ", f$family_glm,
+                                     ",link =",l$link_glm,
+                                     ",fit_intercept =",input$intercept_term_glm,
+                                     # ",subsampling_rate =",v$subsampling_rate_random_forest,
+                                     # ",max_depth  =",x$max_depth_random_forest,
+                                     ")")))
+            
+            table_ml_glm <- sdf_predict(data_spark_test, fit) %>% collect %>% as.data.frame() %>% select(prediction)
+            names(table_ml_glm)[names(table_ml_glm) == 'prediction'] <- v_glm$type_model
+            
+          }
           
-          table_ml_isotonic_regression <- sdf_predict(data_spark_test, fit) %>% collect %>% as.data.frame() %>% select(prediction)
-          names(table_ml_isotonic_regression)[names(table_ml_isotonic_regression) == 'prediction'] <- v_isotonic_regression$type_model
+          if (!is.na(v_decision_tree$type_model) & v_decision_tree$type_model == "ml_decision_tree"){
+            
+            eval(parse(text = paste0("fit <- data_spark_train %>%",v_decision_tree$type_model,"(", y ," ~ " ,chaine_variable ,
+                                     # ",num_trees  =",t$num_tree_random_forest,
+                                     # ",subsampling_rate =",v$subsampling_rate_random_forest,
+                                     # ",max_depth  =",x$max_depth_random_forest,
+                                     ")")))
+            
+            table_ml_decision_tree <- sdf_predict(data_spark_test, fit) %>% collect %>% as.data.frame() %>% select(prediction)
+            names(table_ml_decision_tree)[names(table_ml_decision_tree) == 'prediction'] <- v_decision_tree$type_model
+            
+          }
+          
+          if (!is.na(v_isotonic_regression$type_model) & v_isotonic_regression$type_model == "ml_isotonic_regression"){
+            
+            eval(parse(text = paste0("fit <- data_spark_train %>%",v_isotonic_regression$type_model,"(", y ," ~ " ,chaine_variable ,
+                                     # ",num_trees  =",t$num_tree_random_forest,
+                                     # ",subsampling_rate =",v$subsampling_rate_random_forest,
+                                     # ",max_depth  =",x$max_depth_random_forest,
+                                     ")")))
+            
+            table_ml_isotonic_regression <- sdf_predict(data_spark_test, fit) %>% collect %>% as.data.frame() %>% select(prediction)
+            names(table_ml_isotonic_regression)[names(table_ml_isotonic_regression) == 'prediction'] <- v_isotonic_regression$type_model
+            
+          }
           
         }
         
@@ -398,11 +468,12 @@ dashforecast <- function(data = data,x,y,date_column, share_app = FALSE,port = N
         }
         
         output_dygraph
-          
+        
       })
       
       
-      output$test_result <- renderDataTable({table_forecast()})
+      output$test_result <- renderDataTable({
+        table_forecast()})
       
       
       output$results_table <- renderDataTable(
@@ -452,7 +523,6 @@ dashforecast(share_app = TRUE ,port = 7895,data =sequence_dates ,x = c("jour","m
 
 
 
-
 plot_ly(data = iris,x = eval(parse(text = paste0(data,"$",x))), y = eval(parse(text = paste0(data,"$",y))))
 
 
@@ -463,8 +533,8 @@ data <- "iris"
 
 
 
-
-
+ml_generalized_linear_regression()
+?ml_generalized_linear_regression
 
 # Package sparklyr
 library(sparklyr)
@@ -487,9 +557,9 @@ data_spark_test <- sequence_dates[Date >= "2017-08-01",] %>%
 
 data_spark_train <- copy_to(sc, data_spark_train, "data_spark_train", overwrite = TRUE)
 data_spark_test <- copy_to(sc, data_spark_test, "data_spark_test", overwrite = TRUE)
-
-
-fit <- data_spark_train %>% ml_generalized_linear_regression(Valeur ~ jour + numero_jour,family = "gaussian")
+tweedie()
+family("tweedie")
+fit <- data_spark_train %>% ml_generalized_linear_regression(Valeur ~ jour + numero_jour + mois,family = "tweedie",link = "log", fit_intercept = FALSE)
 fit <- data_spark_train %>% ml_decision_tree(Valeur ~ jour + numero_jour + mois)
 
 
@@ -501,7 +571,7 @@ fit <- data_spark_train %>% ml_mul(Valeur ~ jour + numero_jour)
 ml_tree_feature_importance(fit)
 ml_mutl
 fdk <- sdf_predict(data_spark_test, fit) %>% collect %>% as.data.frame()
-
+varibd <- "tweedie"
 ?ml_generalized_linear_regression
 # iris_tbl <- sdf_copy_to(sc, iris, name = "iris_tbl", overwrite = TRUE)
 # 
