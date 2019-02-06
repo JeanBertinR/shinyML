@@ -45,13 +45,8 @@ spark_disconnect_all()
 
 
 dashforecast <- function(data = data,x,y,date_column, share_app = FALSE,port = NULL ){
-  #spark_disconnect(sc)
   sc <- spark_connect(master = "local")
-  
-  
-  
-  
-  
+
   app <- shinyApp(
     ui = dashboardPage(
       dashboardHeader(title = "Compare forecast models"),
@@ -64,17 +59,8 @@ dashforecast <- function(data = data,x,y,date_column, share_app = FALSE,port = N
       
       dashboardBody(
         
-        # if ("dashboardthemes" %in% rownames(installed.packages())){ 
-        #   
-        #   library(dashboardthemes)
-        #   shinyDashboardThemes(theme = "blue_gradient"
-        #   )
-        # },
-        
-        
         fluidRow(
-          #box(plotOutput("plot1", height = 250)),
-          
+
           box(dygraphOutput("input_curve", height = 250,width = 1100),
               
               column(
@@ -83,10 +69,6 @@ dashforecast <- function(data = data,x,y,date_column, share_app = FALSE,port = N
                 width = 10),
               
               width = 30),
-          
-          
-          
-          
           
           box(
             title = "Controls",
@@ -120,10 +102,9 @@ dashforecast <- function(data = data,x,y,date_column, share_app = FALSE,port = N
             
             actionButton("run_gradient_boosting","Run gradient boosting model",style = 'color:white; background-color:darkgreen; padding:4px; font-size:150%',
                          icon = icon("users",lib = "font-awesome"))
-            # as.Date("2015-01-01"), as.Date("2015-12-31"),
-            # c(as.Date("2015-01-01"),as.Date("2015-06-01")))
+
           ),
-          #tags$style(HTML('#run{background-color:orange}')),
+          
           box(
             title = "Random Forest",
             
@@ -136,17 +117,17 @@ dashforecast <- function(data = data,x,y,date_column, share_app = FALSE,port = N
             
             actionButton("run_random_forest","Run random forest model",style = 'color:white; background-color:darkblue; padding:4px; font-size:150%',
                          icon = icon("users",lib = "font-awesome"))
-            # as.Date("2015-01-01"), as.Date("2015-12-31"),
-            # c(as.Date("2015-01-01"),as.Date("2015-06-01")))
+
           ),
           
           box(
             title = "Generalized linear regresion",
             
-            radioButtons(label = "Family",inputId = "glm_family",choices = c("gaussian","Gamma","tweedie","poisson"),selected = "gaussian"),
+            radioButtons(label = "Family",inputId = "glm_family",choices = c("gaussian","Gamma","poisson"),selected = "gaussian"),
             radioButtons(label = "Link",inputId = "glm_link",choices = c("identity","log"),selected = "identity"),
-            materialSwitch(label = "Intercept terme",inputId = "intercept_term_glm",status = "primary",value = TRUE),
-            
+            materialSwitch(label = "Intercept term",inputId = "intercept_term_glm",status = "primary",value = TRUE),
+            sliderInput(label = "Regularization parameter (lambda)",inputId = "reg_param_glm",min = 0,max = 10,value = 0),
+            sliderInput(label = "Maximum iteraions",inputId = "max_iter_glm",min = 50,max = 300,value = 100),
             actionButton("run_glm","Run generalized linear regression",style = 'color:white; background-color:orange; padding:4px; font-size:150%',
                          icon = icon("cogs",lib = "font-awesome"))
           ),
@@ -156,23 +137,13 @@ dashforecast <- function(data = data,x,y,date_column, share_app = FALSE,port = N
             title = "Decision tree",
             
             
-            
+            sliderInput(label = "Max depth",inputId = "max_depth_decision_tree",min = 0,max = 20,value = 5),
+            sliderInput(label = "Max bins",inputId = "max_bins_decision_tree",min = 2,max = 60,value = 32),
+            sliderInput(label = "Min instance per node",inputId = "min_instance_decision_tree",min = 1,max = 10,value = 1),
             actionButton("run_decision_tree","Run decision tree regression",style = 'color:white; background-color:purple; padding:4px; font-size:150%',
                          icon = icon("cogs",lib = "font-awesome"))
             
-          ),
-          
-          box(
-            title = "Isotonic regression",
-            
-            
-            actionButton("run_isotonic_regression","Run isotonic regression",style = 'color:white; background-color:cyan; padding:4px; font-size:150%',
-                         icon = icon("cogs",lib = "font-awesome"))
-            
           )
-          
-          
-          
         )
       )
     ),
@@ -185,8 +156,6 @@ dashforecast <- function(data = data,x,y,date_column, share_app = FALSE,port = N
       table_ml_random_forest <- data.table(ml_random_forest = NA)
       table_ml_glm <- data.table(ml_generalized_linear_regression = NA)
       table_ml_decision_tree <- data.table(ml_decision_tree = NA)
-      table_ml_isotonic_regression <- data.table(ml_isotonic_regression = NA)
-      
       model <- reactiveValues(train_variables = NA)
       
       
@@ -202,8 +171,7 @@ dashforecast <- function(data = data,x,y,date_column, share_app = FALSE,port = N
       v_random <- reactiveValues(type_model = NA)
       v_glm <- reactiveValues(type_model = NA)
       v_decision_tree <- reactiveValues(type_model = NA)
-      v_isotonic_regression <- reactiveValues(type_model = NA)
-      
+
       x <- reactiveValues(max_depth_random_forest = 5)
       
       
@@ -218,8 +186,7 @@ dashforecast <- function(data = data,x,y,date_column, share_app = FALSE,port = N
         v_random$type_model <- NA
         v_glm$type_model <- NA
         v_decision_tree$type_model <- NA
-        v_isotonic_regression$type_model <- NA
-        
+
       })
       
       
@@ -236,8 +203,7 @@ dashforecast <- function(data = data,x,y,date_column, share_app = FALSE,port = N
         v_grad$type_model <- NA
         v_glm$type_model <- NA
         v_decision_tree$type_model <- NA
-        v_isotonic_regression$type_model <- NA
-        
+
       })
       
       observeEvent(input$run_glm,{
@@ -250,42 +216,33 @@ dashforecast <- function(data = data,x,y,date_column, share_app = FALSE,port = N
         
         v_glm$type_model <- "ml_generalized_linear_regression"
         
+        x$reg_param_glm <- input$reg_param_glm
+        x$max_iter_glm <- input$max_iter_glm
+        
+        
         v_grad$type_model <- NA
         v_random$type_model <- NA
         v_decision_tree$type_model <- NA
-        v_isotonic_regression$type_model <- NA
-        
+
       })
       
       observeEvent(input$run_decision_tree,{
         
         test_1$date <- input$test_selector[1]
         model$train_variables <- input$input_variables
+        x$max_depth_decision_tree <- input$max_depth_decision_tree
+        x$max_bins_decision_tree <- input$max_bins_decision_tree
+        x$min_instance_decision_tree <- input$min_instance_decision_tree
+        
         v_decision_tree$type_model <- "ml_decision_tree"
         
         v_glm$type_model <- NA
         v_grad$type_model <- NA
         v_random$type_model <- NA
-        v_isotonic_regression$type_model <- NA
-        
+
       })
       
-      observeEvent(input$run_isotonic_regression,{
-        
-        test_1$date <- input$test_selector[1]
-        model$train_variables <- input$input_variables
-        v_isotonic_regression$type_model <- "ml_isotonic_regression"
-        
-        
-        v_decision_tree$type_model <- NA
-        v_glm$type_model <- NA
-        v_grad$type_model <- NA
-        v_random$type_model <- NA
-        
-      })
-      
-      
-      
+
       output$input_curve <- renderDygraph({
         
         data <- as.data.table(data)
@@ -305,11 +262,8 @@ dashforecast <- function(data = data,x,y,date_column, share_app = FALSE,port = N
         if (input$bar_chart_mode == TRUE){
           curve_entries <- curve_entries %>% dyBarChart()
         }
-        
         curve_entries
-        
-        
-        
+
       })
       
       
@@ -323,49 +277,26 @@ dashforecast <- function(data = data,x,y,date_column, share_app = FALSE,port = N
         v_glm$type_model <- "ml_generalized_linear_regression"
         v_grad$type_model <- "ml_gradient_boosted_trees"
         v_random$type_model <- "ml_random_forest"
-        v_isotonic_regression$type_model <- "ml_isotonic_regression"
-        
+
       })
       
       
       output$date_essai <- renderDataTable({
-        
-        
-        
+
         chaine_variable <- ""
+
+        x$reg_param_glm %>% as.data.table()
         
-        #if (length(model$train_variables) >= 1 ){
-        
-        for (i in 1:length(model$train_variables)){chaine_variable <- paste0(chaine_variable,"+",model$train_variables[i])}
-        chaine_variable <- ifelse(startsWith(chaine_variable,"+"),substr(chaine_variable,2,nchar(chaine_variable)),chaine_variable)
-        
-        #}
-        
-        chaine_variable %>% as.data.table()
-        
-        #input$intercept_term_glm %>% as.data.table()
       })
-      
-      
-      # entree <- c("")
-      # 
-      # for (i in 1:length(entree)){
-      # chaine_variable <- paste0(chaine_variable,"+",entree[i])
-      # chaine_variable <- ifelse(startsWith(chaine_variable,"+"),substr(chaine_variable,2,nchar(chaine_variable)),chaine_variable)
-      #   
-      # }
-      
       
       
       table_forecast <- reactive({
         
-        
-        
-        
+      
         data_results = eval(parse(text = paste0("data[,.(",date_column,",",y,")][",date_column,">","'",test_1$date,"',]")))
         
         chaine_variable <- ""
-        
+     
         
         for (i in 1:length(model$train_variables)){chaine_variable <- paste0(chaine_variable,"+",model$train_variables[i])}
         chaine_variable <- ifelse(startsWith(chaine_variable,"+"),substr(chaine_variable,2,nchar(chaine_variable)),chaine_variable)
@@ -393,9 +324,6 @@ dashforecast <- function(data = data,x,y,date_column, share_app = FALSE,port = N
             
           }
           
-          
-          
-          
           if (!is.na(v_random$type_model) & v_random$type_model == "ml_random_forest"){
             
             eval(parse(text = paste0("fit <- data_spark_train %>%",v_random$type_model,"(", y ," ~ " ,chaine_variable ,
@@ -415,6 +343,8 @@ dashforecast <- function(data = data,x,y,date_column, share_app = FALSE,port = N
                                      ",family  = ", f$family_glm,
                                      ",link =",l$link_glm,
                                      ",fit_intercept =",input$intercept_term_glm,
+                                     ",reg_param =",x$reg_param_glm,
+                                     ",max_iter =",x$max_iter_glm,
                                      # ",subsampling_rate =",v$subsampling_rate_random_forest,
                                      # ",max_depth  =",x$max_depth_random_forest,
                                      ")")))
@@ -429,7 +359,9 @@ dashforecast <- function(data = data,x,y,date_column, share_app = FALSE,port = N
             eval(parse(text = paste0("fit <- data_spark_train %>%",v_decision_tree$type_model,"(", y ," ~ " ,chaine_variable ,
                                      # ",num_trees  =",t$num_tree_random_forest,
                                      # ",subsampling_rate =",v$subsampling_rate_random_forest,
-                                     # ",max_depth  =",x$max_depth_random_forest,
+                                     ",max_depth  =",x$max_depth_decision_tree,
+                                     ",max_bins  =",x$max_bins_decision_tree,
+                                     ",min_instances_per_node  =",x$min_instance_decision_tree,
                                      ")")))
             
             table_ml_decision_tree <- sdf_predict(data_spark_test, fit) %>% collect %>% as.data.frame() %>% select(prediction)
@@ -437,22 +369,9 @@ dashforecast <- function(data = data,x,y,date_column, share_app = FALSE,port = N
             
           }
           
-          if (!is.na(v_isotonic_regression$type_model) & v_isotonic_regression$type_model == "ml_isotonic_regression"){
-            
-            eval(parse(text = paste0("fit <- data_spark_train %>%",v_isotonic_regression$type_model,"(", y ," ~ " ,chaine_variable ,
-                                     # ",num_trees  =",t$num_tree_random_forest,
-                                     # ",subsampling_rate =",v$subsampling_rate_random_forest,
-                                     # ",max_depth  =",x$max_depth_random_forest,
-                                     ")")))
-            
-            table_ml_isotonic_regression <- sdf_predict(data_spark_test, fit) %>% collect %>% as.data.frame() %>% select(prediction)
-            names(table_ml_isotonic_regression)[names(table_ml_isotonic_regression) == 'prediction'] <- v_isotonic_regression$type_model
-            
-          }
-          
         }
         
-        cbind(data_results,table_ml_gradient_boosted,table_ml_random_forest,table_ml_glm,table_ml_decision_tree,table_ml_isotonic_regression) %>% 
+        cbind(data_results,table_ml_gradient_boosted,table_ml_random_forest,table_ml_glm,table_ml_decision_tree) %>% 
           as.data.table()
         
       })
@@ -471,16 +390,11 @@ dashforecast <- function(data = data,x,y,date_column, share_app = FALSE,port = N
         
       })
       
-      
       output$test_result <- renderDataTable({
         table_forecast()})
       
       
       output$results_table <- renderDataTable(
-        
-        
-        
-        
         
         DT::datatable(table_forecast() %>% summarise(mape = 100 * median(abs((Valeur - eval(parse(text = u$type_model))) /eval(parse(text =  u$type_model)))),
                                                      rmse = sqrt(mean((Valeur - eval(parse(text =  u$type_model)))**2))),
@@ -514,12 +428,14 @@ dashforecast <- function(data = data,x,y,date_column, share_app = FALSE,port = N
   }
   
   else {runApp(app)}
-  #shinyApp(ui, server)
-  
-  
+
 }
 
+
 dashforecast(share_app = TRUE ,port = 7895,data =sequence_dates ,x = c("jour","mois","numero_jour"), y = "Valeur",date_column = "Date")
+
+
+
 
 
 
@@ -557,8 +473,7 @@ data_spark_test <- sequence_dates[Date >= "2017-08-01",] %>%
 
 data_spark_train <- copy_to(sc, data_spark_train, "data_spark_train", overwrite = TRUE)
 data_spark_test <- copy_to(sc, data_spark_test, "data_spark_test", overwrite = TRUE)
-tweedie()
-family("tweedie")
+
 fit <- data_spark_train %>% ml_generalized_linear_regression(Valeur ~ jour + numero_jour + mois,family = "tweedie",link = "log", fit_intercept = FALSE)
 fit <- data_spark_train %>% ml_decision_tree(Valeur ~ jour + numero_jour + mois)
 
@@ -678,5 +593,6 @@ eval(parse(text = paste0("dygraph(sequence_dates[,.(Date,Valeur)])")))
 
 
 ml_random_forest()
+guassian()
 
-
+ml_generalized_linear_regression()
