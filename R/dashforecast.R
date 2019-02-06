@@ -62,14 +62,9 @@ dashforecast <- function(data = data,x,y,date_column, share_app = FALSE,port = N
         
         fluidRow(
           
-          box(dygraphOutput("input_curve", height = 250,width = 1100),
-              
-              column(
-                dygraphOutput("output_curve",height = 250,width = 700),
-                #dataTableOutput("results_table"),
-                width = 10),
-              
-              width = 30),
+          box(dygraphOutput("input_curve", height = 230,width = 900),
+              width = 8
+              ),
           
           box(
             title = "Controls",
@@ -91,7 +86,24 @@ dashforecast <- function(data = data,x,y,date_column, share_app = FALSE,port = N
             
             actionButton("train_all","Run all models !",style = 'color:white; background-color:red; padding:4px; font-size:150%',
                          icon = icon("cogs",lib = "font-awesome"))
-          ),
+            ,width = 4,height = 400),
+          
+              box(
+            dygraphOutput("output_curve",height = 230,width = 800),width = 7),
+              box(dataTableOutput("date_essai",width = 10),width = 4),
+
+          
+          # box(
+          #   dataTableOutput("date_essai")
+          #   ,width = 3)
+              # column(
+              #   dygraphOutput("output_curve",height = 230,width = 700),
+              #   #dataTableOutput("results_table"),
+              #   width = 10),
+              # 
+              # width = 8),
+          
+          column(
           
           box(
             title = "Gradient boosting trees",
@@ -104,7 +116,7 @@ dashforecast <- function(data = data,x,y,date_column, share_app = FALSE,port = N
             actionButton("run_gradient_boosting","Run gradient boosting model",style = 'color:white; background-color:darkgreen; padding:4px; font-size:150%',
                          icon = icon("users",lib = "font-awesome"))
             
-          ),
+            ,width = 3),
           
           box(
             title = "Random Forest",
@@ -112,26 +124,26 @@ dashforecast <- function(data = data,x,y,date_column, share_app = FALSE,port = N
             sliderInput(label = "Number of trees",min = 1,max = 100, inputId = "num_tree_random_forest",value = 20),
             sliderInput(label = "Subsampling rate",min = 0.1,max = 1, inputId = "subsampling_rate_random_forest",value = 1),
             sliderInput(label = "Max depth",min = 0,max = 20, inputId = "max_depth_random_forest",value = 5),
-            dataTableOutput("test_result"),
-            dataTableOutput("date_essai"),
-            
-            
+            #dataTableOutput("test_result"),
+      
             actionButton("run_random_forest","Run random forest model",style = 'color:white; background-color:darkblue; padding:4px; font-size:150%',
                          icon = icon("users",lib = "font-awesome"))
             
-          ),
+            ,width = 3),
           
           box(
             title = "Generalized linear regresion",
+            column(
+              radioButtons(label = "Family",inputId = "glm_family",choices = c("gaussian","Gamma","poisson"),selected = "gaussian"),width = 6),
+            column(
+              radioButtons(label = "Link",inputId = "glm_link",choices = c("identity","log"),selected = "identity"),width = 6),
             
-            radioButtons(label = "Family",inputId = "glm_family",choices = c("gaussian","Gamma","poisson"),selected = "gaussian"),
-            radioButtons(label = "Link",inputId = "glm_link",choices = c("identity","log"),selected = "identity"),
             materialSwitch(label = "Intercept term",inputId = "intercept_term_glm",status = "primary",value = TRUE),
             sliderInput(label = "Regularization parameter (lambda)",inputId = "reg_param_glm",min = 0,max = 10,value = 0),
             sliderInput(label = "Maximum iteraions",inputId = "max_iter_glm",min = 50,max = 300,value = 100),
             actionButton("run_glm","Run generalized linear regression",style = 'color:white; background-color:orange; padding:4px; font-size:150%',
                          icon = icon("cogs",lib = "font-awesome"))
-          ),
+            ,width = 3 ),
           
           
           box(
@@ -144,7 +156,11 @@ dashforecast <- function(data = data,x,y,date_column, share_app = FALSE,port = N
             actionButton("run_decision_tree","Run decision tree regression",style = 'color:white; background-color:purple; padding:4px; font-size:150%',
                          icon = icon("cogs",lib = "font-awesome"))
             
-          )
+            ,width = 3)
+          ,width = 12)
+          
+
+
         )
       )
     ),
@@ -284,17 +300,16 @@ dashforecast <- function(data = data,x,y,date_column, share_app = FALSE,port = N
       
       output$date_essai <- renderDataTable({
         
-        
-        
+        datatable(
         table_forecast() %>% 
-          # summarise_at(vars(ml_gradient_boosted_trees,ml_random_forest,ml_generalized_linear_regression,ml_decision_tree),
-          #              funs(round(100 * mean(abs((. - Valeur)/Valeur),na.rm = TRUE),1))) %>% 
-          gather(key = Model,value = Predicted_value,-Date,-Valeur) %>% 
+          gather(key = Model,value = Predicted_value,-date_column,-y) %>% 
           group_by(Model) %>% 
-          summarise(MAPE = round(100 * mean(abs((Predicted_value - Valeur)/Valeur),na.rm = TRUE),1),
-                    RMSE = round(sqrt(mean((Predicted_value - Valeur)**2)),0)
-                    ) %>% 
-          as.data.table()
+          summarise(`MAPE(%)` = round(100 * mean(abs((Predicted_value - Valeur)/Valeur),na.rm = TRUE),1),
+                    RMSE = round(sqrt(mean((Predicted_value - Valeur)**2)),0)) %>% 
+          arrange(`MAPE(%)`) %>% 
+          as.data.table(),
+        options = list(dom = 't')
+        )
         
       
         
