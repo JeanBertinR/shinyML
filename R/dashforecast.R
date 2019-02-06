@@ -10,6 +10,7 @@ library(lubridate)
 library(plotly)
 library(sparklyr)
 library(DT)
+library(tidyr)
 
 ## x Optional) A vector containing the names or indices of the predictor variables to use in building the model. 
 #If x is missing, then all columns except y are used.
@@ -46,7 +47,7 @@ spark_disconnect_all()
 
 dashforecast <- function(data = data,x,y,date_column, share_app = FALSE,port = NULL ){
   sc <- spark_connect(master = "local")
-
+  
   app <- shinyApp(
     ui = dashboardPage(
       dashboardHeader(title = "Compare forecast models"),
@@ -60,7 +61,7 @@ dashforecast <- function(data = data,x,y,date_column, share_app = FALSE,port = N
       dashboardBody(
         
         fluidRow(
-
+          
           box(dygraphOutput("input_curve", height = 250,width = 1100),
               
               column(
@@ -102,7 +103,7 @@ dashforecast <- function(data = data,x,y,date_column, share_app = FALSE,port = N
             
             actionButton("run_gradient_boosting","Run gradient boosting model",style = 'color:white; background-color:darkgreen; padding:4px; font-size:150%',
                          icon = icon("users",lib = "font-awesome"))
-
+            
           ),
           
           box(
@@ -117,7 +118,7 @@ dashforecast <- function(data = data,x,y,date_column, share_app = FALSE,port = N
             
             actionButton("run_random_forest","Run random forest model",style = 'color:white; background-color:darkblue; padding:4px; font-size:150%',
                          icon = icon("users",lib = "font-awesome"))
-
+            
           ),
           
           box(
@@ -171,7 +172,7 @@ dashforecast <- function(data = data,x,y,date_column, share_app = FALSE,port = N
       v_random <- reactiveValues(type_model = NA)
       v_glm <- reactiveValues(type_model = NA)
       v_decision_tree <- reactiveValues(type_model = NA)
-
+      
       x <- reactiveValues(max_depth_random_forest = 5)
       
       
@@ -186,7 +187,7 @@ dashforecast <- function(data = data,x,y,date_column, share_app = FALSE,port = N
         v_random$type_model <- NA
         v_glm$type_model <- NA
         v_decision_tree$type_model <- NA
-
+        
       })
       
       
@@ -203,7 +204,7 @@ dashforecast <- function(data = data,x,y,date_column, share_app = FALSE,port = N
         v_grad$type_model <- NA
         v_glm$type_model <- NA
         v_decision_tree$type_model <- NA
-
+        
       })
       
       observeEvent(input$run_glm,{
@@ -223,7 +224,7 @@ dashforecast <- function(data = data,x,y,date_column, share_app = FALSE,port = N
         v_grad$type_model <- NA
         v_random$type_model <- NA
         v_decision_tree$type_model <- NA
-
+        
       })
       
       observeEvent(input$run_decision_tree,{
@@ -239,10 +240,10 @@ dashforecast <- function(data = data,x,y,date_column, share_app = FALSE,port = N
         v_glm$type_model <- NA
         v_grad$type_model <- NA
         v_random$type_model <- NA
-
+        
       })
       
-
+      
       output$input_curve <- renderDygraph({
         
         data <- as.data.table(data)
@@ -263,7 +264,7 @@ dashforecast <- function(data = data,x,y,date_column, share_app = FALSE,port = N
           curve_entries <- curve_entries %>% dyBarChart()
         }
         curve_entries
-
+        
       })
       
       
@@ -277,26 +278,36 @@ dashforecast <- function(data = data,x,y,date_column, share_app = FALSE,port = N
         v_glm$type_model <- "ml_generalized_linear_regression"
         v_grad$type_model <- "ml_gradient_boosted_trees"
         v_random$type_model <- "ml_random_forest"
-
+        
       })
       
       
       output$date_essai <- renderDataTable({
-
-        chaine_variable <- ""
-
-        x$reg_param_glm %>% as.data.table()
+        
+        
+        
+        table_forecast() %>% 
+          # summarise_at(vars(ml_gradient_boosted_trees,ml_random_forest,ml_generalized_linear_regression,ml_decision_tree),
+          #              funs(round(100 * mean(abs((. - Valeur)/Valeur),na.rm = TRUE),1))) %>% 
+          gather(key = Model,value = Predicted_value,-Date,-Valeur) %>% 
+          group_by(Model) %>% 
+          summarise(MAPE = round(100 * mean(abs((Predicted_value - Valeur)/Valeur),na.rm = TRUE),1),
+                    RMSE = round(sqrt(mean((Predicted_value - Valeur)**2)),0)
+                    ) %>% 
+          as.data.table()
+        
+      
         
       })
       
       
       table_forecast <- reactive({
         
-      
+        
         data_results = eval(parse(text = paste0("data[,.(",date_column,",",y,")][",date_column,">","'",test_1$date,"',]")))
         
         chaine_variable <- ""
-     
+        
         
         for (i in 1:length(model$train_variables)){chaine_variable <- paste0(chaine_variable,"+",model$train_variables[i])}
         chaine_variable <- ifelse(startsWith(chaine_variable,"+"),substr(chaine_variable,2,nchar(chaine_variable)),chaine_variable)
@@ -428,7 +439,7 @@ dashforecast <- function(data = data,x,y,date_column, share_app = FALSE,port = N
   }
   
   else {runApp(app)}
-
+  
 }
 
 
@@ -476,7 +487,15 @@ data_spark_test <- copy_to(sc, data_spark_test, "data_spark_test", overwrite = T
 
 fit <- data_spark_train %>% ml_generalized_linear_regression(Valeur ~ jour + numero_jour + mois,family = "tweedie",link = "log", fit_intercept = FALSE)
 fit <- data_spark_train %>% ml_decision_tree(Valeur ~ jour + numero_jour + mois)
+fdk <- sdf_predict(data_spark_test, fit) 
+ml_regression_evaluator(fdk,label_col = "Valeur",metric_name = "r2")
 
+
+test_mae <- fdk %>% collect() %>% as.data.table() %>% 
+  summarise(mae = mean(abs((prediction - Valeur)/Valeur),na.rm = TRUE))
+
+ml_classification_eval()
+?ml_regression_evaluator
 
 fit <- data_spark_train %>% ml_gaussian_mixture(Valeur ~ jour + numero_jour)
 
@@ -485,7 +504,7 @@ fit <- data_spark_train %>% ml_logistic_regression(Valeur ~ jour + numero_jour)
 fit <- data_spark_train %>% ml_mul(Valeur ~ jour + numero_jour)
 ml_tree_feature_importance(fit)
 ml_mutl
-fdk <- sdf_predict(data_spark_test, fit) %>% collect %>% as.data.frame()
+
 varibd <- "tweedie"
 ?ml_generalized_linear_regression
 # iris_tbl <- sdf_copy_to(sc, iris, name = "iris_tbl", overwrite = TRUE)
