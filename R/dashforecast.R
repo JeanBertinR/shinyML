@@ -49,6 +49,7 @@ dashforecast <- function(data = data,x,y,date_column, share_app = FALSE,port = N
   sc <- spark_connect(master = "local")
   
   app <- shinyApp(
+    
     ui = dashboardPage(
       dashboardHeader(title = "Compare forecast models"),
       dashboardSidebar(    
@@ -59,108 +60,115 @@ dashforecast <- function(data = data,x,y,date_column, share_app = FALSE,port = N
         )),
       
       dashboardBody(
-        
-        fluidRow(
-          
-          box(dygraphOutput("input_curve", height = 230,width = 900),
-              width = 8
-              ),
-          
-          box(
-            title = "Controls",
-            
-            selectInput( inputId  = "input_variables",label = "Input variables: ",
-                         choices = x,
-                         multiple = TRUE,selected = x),
-            
-            
-            sliderInput("train_selector", "Choose train period:",
-                        min = eval(parse(text = paste0("min(data$",date_column,")"))),
-                        max = eval(parse(text = paste0("max(data$",date_column,")"))),
-                        value =  eval(parse(text = paste0("c(min(data$",date_column,"),mean(data$",date_column,"))")))),
-            sliderInput("test_selector", "Choose test period:",
-                        min = eval(parse(text = paste0("min(data$",date_column,")"))),
-                        max = eval(parse(text = paste0("max(data$",date_column,")"))),
-                        value = eval(parse(text = paste0("c(mean(data$",date_column,"),max(data$",date_column,"))")))),
-            
-            
-            actionButton("train_all","Run all models !",style = 'color:white; background-color:red; padding:4px; font-size:150%',
-                         icon = icon("cogs",lib = "font-awesome"))
-            ,width = 4,height = 400),
-          
-              box(
-            dygraphOutput("output_curve",height = 230,width = 800),width = 7),
-              box(dataTableOutput("date_essai",width = 10),width = 4),
-
-          
-          # box(
-          #   dataTableOutput("date_essai")
-          #   ,width = 3)
-              # column(
-              #   dygraphOutput("output_curve",height = 230,width = 700),
-              #   #dataTableOutput("results_table"),
-              #   width = 10),
-              # 
-              # width = 8),
-          
-          column(
-          
-          box(
-            title = "Gradient boosting trees",
-            
-            
-            sliderInput(label = "Step size",min = 0,max = 1, inputId = "step_size_gbm",value = 0.1),
-            sliderInput(label = "Subsampling rate",min = 0.1,max = 1, inputId = "subsampling_rate_gbm",value = 1),
-            
-            
-            actionButton("run_gradient_boosting","Run gradient boosting model",style = 'color:white; background-color:darkgreen; padding:4px; font-size:150%',
-                         icon = icon("users",lib = "font-awesome"))
-            
-            ,width = 3),
-          
-          box(
-            title = "Random Forest",
-            
-            sliderInput(label = "Number of trees",min = 1,max = 100, inputId = "num_tree_random_forest",value = 20),
-            sliderInput(label = "Subsampling rate",min = 0.1,max = 1, inputId = "subsampling_rate_random_forest",value = 1),
-            sliderInput(label = "Max depth",min = 0,max = 20, inputId = "max_depth_random_forest",value = 5),
-            #dataTableOutput("test_result"),
-      
-            actionButton("run_random_forest","Run random forest model",style = 'color:white; background-color:darkblue; padding:4px; font-size:150%',
-                         icon = icon("users",lib = "font-awesome"))
-            
-            ,width = 3),
-          
-          box(
-            title = "Generalized linear regresion",
-            column(
-              radioButtons(label = "Family",inputId = "glm_family",choices = c("gaussian","Gamma","poisson"),selected = "gaussian"),width = 6),
-            column(
-              radioButtons(label = "Link",inputId = "glm_link",choices = c("identity","log"),selected = "identity"),width = 6),
-            
-            materialSwitch(label = "Intercept term",inputId = "intercept_term_glm",status = "primary",value = TRUE),
-            sliderInput(label = "Regularization parameter (lambda)",inputId = "reg_param_glm",min = 0,max = 10,value = 0),
-            sliderInput(label = "Maximum iteraions",inputId = "max_iter_glm",min = 50,max = 300,value = 100),
-            actionButton("run_glm","Run generalized linear regression",style = 'color:white; background-color:orange; padding:4px; font-size:150%',
-                         icon = icon("cogs",lib = "font-awesome"))
-            ,width = 3 ),
+        fluidPage(
+          column(width = 12,
+                 column(width = 8,
+                        fluidRow(
+                          column(width = 12,box(
+                            dygraphOutput("input_curve", height = 120, width = 900),width = 12
+                          )
+                          ),
+                          column(width = 12,tabBox(id = "results_models",
+                                                   tabPanel("Plot models on test period",dygraphOutput("output_curve",height = 200,width = 900)),
+                                                   tabPanel("Compare models performances",dataTableOutput("date_essai",width = 10)),
+                                                   tabPanel("Feature importance",plotlyOutput("feature_importance")),width = 12
+                          )
+                          )
+                        )
+                 ),
+                 column(width = 4,align="center",
+                        fluidRow(
+                          
+                          box(
+                            title = "Controls",
+                            
+                            selectInput( inputId  = "input_variables",label = "Input variables: ",
+                                         choices = x,
+                                         multiple = TRUE,selected = x),
+                            
+                            
+                            sliderInput("train_selector", "Choose train period:",
+                                        min = eval(parse(text = paste0("min(data$",date_column,")"))),
+                                        max = eval(parse(text = paste0("max(data$",date_column,")"))),
+                                        value =  eval(parse(text = paste0("c(min(data$",date_column,"),mean(data$",date_column,"))")))),
+                            sliderInput("test_selector", "Choose test period:",
+                                        min = eval(parse(text = paste0("min(data$",date_column,")"))),
+                                        max = eval(parse(text = paste0("max(data$",date_column,")"))),
+                                        value = eval(parse(text = paste0("c(mean(data$",date_column,"),max(data$",date_column,"))")))),
+                            
+                            
+                            actionButton("train_all","Run all models !",style = 'color:white; background-color:red; padding:4px; font-size:150%',
+                                         icon = icon("cogs",lib = "font-awesome"))
+                            ,width = 12,height = 425)
+                          
+                        )
+                 )
+          ),
           
           
-          box(
-            title = "Decision tree",
-            
-            
-            sliderInput(label = "Max depth",inputId = "max_depth_decision_tree",min = 0,max = 20,value = 5),
-            sliderInput(label = "Max bins",inputId = "max_bins_decision_tree",min = 2,max = 60,value = 32),
-            sliderInput(label = "Min instance per node",inputId = "min_instance_decision_tree",min = 1,max = 10,value = 1),
-            actionButton("run_decision_tree","Run decision tree regression",style = 'color:white; background-color:purple; padding:4px; font-size:150%',
-                         icon = icon("cogs",lib = "font-awesome"))
-            
-            ,width = 3)
-          ,width = 12)
           
-
-
+          column(width = 12,align = "center",
+                 fluidRow(
+                   
+                   
+                   box(
+                     title = "Generalized linear regresion",
+                     column(
+                       radioButtons(label = "Family",inputId = "glm_family",choices = c("gaussian","Gamma","poisson"),selected = "gaussian"),width = 6),
+                     column(
+                       radioButtons(label = "Link",inputId = "glm_link",choices = c("identity","log"),selected = "identity"),width = 6),
+                     
+                     materialSwitch(label = "Intercept term",inputId = "intercept_term_glm",status = "primary",value = TRUE),
+                     sliderInput(label = "Regularization parameter (lambda)",inputId = "reg_param_glm",min = 0,max = 10,value = 0),
+                     sliderInput(label = "Maximum iteraions",inputId = "max_iter_glm",min = 50,max = 300,value = 100),
+                     actionButton("run_glm","Run generalized linear regression",style = 'color:white; background-color:orange; padding:4px; font-size:150%',
+                                  icon = icon("cogs",lib = "font-awesome"))
+                     ,width = 3 ),
+                   
+                   box(
+                     title = "Decision tree",
+                     
+                     
+                     sliderInput(label = "Max depth",inputId = "max_depth_decision_tree",min = 0,max = 20,value = 5),
+                     sliderInput(label = "Max bins",inputId = "max_bins_decision_tree",min = 2,max = 60,value = 32),
+                     sliderInput(label = "Min instance per node",inputId = "min_instance_decision_tree",min = 1,max = 10,value = 1),
+                     actionButton("run_decision_tree","Run decision tree regression",style = 'color:white; background-color:purple; padding:4px; font-size:150%',
+                                  icon = icon("cogs",lib = "font-awesome"))
+                     
+                     ,width = 3),
+                   
+                   box(
+                     title = "Random Forest",
+                     
+                     sliderInput(label = "Number of trees",min = 1,max = 100, inputId = "num_tree_random_forest",value = 20),
+                     sliderInput(label = "Subsampling rate",min = 0.1,max = 1, inputId = "subsampling_rate_random_forest",value = 1),
+                     sliderInput(label = "Max depth",min = 0,max = 20, inputId = "max_depth_random_forest",value = 5),
+                     #dataTableOutput("test_result"),
+                     
+                     actionButton("run_random_forest","Run random forest model",style = 'color:white; background-color:darkblue; padding:4px; font-size:150%',
+                                  icon = icon("users",lib = "font-awesome"))
+                     
+                     ,width = 3),
+                   
+                   
+                   box(
+                     title = "Gradient boosting trees",
+                     
+                     
+                     sliderInput(label = "Step size",min = 0,max = 1, inputId = "step_size_gbm",value = 0.1),
+                     sliderInput(label = "Subsampling rate",min = 0.1,max = 1, inputId = "subsampling_rate_gbm",value = 1),
+                     
+                     
+                     actionButton("run_gradient_boosting","Run gradient boosting model",style = 'color:white; background-color:darkgreen; padding:4px; font-size:150%',
+                                  icon = icon("users",lib = "font-awesome"))
+                     
+                     ,width = 3)
+                   
+                 )
+                 
+          )
+          
+          
         )
       )
     ),
@@ -169,10 +177,18 @@ dashforecast <- function(data = data,x,y,date_column, share_app = FALSE,port = N
       set.seed(122)
       histdata <- rnorm(500)
       
+      
+      
       table_ml_gradient_boosted <- data.table(ml_gradient_boosted_trees = NA)
       table_ml_random_forest <- data.table(ml_random_forest = NA)
       table_ml_glm <- data.table(ml_generalized_linear_regression = NA)
       table_ml_decision_tree <- data.table(ml_decision_tree = NA)
+      
+      importance_gbm <- data.table()
+      importance_random_forest <- data.table()
+      importance_decision_tree <- data.table()
+      
+      
       model <- reactiveValues(train_variables = NA)
       
       
@@ -196,6 +212,7 @@ dashforecast <- function(data = data,x,y,date_column, share_app = FALSE,port = N
         
         test_1$date <- input$test_selector[1]
         model$train_variables <- input$input_variables
+        
         t$step_size_gbm <- input$step_size_gbm
         v$subsampling_rate_gbm <- input$subsampling_rate_gbm
         v_grad$type_model <- "ml_gradient_boosted_trees"
@@ -295,23 +312,42 @@ dashforecast <- function(data = data,x,y,date_column, share_app = FALSE,port = N
         v_grad$type_model <- "ml_gradient_boosted_trees"
         v_random$type_model <- "ml_random_forest"
         
+        t$step_size_gbm <- input$step_size_gbm
+        v$subsampling_rate_gbm <- input$subsampling_rate_gbm
+        
+        t$num_tree_random_forest <- input$num_tree_random_forest
+        v$subsampling_rate_random_forest <- input$subsampling_rate_random_forest
+        x$max_depth_random_forest <-  input$max_depth_random_forest
+        
+        
+        f$family_glm <- input$glm_family
+        l$link_glm <- input$glm_link
+        i$intercept_glm <- input$intercept_term_glm
+        x$reg_param_glm <- input$reg_param_glm
+        x$max_iter_glm <- input$max_iter_glm
+        
+        x$max_depth_decision_tree <- input$max_depth_decision_tree
+        x$max_bins_decision_tree <- input$max_bins_decision_tree
+        x$min_instance_decision_tree <- input$min_instance_decision_tree
+        
+        
       })
       
       
       output$date_essai <- renderDataTable({
         
         datatable(
-        table_forecast() %>% 
-          gather(key = Model,value = Predicted_value,-date_column,-y) %>% 
-          group_by(Model) %>% 
-          summarise(`MAPE(%)` = round(100 * mean(abs((Predicted_value - Valeur)/Valeur),na.rm = TRUE),1),
-                    RMSE = round(sqrt(mean((Predicted_value - Valeur)**2)),0)) %>% 
-          arrange(`MAPE(%)`) %>% 
-          as.data.table(),
-        options = list(dom = 't')
+          table_forecast()[['results']] %>% 
+            gather(key = Model,value = Predicted_value,-date_column,-y) %>% 
+            group_by(Model) %>% 
+            summarise(`MAPE(%)` = round(100 * mean(abs((Predicted_value - Valeur)/Valeur),na.rm = TRUE),1),
+                      RMSE = round(sqrt(mean((Predicted_value - Valeur)**2)),0)) %>% 
+            arrange(`MAPE(%)`) %>% 
+            as.data.table(),
+          options = list(dom = 't')
         )
         
-      
+        
         
       })
       
@@ -345,6 +381,8 @@ dashforecast <- function(data = data,x,y,date_column, share_app = FALSE,port = N
                                      ",subsampling_rate =",v$subsampling_rate_gbm,
                                      " )")))
             
+            importance_gbm <- ml_feature_importances(fit) %>% mutate(model = "gradient_boosted_trees")
+            
             table_ml_gradient_boosted <- sdf_predict(data_spark_test, fit) %>% collect %>% as.data.frame() %>% select(prediction)
             names(table_ml_gradient_boosted)[names(table_ml_gradient_boosted) == 'prediction'] <- v_grad$type_model
             
@@ -357,6 +395,8 @@ dashforecast <- function(data = data,x,y,date_column, share_app = FALSE,port = N
                                      ",subsampling_rate =",v$subsampling_rate_random_forest,
                                      ",max_depth  =",x$max_depth_random_forest,
                                      ")")))
+            
+            importance_random_forest <- ml_feature_importances(fit) %>% mutate(model = "random_forest")
             
             table_ml_random_forest <- sdf_predict(data_spark_test, fit) %>% collect %>% as.data.frame() %>% select(prediction)
             names(table_ml_random_forest)[names(table_ml_random_forest) == 'prediction'] <- v_random$type_model
@@ -371,9 +411,8 @@ dashforecast <- function(data = data,x,y,date_column, share_app = FALSE,port = N
                                      ",fit_intercept =",input$intercept_term_glm,
                                      ",reg_param =",x$reg_param_glm,
                                      ",max_iter =",x$max_iter_glm,
-                                     # ",subsampling_rate =",v$subsampling_rate_random_forest,
-                                     # ",max_depth  =",x$max_depth_random_forest,
                                      ")")))
+            
             
             table_ml_glm <- sdf_predict(data_spark_test, fit) %>% collect %>% as.data.frame() %>% select(prediction)
             names(table_ml_glm)[names(table_ml_glm) == 'prediction'] <- v_glm$type_model
@@ -389,6 +428,7 @@ dashforecast <- function(data = data,x,y,date_column, share_app = FALSE,port = N
                                      ",max_bins  =",x$max_bins_decision_tree,
                                      ",min_instances_per_node  =",x$min_instance_decision_tree,
                                      ")")))
+            importance_decision_tree <- ml_feature_importances(fit) %>% mutate(model = "decision_tree")
             
             table_ml_decision_tree <- sdf_predict(data_spark_test, fit) %>% collect %>% as.data.frame() %>% select(prediction)
             names(table_ml_decision_tree)[names(table_ml_decision_tree) == 'prediction'] <- v_decision_tree$type_model
@@ -397,16 +437,20 @@ dashforecast <- function(data = data,x,y,date_column, share_app = FALSE,port = N
           
         }
         
-        cbind(data_results,table_ml_gradient_boosted,table_ml_random_forest,table_ml_glm,table_ml_decision_tree) %>% 
+        table_importance <- rbind(importance_gbm,importance_random_forest,importance_decision_tree) %>% as.data.table()
+        
+        table_results <- cbind(data_results,table_ml_gradient_boosted,table_ml_random_forest,table_ml_glm,table_ml_decision_tree) %>% 
           as.data.table()
+        
+        list(importance = table_importance, results = table_results)
         
       })
       
       
       output$output_curve <- renderDygraph({
         
-        output_dygraph <- dygraph(data = table_forecast()) %>% 
-          dyAxis("y",valueRange = c(0,1.5 * max(eval(parse(text =paste0("table_forecast()$",y))))))
+        output_dygraph <- dygraph(data = table_forecast()[['results']]) %>% 
+          dyAxis("y",valueRange = c(0,1.5 * max(eval(parse(text =paste0("table_forecast()[['results']]$",y))))))
         
         if (input$bar_chart_mode == TRUE){
           output_dygraph <- output_dygraph %>% dyBarChart()
@@ -417,15 +461,33 @@ dashforecast <- function(data = data,x,y,date_column, share_app = FALSE,port = N
       })
       
       output$test_result <- renderDataTable({
-        table_forecast()})
+        table_forecast()[['results']]})
       
       
       output$results_table <- renderDataTable(
         
-        DT::datatable(table_forecast() %>% summarise(mape = 100 * median(abs((Valeur - eval(parse(text = u$type_model))) /eval(parse(text =  u$type_model)))),
-                                                     rmse = sqrt(mean((Valeur - eval(parse(text =  u$type_model)))**2))),
-                      options = list(searching = FALSE,paging = FALSE,columnDefs = list(list(width = '200px',targets = "_all"))))
+        table_forecast()[['importance']]
+        
       )
+      
+      output$feature_importance <- renderPlotly({
+        
+        if (nrow(table_forecast()[['importance']]) != 0){
+          ggplotly(
+            
+            ggplot(data = table_forecast()[['importance']])+
+              geom_bar(aes(reorder(feature,importance),importance,fill =  model),stat = "identity",width = 0.3)+
+              facet_wrap(~ model)+
+              coord_flip()+
+              xlab("")+
+              ylab("")+
+              theme(legend.position="none")
+          )
+        }
+        
+      })
+      
+      
       
       
       observeEvent(input$train_selector,{
@@ -503,6 +565,10 @@ data_spark_test <- copy_to(sc, data_spark_test, "data_spark_test", overwrite = T
 fit <- data_spark_train %>% ml_generalized_linear_regression(Valeur ~ jour + numero_jour + mois,family = "tweedie",link = "log", fit_intercept = FALSE)
 fit <- data_spark_train %>% ml_decision_tree(Valeur ~ jour + numero_jour + mois)
 fdk <- sdf_predict(data_spark_test, fit) 
+
+ml_feature_importances(fit)
+
+
 ml_regression_evaluator(fdk,label_col = "Valeur",metric_name = "r2")
 
 
@@ -514,15 +580,37 @@ ml_classification_eval()
 
 fit <- data_spark_train %>% ml_gaussian_mixture(Valeur ~ jour + numero_jour)
 
-ml_feature_importances(fit)
+
 fit <- data_spark_train %>% ml_logistic_regression(Valeur ~ jour + numero_jour)
 fit <- data_spark_train %>% ml_mul(Valeur ~ jour + numero_jour)
-ml_tree_feature_importance(fit)
-ml_mutl
 
-varibd <- "tweedie"
-?ml_generalized_linear_regression
-# iris_tbl <- sdf_copy_to(sc, iris, name = "iris_tbl", overwrite = TRUE)
+importance <- rbind(ml_tree_feature_importance(fit) %>% mutate(model = "glm"),ml_tree_feature_importance(fit) %>% mutate(model = "random_forest"),
+                    ml_tree_feature_importance(fit) %>% mutate(model = "decision_tree"))
+
+ggplotly(
+  
+  
+  ggplot(data = importance)+
+    geom_bar(aes(reorder(feature,importance),importance,fill =  model),stat = "identity")+
+    facet_wrap(~ model)+
+    coord_flip()+
+    xlab("")+
+    ylab("")+
+    theme(legend.position="none")
+) %>% 
+  layout(legend = list(orientation = "h",x = 0.3, y = -0.1))
+
+
+ggplot(data = table_forecast()[['importance']])+
+  geom_bar(aes(reorder(feature,importance),importance,fill =  model),stat = "identity",width = 0.3)+
+  facet_wrap(~ model)+
+  coord_flip()+
+  xlab("")+
+  ylab("")+
+  theme(legend.position="bottom",legend.direction="vertical")
+
+
+
 # 
 # 
 # 
@@ -613,7 +701,7 @@ dygraph(sequence_dates[,.(Date,Valeur)]) %>%
 
 
 
-
+test
 
 
 sequence_dates$Date
