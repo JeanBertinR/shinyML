@@ -167,6 +167,7 @@ dashforecast <- function(data = data,x,y,date_column, share_app = FALSE,port = N
                  )
                  
           )
+          #dataTableOutput("testsf")
           
           
         )
@@ -283,8 +284,10 @@ dashforecast <- function(data = data,x,y,date_column, share_app = FALSE,port = N
         curve_entries <- dygraph(data = eval(parse(text = paste0("data[,.(",date_column,",",y,")]"))))  %>% 
           dyShading(from = input$train_selector[1],to = input$train_selector[2],color = "snow" ) %>%
           dyShading(from = input$test_selector[1],to = input$test_selector[2],color = "azure" ) %>%
-          dyAnnotation(mean(input$train_selector[1],input$train_selector[2],na.rm = TRUE,trim = 5),text= "Train period", attachAtBottom = TRUE,height = 20,width = 200) %>% 
-          dyAnnotation(input$test_selector[2],text= "Test period", attachAtBottom = TRUE,height = 20,width = 200) %>% 
+          # dyAnnotation(
+          #  as.Date(as.Date(input$train_selector[1]) + (round((as.Date(input$test_selector[1]) - as.Date(input$train_selector[1])) / 2 ,0))),
+          #              text= "Train period", attachAtBottom = FALSE,height = 20,width = 200) %>% 
+          # dyAnnotation(input$test_selector[2],text= "Test period", attachAtBottom = FALSE,height = 20,width = 200) %>% 
           dyEvent(x = input$train_selector[1]) %>%
           dyEvent(x = input$train_selector[2]) %>%
           dyEvent(x = input$test_selector[2]) %>%
@@ -486,6 +489,18 @@ dashforecast <- function(data = data,x,y,date_column, share_app = FALSE,port = N
         }
         
       })
+      
+      
+      output$testsf <- renderDataTable(
+        # as.Date(input$train_selector[1]) +  
+        (as.Date(input$train_selector[1]) + (round((as.Date(input$test_selector[1]) - as.Date(input$train_selector[1])) / 2 ,0))) %>% as.data.table()
+        
+       
+
+        #mean.Date(as.Date(input$train_selector[1]),as.Date(input$test_selector[1]),na.rm = TRUE,trim = 0) %>% as.data.table()
+        #rowMeans(data.frame(input$train_selector[1],input$train_selector[2],na.rm = TRUE))%>% as.data.table()
+        
+      )
       
       
       
