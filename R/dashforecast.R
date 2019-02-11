@@ -52,7 +52,7 @@ dashforecast <- function(data = data,x,y,date_column, share_app = FALSE,port = N
     
     ui = dashboardPage(
       dashboardHeader(title = "Compare forecast models"),
-      dashboardSidebar(    
+      dashboardSidebar( 
         sidebarMenu(
           menuItem("Dashboard", tabName = "dashboard", icon = icon("dashboard"),
                    materialSwitch(inputId = "bar_chart_mode",label = "Bar chart mode",status = "primary",value = TRUE)
@@ -65,11 +65,11 @@ dashforecast <- function(data = data,x,y,date_column, share_app = FALSE,port = N
                  column(width = 8,
                         fluidRow(
                           column(width = 12,box(
-                            dygraphOutput("input_curve", height = 120, width = 900),width = 12
+                            dygraphOutput("input_curve", height = 120, width = 930),width = 12
                           )
                           ),
                           column(width = 12,tabBox(id = "results_models",
-                                                   tabPanel("Plot models on test period",dygraphOutput("output_curve",height = 200,width = 900)),
+                                                   tabPanel("Plot models on test period",dygraphOutput("output_curve",height = 200,width = 930)),
                                                    tabPanel("Compare models performances",dataTableOutput("date_essai",width = 10)),
                                                    tabPanel("Feature importance",plotlyOutput("feature_importance")),width = 12
                           )
@@ -112,7 +112,7 @@ dashforecast <- function(data = data,x,y,date_column, share_app = FALSE,port = N
                    
                    
                    box(
-                     title = "Generalized linear regresion",
+                     title = "Generalized linear regresion",status = "warning",
                      column(
                        radioButtons(label = "Family",inputId = "glm_family",choices = c("gaussian","Gamma","poisson"),selected = "gaussian"),width = 6),
                      column(
@@ -126,19 +126,19 @@ dashforecast <- function(data = data,x,y,date_column, share_app = FALSE,port = N
                      ,width = 3 ),
                    
                    box(
-                     title = "Decision tree",
+                     title = "Decision tree",status = "danger",
                      
                      
                      sliderInput(label = "Max depth",inputId = "max_depth_decision_tree",min = 0,max = 20,value = 5),
                      sliderInput(label = "Max bins",inputId = "max_bins_decision_tree",min = 2,max = 60,value = 32),
                      sliderInput(label = "Min instance per node",inputId = "min_instance_decision_tree",min = 1,max = 10,value = 1),
-                     actionButton("run_decision_tree","Run decision tree regression",style = 'color:white; background-color:purple; padding:4px; font-size:150%',
+                     actionButton("run_decision_tree","Run decision tree regression",style = 'color:white; background-color:red; padding:4px; font-size:150%',
                                   icon = icon("cogs",lib = "font-awesome"))
                      
                      ,width = 3),
                    
                    box(
-                     title = "Random Forest",
+                     title = "Random Forest",status = "primary",
                      
                      sliderInput(label = "Number of trees",min = 1,max = 100, inputId = "num_tree_random_forest",value = 20),
                      sliderInput(label = "Subsampling rate",min = 0.1,max = 1, inputId = "subsampling_rate_random_forest",value = 1),
@@ -152,7 +152,7 @@ dashforecast <- function(data = data,x,y,date_column, share_app = FALSE,port = N
                    
                    
                    box(
-                     title = "Gradient boosting trees",
+                     title = "Gradient boosting trees",status = "success",
                      
                      
                      sliderInput(label = "Step size",min = 0,max = 1, inputId = "step_size_gbm",value = 0.1),
