@@ -166,8 +166,8 @@ dashforecast <- function(data = data,x,y,date_column, share_app = FALSE,port = N
                    
                  )
                  
-          )
-          #dataTableOutput("testsf")
+          ),
+          dataTableOutput("testsf")
           
           
         )
@@ -184,6 +184,11 @@ dashforecast <- function(data = data,x,y,date_column, share_app = FALSE,port = N
       table_ml_random_forest <- data.table(ml_random_forest = NA)
       table_ml_glm <- data.table(ml_generalized_linear_regression = NA)
       table_ml_decision_tree <- data.table(ml_decision_tree = NA)
+      
+      time_gbm <- data.table()
+      time_random_forest <- data.table()
+      time_glm <- data.table()
+      time_decision_tree <- data.table()
       
       importance_gbm <- data.table()
       importance_random_forest <- data.table()
@@ -339,18 +344,20 @@ dashforecast <- function(data = data,x,y,date_column, share_app = FALSE,port = N
       
       output$date_essai <- renderDataTable({
         
+        performance_table <-  table_forecast()[['results']] %>% 
+          gather(key = Model,value = Predicted_value,-date_column,-y) %>% 
+          group_by(Model) %>% 
+          summarise(`MAPE(%)` = round(100 * mean(abs((Predicted_value - Valeur)/Valeur),na.rm = TRUE),1),
+                    RMSE = round(sqrt(mean((Predicted_value - Valeur)**2)),0)) 
+        
+        if (nrow(table_forecast()[['traning_time']]) != 0){
+          performance_table <- performance_table %>% merge(.,table_forecast()[['traning_time']],by = "Model")
+        }
+        
         datatable(
-          table_forecast()[['results']] %>% 
-            gather(key = Model,value = Predicted_value,-date_column,-y) %>% 
-            group_by(Model) %>% 
-            summarise(`MAPE(%)` = round(100 * mean(abs((Predicted_value - Valeur)/Valeur),na.rm = TRUE),1),
-                      RMSE = round(sqrt(mean((Predicted_value - Valeur)**2)),0)) %>% 
-            arrange(`MAPE(%)`) %>% 
-            as.data.table(),
-          options = list(dom = 't')
+          performance_table %>% arrange(`MAPE(%)`) %>% as.data.table()
+          ,options = list(dom = 't')
         )
-        
-        
         
       })
       
@@ -379,11 +386,14 @@ dashforecast <- function(data = data,x,y,date_column, share_app = FALSE,port = N
           if (!is.na(v_grad$type_model) & v_grad$type_model == "ml_gradient_boosted_trees"){
             
             
+            t1 <- Sys.time()
             eval(parse(text = paste0("fit <- data_spark_train %>%",v_grad$type_model,"(", y ," ~ " ,chaine_variable ,
                                      ",step_size =",t$step_size_gbm,
                                      ",subsampling_rate =",v$subsampling_rate_gbm,
                                      " )")))
+            t2 <- Sys.time()
             
+            time_gbm <- data.frame(`Training time` =  paste0(round(t2 - t1,1)," seconds"), Model = "ml_gradient_boosted_trees") 
             importance_gbm <- ml_feature_importances(fit) %>% mutate(model = "gradient_boosted_trees")
             
             table_ml_gradient_boosted <- sdf_predict(data_spark_test, fit) %>% collect %>% as.data.frame() %>% select(prediction)
@@ -393,12 +403,14 @@ dashforecast <- function(data = data,x,y,date_column, share_app = FALSE,port = N
           
           if (!is.na(v_random$type_model) & v_random$type_model == "ml_random_forest"){
             
+            t1 <- Sys.time()
             eval(parse(text = paste0("fit <- data_spark_train %>%",v_random$type_model,"(", y ," ~ " ,chaine_variable ,
                                      ",num_trees  =",t$num_tree_random_forest,
                                      ",subsampling_rate =",v$subsampling_rate_random_forest,
                                      ",max_depth  =",x$max_depth_random_forest,
                                      ")")))
-            
+            t2 <- Sys.time()
+            time_random_forest <- data.frame(`Training time` =  paste0(round(t2 - t1,1)," seconds"), Model = "ml_random_forest")
             importance_random_forest <- ml_feature_importances(fit) %>% mutate(model = "random_forest")
             
             table_ml_random_forest <- sdf_predict(data_spark_test, fit) %>% collect %>% as.data.frame() %>% select(prediction)
@@ -408,6 +420,7 @@ dashforecast <- function(data = data,x,y,date_column, share_app = FALSE,port = N
           
           if (!is.na(v_glm$type_model) & v_glm$type_model == "ml_generalized_linear_regression"){
             
+            t1 <- Sys.time()
             eval(parse(text = paste0("fit <- data_spark_train %>%",v_glm$type_model,"(", y ," ~ " ,chaine_variable ,
                                      ",family  = ", f$family_glm,
                                      ",link =",l$link_glm,
@@ -415,7 +428,8 @@ dashforecast <- function(data = data,x,y,date_column, share_app = FALSE,port = N
                                      ",reg_param =",x$reg_param_glm,
                                      ",max_iter =",x$max_iter_glm,
                                      ")")))
-            
+            t2 <- Sys.time()
+            time_glm <- data.frame(`Training time` =  paste0(round(t2 - t1,1)," seconds"), Model = "ml_generalized_linear_regression")
             
             table_ml_glm <- sdf_predict(data_spark_test, fit) %>% collect %>% as.data.frame() %>% select(prediction)
             names(table_ml_glm)[names(table_ml_glm) == 'prediction'] <- v_glm$type_model
@@ -424,6 +438,7 @@ dashforecast <- function(data = data,x,y,date_column, share_app = FALSE,port = N
           
           if (!is.na(v_decision_tree$type_model) & v_decision_tree$type_model == "ml_decision_tree"){
             
+            t1 <- Sys.time()
             eval(parse(text = paste0("fit <- data_spark_train %>%",v_decision_tree$type_model,"(", y ," ~ " ,chaine_variable ,
                                      # ",num_trees  =",t$num_tree_random_forest,
                                      # ",subsampling_rate =",v$subsampling_rate_random_forest,
@@ -431,6 +446,8 @@ dashforecast <- function(data = data,x,y,date_column, share_app = FALSE,port = N
                                      ",max_bins  =",x$max_bins_decision_tree,
                                      ",min_instances_per_node  =",x$min_instance_decision_tree,
                                      ")")))
+            t2 <- Sys.time()
+            time_decision_tree <- data.frame(`Training time` =  paste0(round(t2 - t1,1)," seconds"), Model = "ml_decision_tree")
             importance_decision_tree <- ml_feature_importances(fit) %>% mutate(model = "decision_tree")
             
             table_ml_decision_tree <- sdf_predict(data_spark_test, fit) %>% collect %>% as.data.frame() %>% select(prediction)
@@ -440,12 +457,13 @@ dashforecast <- function(data = data,x,y,date_column, share_app = FALSE,port = N
           
         }
         
+        table_training_time <- rbind(time_gbm,time_random_forest,time_glm,time_decision_tree)
         table_importance <- rbind(importance_gbm,importance_random_forest,importance_decision_tree) %>% as.data.table()
         
         table_results <- cbind(data_results,table_ml_gradient_boosted,table_ml_random_forest,table_ml_glm,table_ml_decision_tree) %>% 
           as.data.table()
         
-        list(importance = table_importance, results = table_results)
+        list(traning_time = table_training_time, importance = table_importance, results = table_results)
         
       })
       
@@ -453,13 +471,14 @@ dashforecast <- function(data = data,x,y,date_column, share_app = FALSE,port = N
       output$output_curve <- renderDygraph({
         
         output_dygraph <- dygraph(data = table_forecast()[['results']]) %>% 
-          dyAxis("y",valueRange = c(0,1.5 * max(eval(parse(text =paste0("table_forecast()[['results']]$",y))))))
+          dyAxis("y",valueRange = c(0,1.5 * max(eval(parse(text =paste0("table_forecast()[['results']]$",y)))))) 
+        
         
         if (input$bar_chart_mode == TRUE){
           output_dygraph <- output_dygraph %>% dyBarChart()
         }
         
-        output_dygraph
+        output_dygraph %>% dyLegend(width = 800)
         
       })
       
@@ -492,11 +511,15 @@ dashforecast <- function(data = data,x,y,date_column, share_app = FALSE,port = N
       
       
       output$testsf <- renderDataTable(
-        # as.Date(input$train_selector[1]) +  
-        (as.Date(input$train_selector[1]) + (round((as.Date(input$test_selector[1]) - as.Date(input$train_selector[1])) / 2 ,0))) %>% as.data.table()
         
-       
-
+        
+        
+        table_forecast()[['traning_time']]
+        # as.Date(input$train_selector[1]) +  
+        # (as.Date(input$train_selector[1]) + (round((as.Date(input$test_selector[1]) - as.Date(input$train_selector[1])) / 2 ,0))) %>% as.data.table()
+        
+        
+        
         #mean.Date(as.Date(input$train_selector[1]),as.Date(input$test_selector[1]),na.rm = TRUE,trim = 0) %>% as.data.table()
         #rowMeans(data.frame(input$train_selector[1],input$train_selector[2],na.rm = TRUE))%>% as.data.table()
         
@@ -536,7 +559,6 @@ dashforecast <- function(data = data,x,y,date_column, share_app = FALSE,port = N
 
 
 dashforecast(share_app = TRUE ,port = 7895,data =sequence_dates ,x = c("jour","mois","numero_jour"), y = "Valeur",date_column = "Date")
-
 
 
 
@@ -612,8 +634,7 @@ ggplotly(
     xlab("")+
     ylab("")+
     theme(legend.position="none")
-) %>% 
-  layout(legend = list(orientation = "h",x = 0.3, y = -0.1))
+) 
 
 
 ggplot(data = table_forecast()[['importance']])+
