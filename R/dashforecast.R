@@ -1,35 +1,37 @@
-library(h2o)
-library(shiny)
-library(shinydashboard)
-library(shinyWidgets)
-library(dygraphs)
+#' @title Create a shiny app to implement and compare supervised regression models on time series (framework used: Spark)
+#'
+#' @description This package creates in one line of code a shareable web app to compare supervised regression model performances.
+#'
+#' @param data Time serie containing one or more input values and one output value. 
+#'    The time serie must be a data.frame or a data.table and must contain at least one time-based column on Date or Posixct format.
+#' @param x Vector of numerical and categorical input variables used to train and test the model. Each element of x vector must correspond to a data column with either numerical or factor type.  
+#' 
+#' @param y the numerical output variable to forecast (must correpond to one data column)
+#' 
+#' @param date_column the name of time-based column ( must correspond to one data column)
+#' 
+#' @param share_app a logical value indicating whether the app must be shared on local LAN 
+#' 
+#' @param port a four-digit number corresponding to the port the application should listen to. This parameter is necessary only  if share_app option is set to TRUE
+#' 
+#' @return 
+#'
+#' @examples
+#'
+#' @export
+
+longley2 <- longley %>% mutate(Year = as.Date(as.character(Year),format = "%Y"))
 library(data.table)
-library(dplyr)
-library(timeDate)
-library(lubridate)
-library(plotly)
-library(sparklyr)
-library(DT)
-library(tidyr)
-
-## x Optional) A vector containing the names or indices of the predictor variables to use in building the model. 
-#If x is missing, then all columns except y are used.
-
-# y The name or column index of the response variable in the data.
-# The response must be either a numeric or a categorical/factor variable. 
-#If the response is numeric, then a regression model will be trained, otherwise it will train a classification model.
+  
+dashforecast(data =longley2,x = c("Unemployed" ,"Population","Employed"),y = "GNP",date_column = "Year",share_app = TRUE,port = 5846 )
 
 
+class()
+class(longley$Year)
+dashforecast()
 
-# sequence_dates <- seq.Date(from = as.Date("2017-01-01"),to = as.Date("2018-01-01"),by = "days") %>% 
-#   as.data.table() %>% 
-#   mutate(valeur = runif( row_number()) *100) %>% 
-#   as.data.table()
-# colnames(sequence_dates) <- c("Date","Valeur")
-# sequence_dates <- sequence_dates %>% 
-#   mutate(jour = day(Date),mois = month(Date),numero_jour = row_number()) %>% 
-#   as.data.table()
-
+?shinyApp
+?read.csv2
 sequence_dates <- read.csv2("data_test_package.csv") %>% 
   mutate(mois = as.Date(paste0(mois,"-01"))) %>% 
   rename(Date = mois,Valeur = Vol_conso) %>% 
@@ -560,7 +562,9 @@ dashforecast <- function(data = data,x,y,date_column, share_app = FALSE,port = N
 
 dashforecast(share_app = TRUE ,port = 7895,data =sequence_dates ,x = c("jour","mois","numero_jour"), y = "Valeur",date_column = "Date")
 
+sequence_dates
 
+dashforecast(data = )
 
 
 
