@@ -13,3 +13,4 @@ Imports:
   h2o,shiny,shinydashboard,shinyWidgets,dygraphs,data.table,dplyr,plotly,sparklyr,DT,tidyr
 Suggests:
   knitr
+RoxygenNote: 6.1.1
