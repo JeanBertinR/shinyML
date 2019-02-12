@@ -14,38 +14,12 @@
 #' 
 #' @param port a four-digit number corresponding to the port the application should listen to. This parameter is necessary only  if share_app option is set to TRUE
 #' 
-#' @return 
+#' @return NULL
 #'
 #' @examples
 #' longley2 <- longley %>% mutate(Year = as.Date(as.character(Year),format = "%Y"))
 #' dashforecast(data =longley2,x = c("GNP_deflator","Unemployed" ,"Armed_Forces", "Population","Employed"),y = "GNP",date_column = "Year",share_app = TRUE,port = 5846 )
 #' @export
-
-longley2 <- longley %>% mutate(Year = as.Date(as.character(Year),format = "%Y"))
-library(data.table)
-  
-dashforecast(data =longley2,x = c("Unemployed" ,"Population","Employed"),y = "GNP",date_column = "Year",share_app = TRUE,port = 5846 )
-
-
-class()
-class(longley$Year)
-dashforecast()
-
-?shinyApp
-?read.csv2
-sequence_dates <- read.csv2("data_test_package.csv") %>% 
-  mutate(mois = as.Date(paste0(mois,"-01"))) %>% 
-  rename(Date = mois,Valeur = Vol_conso) %>% 
-  mutate(jour = day(Date),mois = month(Date),numero_jour = row_number())
-
-
-
-
-spark_disconnect_all()
-
-
-
-
 
 dashforecast <- function(data = data,x,y,date_column, share_app = FALSE,port = NULL ){
   
@@ -70,27 +44,21 @@ dashforecast <- function(data = data,x,y,date_column, share_app = FALSE,port = N
                         fluidRow(
                           column(width = 12,box(
                             dygraphOutput("input_curve", height = 120, width = 930),width = 12
-                          )
-                          ),
+                                                )
+                                ),
                           column(width = 12,tabBox(id = "results_models",
                                                    tabPanel("Plot models on test period",dygraphOutput("output_curve",height = 200,width = 930)),
                                                    tabPanel("Compare models performances",dataTableOutput("date_essai",width = 10)),
                                                    tabPanel("Feature importance",plotlyOutput("feature_importance")),width = 12
-                          )
-                          )
-                        )
-                 ),
-                 column(width = 4,align="center",
-                        fluidRow(
-                          
-                          box(
-                            title = "Controls",
-                            
-                            selectInput( inputId  = "input_variables",label = "Input variables: ",
-                                         choices = x,
-                                         multiple = TRUE,selected = x),
-                            
-                            
+                                                   )
+                                )
+                              )
+                      ),
+            column(width = 4,align="center",
+               fluidRow(
+                  box(
+                    title = "Controls",
+                      selectInput( inputId  = "input_variables",label = "Input variables: ",choices = x,multiple = TRUE,selected = x),
                             sliderInput("train_selector", "Choose train period:",
                                         min = eval(parse(text = paste0("min(data$",date_column,")"))),
                                         max = eval(parse(text = paste0("max(data$",date_column,")"))),
@@ -99,13 +67,11 @@ dashforecast <- function(data = data,x,y,date_column, share_app = FALSE,port = N
                                         min = eval(parse(text = paste0("min(data$",date_column,")"))),
                                         max = eval(parse(text = paste0("max(data$",date_column,")"))),
                                         value = eval(parse(text = paste0("c(mean(data$",date_column,"),max(data$",date_column,"))")))),
-                            
-                            
                             actionButton("train_all","Run all models !",style = 'color:white; background-color:red; padding:4px; font-size:150%',
-                                         icon = icon("cogs",lib = "font-awesome"))
-                            ,width = 12,height = 425)
+                                         icon = icon("cogs",lib = "font-awesome")),width = 12,height = 425
+                    )
                           
-                        )
+                    )
                  )
           ),
           
@@ -131,8 +97,7 @@ dashforecast <- function(data = data,x,y,date_column, share_app = FALSE,port = N
                    
                    box(
                      title = "Decision tree",status = "danger",
-                     
-                     
+
                      sliderInput(label = "Max depth",inputId = "max_depth_decision_tree",min = 0,max = 20,value = 5),
                      sliderInput(label = "Max bins",inputId = "max_bins_decision_tree",min = 2,max = 60,value = 32),
                      sliderInput(label = "Min instance per node",inputId = "min_instance_decision_tree",min = 1,max = 10,value = 1),
@@ -170,24 +135,19 @@ dashforecast <- function(data = data,x,y,date_column, share_app = FALSE,port = N
                    
                  )
                  
-          ),
-          dataTableOutput("testsf")
-          
-          
+          )
         )
       )
     ),
     
     server = function(session, input, output) {
       set.seed(122)
-      histdata <- rnorm(500)
-      
-      
-      
       table_ml_gradient_boosted <- data.table(ml_gradient_boosted_trees = NA)
       table_ml_random_forest <- data.table(ml_random_forest = NA)
       table_ml_glm <- data.table(ml_generalized_linear_regression = NA)
       table_ml_decision_tree <- data.table(ml_decision_tree = NA)
+      
+
       
       time_gbm <- data.table()
       time_random_forest <- data.table()
@@ -222,11 +182,9 @@ dashforecast <- function(data = data,x,y,date_column, share_app = FALSE,port = N
         
         test_1$date <- input$test_selector[1]
         model$train_variables <- input$input_variables
-        
         t$step_size_gbm <- input$step_size_gbm
         v$subsampling_rate_gbm <- input$subsampling_rate_gbm
         v_grad$type_model <- "ml_gradient_boosted_trees"
-        
         v_random$type_model <- NA
         v_glm$type_model <- NA
         v_decision_tree$type_model <- NA
@@ -241,9 +199,7 @@ dashforecast <- function(data = data,x,y,date_column, share_app = FALSE,port = N
         t$num_tree_random_forest <- input$num_tree_random_forest
         v$subsampling_rate_random_forest <- input$subsampling_rate_random_forest
         x$max_depth_random_forest <-  input$max_depth_random_forest
-        
         v_random$type_model <- "ml_random_forest"
-        
         v_grad$type_model <- NA
         v_glm$type_model <- NA
         v_decision_tree$type_model <- NA
@@ -257,7 +213,6 @@ dashforecast <- function(data = data,x,y,date_column, share_app = FALSE,port = N
         f$family_glm <- input$glm_family
         l$link_glm <- input$glm_link
         i$intercept_glm <- input$intercept_term_glm
-        
         v_glm$type_model <- "ml_generalized_linear_regression"
         
         x$reg_param_glm <- input$reg_param_glm
@@ -293,10 +248,6 @@ dashforecast <- function(data = data,x,y,date_column, share_app = FALSE,port = N
         curve_entries <- dygraph(data = eval(parse(text = paste0("data[,.(",date_column,",",y,")]"))))  %>% 
           dyShading(from = input$train_selector[1],to = input$train_selector[2],color = "snow" ) %>%
           dyShading(from = input$test_selector[1],to = input$test_selector[2],color = "azure" ) %>%
-          # dyAnnotation(
-          #  as.Date(as.Date(input$train_selector[1]) + (round((as.Date(input$test_selector[1]) - as.Date(input$train_selector[1])) / 2 ,0))),
-          #              text= "Train period", attachAtBottom = FALSE,height = 20,width = 200) %>% 
-          # dyAnnotation(input$test_selector[2],text= "Test period", attachAtBottom = FALSE,height = 20,width = 200) %>% 
           dyEvent(x = input$train_selector[1]) %>%
           dyEvent(x = input$train_selector[2]) %>%
           dyEvent(x = input$test_selector[2]) %>%
@@ -371,13 +322,13 @@ dashforecast <- function(data = data,x,y,date_column, share_app = FALSE,port = N
         
         data_results = eval(parse(text = paste0("data[,.(",date_column,",",y,")][",date_column,">","'",test_1$date,"',]")))
         
-        chaine_variable <- ""
+        var_input_list <- ""
         
         
-        for (i in 1:length(model$train_variables)){chaine_variable <- paste0(chaine_variable,"+",model$train_variables[i])}
-        chaine_variable <- ifelse(startsWith(chaine_variable,"+"),substr(chaine_variable,2,nchar(chaine_variable)),chaine_variable)
+        for (i in 1:length(model$train_variables)){var_input_list <- paste0(var_input_list,"+",model$train_variables[i])}
+        var_input_list <- ifelse(startsWith(var_input_list,"+"),substr(var_input_list,2,nchar(var_input_list)),var_input_list)
         
-        if (chaine_variable != "+"){  
+        if (var_input_list != "+"){  
           
           
           data_spark_train <- eval(parse(text = paste0( "data %>% filter(",date_column,"<='", test_1$date,"') %>% as.data.table()")))
@@ -391,7 +342,7 @@ dashforecast <- function(data = data,x,y,date_column, share_app = FALSE,port = N
             
             
             t1 <- Sys.time()
-            eval(parse(text = paste0("fit <- data_spark_train %>%",v_grad$type_model,"(", y ," ~ " ,chaine_variable ,
+            eval(parse(text = paste0("fit <- data_spark_train %>%",v_grad$type_model,"(", y ," ~ " ,var_input_list ,
                                      ",step_size =",t$step_size_gbm,
                                      ",subsampling_rate =",v$subsampling_rate_gbm,
                                      " )")))
@@ -408,7 +359,7 @@ dashforecast <- function(data = data,x,y,date_column, share_app = FALSE,port = N
           if (!is.na(v_random$type_model) & v_random$type_model == "ml_random_forest"){
             
             t1 <- Sys.time()
-            eval(parse(text = paste0("fit <- data_spark_train %>%",v_random$type_model,"(", y ," ~ " ,chaine_variable ,
+            eval(parse(text = paste0("fit <- data_spark_train %>%",v_random$type_model,"(", y ," ~ " ,var_input_list ,
                                      ",num_trees  =",t$num_tree_random_forest,
                                      ",subsampling_rate =",v$subsampling_rate_random_forest,
                                      ",max_depth  =",x$max_depth_random_forest,
@@ -425,7 +376,7 @@ dashforecast <- function(data = data,x,y,date_column, share_app = FALSE,port = N
           if (!is.na(v_glm$type_model) & v_glm$type_model == "ml_generalized_linear_regression"){
             
             t1 <- Sys.time()
-            eval(parse(text = paste0("fit <- data_spark_train %>%",v_glm$type_model,"(", y ," ~ " ,chaine_variable ,
+            eval(parse(text = paste0("fit <- data_spark_train %>%",v_glm$type_model,"(", y ," ~ " ,var_input_list ,
                                      ",family  = ", f$family_glm,
                                      ",link =",l$link_glm,
                                      ",fit_intercept =",input$intercept_term_glm,
@@ -443,9 +394,7 @@ dashforecast <- function(data = data,x,y,date_column, share_app = FALSE,port = N
           if (!is.na(v_decision_tree$type_model) & v_decision_tree$type_model == "ml_decision_tree"){
             
             t1 <- Sys.time()
-            eval(parse(text = paste0("fit <- data_spark_train %>%",v_decision_tree$type_model,"(", y ," ~ " ,chaine_variable ,
-                                     # ",num_trees  =",t$num_tree_random_forest,
-                                     # ",subsampling_rate =",v$subsampling_rate_random_forest,
+            eval(parse(text = paste0("fit <- data_spark_train %>%",v_decision_tree$type_model,"(", y ," ~ " ,var_input_list ,
                                      ",max_depth  =",x$max_depth_decision_tree,
                                      ",max_bins  =",x$max_bins_decision_tree,
                                      ",min_instances_per_node  =",x$min_instance_decision_tree,
@@ -513,25 +462,6 @@ dashforecast <- function(data = data,x,y,date_column, share_app = FALSE,port = N
         
       })
       
-      
-      output$testsf <- renderDataTable(
-        
-        
-        
-        table_forecast()[['traning_time']]
-        # as.Date(input$train_selector[1]) +  
-        # (as.Date(input$train_selector[1]) + (round((as.Date(input$test_selector[1]) - as.Date(input$train_selector[1])) / 2 ,0))) %>% as.data.table()
-        
-        
-        
-        #mean.Date(as.Date(input$train_selector[1]),as.Date(input$test_selector[1]),na.rm = TRUE,trim = 0) %>% as.data.table()
-        #rowMeans(data.frame(input$train_selector[1],input$train_selector[2],na.rm = TRUE))%>% as.data.table()
-        
-      )
-      
-      
-      
-      
       observeEvent(input$train_selector,{
         updateSliderInput(session,'test_selector',
                           value= c(input$train_selector[2],input$test_selector[2]) ) 
@@ -562,208 +492,3 @@ dashforecast <- function(data = data,x,y,date_column, share_app = FALSE,port = N
 }
 
 
-dashforecast(share_app = TRUE ,port = 7895,data =sequence_dates ,x = c("jour","mois","numero_jour"), y = "Valeur",date_column = "Date")
-
-
-
-longley2 <- longley %>% mutate(Year = as.Date(as.character(Year),format = "%Y"))
-dashforecast(data =longley2,x = c("GNP_deflator","Unemployed" ,"Armed_Forces", "Population","Employed"),y = "GNP",date_column = "Year",share_app = TRUE,port = 5846 )
-
-
-
-class(longley2)
-
-dashforecast(data = )
-
-
-
-plot_ly(data = iris,x = eval(parse(text = paste0(data,"$",x))), y = eval(parse(text = paste0(data,"$",y))))
-
-
-y <- "Petal.Length"
-
-x <- "Sepal.Width"
-data <- "iris"
-
-
-
-ml_generalized_linear_regression()
-?ml_generalized_linear_regression
-
-# Package sparklyr
-library(sparklyr)
-t <- Sys.time()
-sc <- spark_connect(master = "local")
-
-
-data_spark_train <- sequence_dates[Date <= "2017-08-01",] %>% 
-  mutate(Valeur = as.integer(Valeur)) %>% 
-  mutate(Valeur = round(Valeur,0)) %>% 
-  mutate(ordi = ifelse(jour == 1,"oui","non"))
-
-
-data_spark_test <- sequence_dates[Date >= "2017-08-01",] %>% 
-  mutate(Valeur = as.integer(Valeur)) %>% 
-  mutate(Valeur = round(Valeur,0)) %>% 
-  mutate(ordi = ifelse(jour == 1,"oui","non"))
-
-
-
-data_spark_train <- copy_to(sc, data_spark_train, "data_spark_train", overwrite = TRUE)
-data_spark_test <- copy_to(sc, data_spark_test, "data_spark_test", overwrite = TRUE)
-
-fit <- data_spark_train %>% ml_generalized_linear_regression(Valeur ~ jour + numero_jour + mois,family = "tweedie",link = "log", fit_intercept = FALSE)
-fit <- data_spark_train %>% ml_decision_tree(Valeur ~ jour + numero_jour + mois)
-fdk <- sdf_predict(data_spark_test, fit) 
-
-ml_feature_importances(fit)
-
-
-ml_regression_evaluator(fdk,label_col = "Valeur",metric_name = "r2")
-
-
-test_mae <- fdk %>% collect() %>% as.data.table() %>% 
-  summarise(mae = mean(abs((prediction - Valeur)/Valeur),na.rm = TRUE))
-
-ml_classification_eval()
-?ml_regression_evaluator
-
-fit <- data_spark_train %>% ml_gaussian_mixture(Valeur ~ jour + numero_jour)
-
-
-fit <- data_spark_train %>% ml_logistic_regression(Valeur ~ jour + numero_jour)
-fit <- data_spark_train %>% ml_mul(Valeur ~ jour + numero_jour)
-
-importance <- rbind(ml_tree_feature_importance(fit) %>% mutate(model = "glm"),ml_tree_feature_importance(fit) %>% mutate(model = "random_forest"),
-                    ml_tree_feature_importance(fit) %>% mutate(model = "decision_tree"))
-
-ggplotly(
-  
-  
-  ggplot(data = importance)+
-    geom_bar(aes(reorder(feature,importance),importance,fill =  model),stat = "identity")+
-    facet_wrap(~ model)+
-    coord_flip()+
-    xlab("")+
-    ylab("")+
-    theme(legend.position="none")
-) 
-
-
-ggplot(data = table_forecast()[['importance']])+
-  geom_bar(aes(reorder(feature,importance),importance,fill =  model),stat = "identity",width = 0.3)+
-  facet_wrap(~ model)+
-  coord_flip()+
-  xlab("")+
-  ylab("")+
-  theme(legend.position="bottom",legend.direction="vertical")
-
-
-
-# 
-# 
-# 
-# 
-# partitions <- iris_tbl %>%
-#   sdf_partition(training = 0.7, test = 0.3, seed = 1111)
-# 
-# iris_training <- partitions$training
-# iris_test <- partitions$test
-# 
-# mlp_model <- iris_tbl %>%
-#   #ml_random_forest(formula = Species ~ . )
-#   ml_multilayer_perceptron_classifier(Sepal_Length ~ Petal_Length, layers = c(4,3,3))
-# 
-# pred <- sdf_predict(iris_test, mlp_model)
-# 
-# ml_multiclass_classification_evaluator(pred)
-
-class(data_spark_train)
-
-?ml_multilayer_perceptron
-data_conso_sparklyr <- copy_to(sc, iris, "iris", overwrite = TRUE)
-partitions <- sdf_partition(x =data_conso_sparklyr,training = 0.75,test = 0.25 )
-
-
-fit <- ml_gradient_boosted_trees(x = partitions$training,
-                                 formula = "Petal_Width ~Sepal_Length+Sepal_Width+Petal_Length",type = "regression")
-
-fit <- ml_multilayer_perceptron_classifier(x = partitions$training,
-                                           formula = "Petal_Width ~Sepal_Length+Sepal_Width+Petal_Length",layers = c(2,2))
-
-
-
-pred <- sdf_predict(fit, partitions$test) %>% collect %>% as.data.table()
-
-
-
-pred %>% summarise(mape = 100 * mean(abs((Petal_Width - prediction) / prediction)),
-                   rmse = sqrt(mean((Petal_Width - prediction)**2)))
-
-T1 <- Sys.time()
-
-T1 - t
-
-
-
-
-# Package h2o
-t <- Sys.time()
-h2o.init(nthreads = -1)
-h2o_data <- as.h2o(sequence_dates)
-splits <- h2o.splitFrame(data = h2o_data,ratios = 0.75,seed = 1234)
-model <- h2o.xgboost(x = 1:3,y = "Valeur",training_frame = splits[[1]])
-model <- h2o.gbm(x = 3:4,y = "Valeur",training_frame = splits[[1]])
-
-h2o.predict(model, splits[[2]]) %>% 
-  as.data.table() %>% 
-  cbind(.,as.data.table(splits[[2]]["Valeur"])) %>% 
-  summarise(mape = 100 * mean(abs((Valeur - predict) / predict)),
-            rmse = sqrt(mean((Valeur - predict)**2)))
-
-t2 <- Sys.time()
-?h2o.xgboost
-t2 - t
-
-
-# Package xgboost 
-library(xgboost)
-iris_xg <- iris %>% mutate(Petal.Width = as.numeric(Petal.Width))
-model <- xgboost(data = as.matrix(iris_xg[1:100,1:4]),label = as.matrix(iris_xg[1:100,4]),nrounds = 100)
-prediction <- predict(model,as.matrix(iris_xg[101:150,4])) %>% 
-  as.data.table() %>% 
-  cbind(.,iris[,"Petal.Width"] %>% as.data.table())
-
-colnames(prediction) <- c("predict","Petal.Width")
-
-resultats <- prediction %>% 
-  summarise(mape = 100 * mean(abs((Petal.Width - predict) / predict)),
-            rmse = sqrt(mean((Petal.Width - predict)**2)))
-
-
-
-
-plot(sequence_dates$Valeur)
-dygraph(sequence_dates[,.(Date,Valeur)]) %>% 
-  dyBarChart()
-?seq.Date
-
-
-
-test
-
-
-sequence_dates$Date
-lead(sequence_dates$Date,1)[1] - sequence_dates$Date[1] > 1
-sapply(sequence_dates, function(x) !all(is.na(as.Date(as.character(x),format="%d/%m/%Y"))))
-
-
-nom_variable <- "Valeur"
-dygraph(sequence_dates[,.(Date,Valeur)])
-eval(parse(text = paste0("dygraph(sequence_dates[,.(Date,Valeur)])")))
-
-
-ml_random_forest()
-guassian()
-
-ml_generalized_linear_regression()
