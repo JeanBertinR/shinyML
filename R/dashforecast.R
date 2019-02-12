@@ -17,7 +17,8 @@
 #' @return 
 #'
 #' @examples
-#'
+#' longley2 <- longley %>% mutate(Year = as.Date(as.character(Year),format = "%Y"))
+#' dashforecast(data =longley2,x = c("GNP_deflator","Unemployed" ,"Armed_Forces", "Population","Employed"),y = "GNP",date_column = "Year",share_app = TRUE,port = 5846 )
 #' @export
 
 longley2 <- longley %>% mutate(Year = as.Date(as.character(Year),format = "%Y"))
@@ -35,8 +36,7 @@ dashforecast()
 sequence_dates <- read.csv2("data_test_package.csv") %>% 
   mutate(mois = as.Date(paste0(mois,"-01"))) %>% 
   rename(Date = mois,Valeur = Vol_conso) %>% 
-  mutate(jour = day(Date),mois = month(Date),numero_jour = row_number()) %>% 
-  as.data.table()
+  mutate(jour = day(Date),mois = month(Date),numero_jour = row_number())
 
 
 
@@ -48,6 +48,8 @@ spark_disconnect_all()
 
 
 dashforecast <- function(data = data,x,y,date_column, share_app = FALSE,port = NULL ){
+  
+  data <- data.table(data)
   sc <- spark_connect(master = "local")
   
   app <- shinyApp(
@@ -349,8 +351,8 @@ dashforecast <- function(data = data,x,y,date_column, share_app = FALSE,port = N
         performance_table <-  table_forecast()[['results']] %>% 
           gather(key = Model,value = Predicted_value,-date_column,-y) %>% 
           group_by(Model) %>% 
-          summarise(`MAPE(%)` = round(100 * mean(abs((Predicted_value - Valeur)/Valeur),na.rm = TRUE),1),
-                    RMSE = round(sqrt(mean((Predicted_value - Valeur)**2)),0)) 
+          summarise(`MAPE(%)` = round(100 * mean(abs((Predicted_value - eval(parse(text = y)))/eval(parse(text = y))),na.rm = TRUE),1),
+                    RMSE = round(sqrt(mean((Predicted_value - eval(parse(text = y)))**2)),0)) 
         
         if (nrow(table_forecast()[['traning_time']]) != 0){
           performance_table <- performance_table %>% merge(.,table_forecast()[['traning_time']],by = "Model")
@@ -562,7 +564,14 @@ dashforecast <- function(data = data,x,y,date_column, share_app = FALSE,port = N
 
 dashforecast(share_app = TRUE ,port = 7895,data =sequence_dates ,x = c("jour","mois","numero_jour"), y = "Valeur",date_column = "Date")
 
-sequence_dates
+
+
+longley2 <- longley %>% mutate(Year = as.Date(as.character(Year),format = "%Y"))
+dashforecast(data =longley2,x = c("GNP_deflator","Unemployed" ,"Armed_Forces", "Population","Employed"),y = "GNP",date_column = "Year",share_app = TRUE,port = 5846 )
+
+
+
+class(longley2)
 
 dashforecast(data = )
 
