@@ -319,10 +319,10 @@ dashforecast <- function(data = data,x,y,date_column, share_app = FALSE,port = N
       
       
       table_forecast <- reactive({
-        #eval(parse(text = paste0("data.table:::`[.data.table`(data,j =.(",date_column,",",y,"))")))
         
-        #data_results = eval(parse(text = paste0(data,"[,.(",date_column,",",y,")][",date_column,">","'",test_1$date,"',]")))
-        data_results <- eval(parse(text = paste0("data.table:::`[.data.table`(data,j =.(",date_column,",",y,"))")))[eval(parse(text = date_column)) > test_1$date,]
+        
+        data_results <- eval(parse(text = paste0("data.table:::`[.data.table`(data,j =.(",date_column,",",y,"))")))
+        data_results <- eval(parse(text = paste0("data_results %>% filter(",date_column,">'", test_1$date,"') %>% as.data.table()")))
         var_input_list <- ""
         
         
