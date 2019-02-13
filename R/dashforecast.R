@@ -477,6 +477,7 @@ dashforecast <- function(data = data,x,y,date_column, share_app = FALSE,port = N
     }
   )
   
+  
   if (share_app == TRUE){
     
     if(is.null(port)){stop("Please choose a port to share dashboard")}
