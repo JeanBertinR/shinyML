@@ -245,7 +245,7 @@ dashforecast <- function(data = data,x,y,date_column, share_app = FALSE,port = N
       output$input_curve <- renderDygraph({
         
         data <- as.data.table(data)
-        curve_entries <- dygraph(data = eval(parse(text = paste0("data[,.(",date_column,",",y,")]"))))  %>% 
+        curve_entries <- dygraph(data = eval(parse(text = paste0(data,"[,.(",date_column,",",y,")]"))))  %>% 
           dyShading(from = input$train_selector[1],to = input$train_selector[2],color = "snow" ) %>%
           dyShading(from = input$test_selector[1],to = input$test_selector[2],color = "azure" ) %>%
           dyEvent(x = input$train_selector[1]) %>%
@@ -320,7 +320,7 @@ dashforecast <- function(data = data,x,y,date_column, share_app = FALSE,port = N
       table_forecast <- reactive({
         
         
-        data_results = eval(parse(text = paste0("data[,.(",date_column,",",y,")][",date_column,">","'",test_1$date,"',]")))
+        data_results = eval(parse(text = paste0(data,"[,.(",date_column,",",y,")][",date_column,">","'",test_1$date,"',]")))
         
         var_input_list <- ""
         
