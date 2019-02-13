@@ -44,21 +44,21 @@ dashforecast <- function(data = data,x,y,date_column, share_app = FALSE,port = N
                         fluidRow(
                           column(width = 12,box(
                             dygraphOutput("input_curve", height = 120, width = 930),width = 12
-                                                )
-                                ),
+                          )
+                          ),
                           column(width = 12,tabBox(id = "results_models",
                                                    tabPanel("Plot models on test period",dygraphOutput("output_curve",height = 200,width = 930)),
                                                    tabPanel("Compare models performances",dataTableOutput("date_essai",width = 10)),
                                                    tabPanel("Feature importance",plotlyOutput("feature_importance")),width = 12
-                                                   )
-                                )
-                              )
-                      ),
-            column(width = 4,align="center",
-               fluidRow(
-                  box(
-                    title = "Controls",
-                      selectInput( inputId  = "input_variables",label = "Input variables: ",choices = x,multiple = TRUE,selected = x),
+                          )
+                          )
+                        )
+                 ),
+                 column(width = 4,align="center",
+                        fluidRow(
+                          box(
+                            title = "Controls",
+                            selectInput( inputId  = "input_variables",label = "Input variables: ",choices = x,multiple = TRUE,selected = x),
                             sliderInput("train_selector", "Choose train period:",
                                         min = eval(parse(text = paste0("min(data$",date_column,")"))),
                                         max = eval(parse(text = paste0("max(data$",date_column,")"))),
@@ -69,9 +69,9 @@ dashforecast <- function(data = data,x,y,date_column, share_app = FALSE,port = N
                                         value = eval(parse(text = paste0("c(mean(data$",date_column,"),max(data$",date_column,"))")))),
                             actionButton("train_all","Run all models !",style = 'color:white; background-color:red; padding:4px; font-size:150%',
                                          icon = icon("cogs",lib = "font-awesome")),width = 12,height = 425
-                    )
+                          )
                           
-                    )
+                        )
                  )
           ),
           
@@ -97,7 +97,7 @@ dashforecast <- function(data = data,x,y,date_column, share_app = FALSE,port = N
                    
                    box(
                      title = "Decision tree",status = "danger",
-
+                     
                      sliderInput(label = "Max depth",inputId = "max_depth_decision_tree",min = 0,max = 20,value = 5),
                      sliderInput(label = "Max bins",inputId = "max_bins_decision_tree",min = 2,max = 60,value = 32),
                      sliderInput(label = "Min instance per node",inputId = "min_instance_decision_tree",min = 1,max = 10,value = 1),
@@ -147,7 +147,7 @@ dashforecast <- function(data = data,x,y,date_column, share_app = FALSE,port = N
       table_ml_glm <- data.table(ml_generalized_linear_regression = NA)
       table_ml_decision_tree <- data.table(ml_decision_tree = NA)
       
-
+      
       
       time_gbm <- data.table()
       time_random_forest <- data.table()
@@ -245,7 +245,8 @@ dashforecast <- function(data = data,x,y,date_column, share_app = FALSE,port = N
       output$input_curve <- renderDygraph({
         
         data <- as.data.table(data)
-        curve_entries <- dygraph(data = eval(parse(text = paste0(data,"[,.(",date_column,",",y,")]"))))  %>% 
+        
+        curve_entries <- dygraph(data = eval(parse(text = paste0("data.table:::`[.data.table`(data,j =.(",date_column,",",y,"))"))))  %>% 
           dyShading(from = input$train_selector[1],to = input$train_selector[2],color = "snow" ) %>%
           dyShading(from = input$test_selector[1],to = input$test_selector[2],color = "azure" ) %>%
           dyEvent(x = input$train_selector[1]) %>%
@@ -318,10 +319,10 @@ dashforecast <- function(data = data,x,y,date_column, share_app = FALSE,port = N
       
       
       table_forecast <- reactive({
+        #eval(parse(text = paste0("data.table:::`[.data.table`(data,j =.(",date_column,",",y,"))")))
         
-        
-        data_results = eval(parse(text = paste0(data,"[,.(",date_column,",",y,")][",date_column,">","'",test_1$date,"',]")))
-        
+        #data_results = eval(parse(text = paste0(data,"[,.(",date_column,",",y,")][",date_column,">","'",test_1$date,"',]")))
+        data_results <- eval(parse(text = paste0("data.table:::`[.data.table`(data,j =.(",date_column,",",y,"))")))[eval(parse(text = date_column)) > test_1$date,]
         var_input_list <- ""
         
         
