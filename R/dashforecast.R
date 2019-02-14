@@ -23,6 +23,7 @@
 
 dashforecast <- function(data = data,x,y,date_column, share_app = FALSE,port = NULL ){
   
+  
   data <- data.table(data)
   if (nrow(spark_installed_versions()) == 0){spark_install()}
   sc <- spark_connect(master = "local")
