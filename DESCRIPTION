@@ -9,7 +9,7 @@ Description: This package creates in one line of code a shareable web app to com
 License: GPL-2
 Encoding: UTF-8
 LazyData: False
-Imports:
+Depends:
   h2o,shiny,shinydashboard,shinyWidgets,dygraphs,data.table,dplyr,plotly,sparklyr,DT,tidyr
 Suggests:
   knitr
