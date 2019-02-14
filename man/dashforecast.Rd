@@ -26,5 +26,5 @@ This function creates in one line of code a shareable web app to compare supervi
 }
 \examples{
 longley2 <- longley \%>\% mutate(Year = as.Date(as.character(Year),format = "\%Y"))
-dashforecast(data =longley2,x = c("GNP_deflator","Unemployed" ,"Armed_Forces", "Population","Employed"),y = "GNP",date_column = "Year",share_app = TRUE,port = 5846 )
+dashforecast(data =longley2,x = c("GNP_deflator","Unemployed" ,"Armed_Forces", "Population","Employed"),y = "GNP",date_column = "Year",share_app = TRUE,port = 5845)
 }

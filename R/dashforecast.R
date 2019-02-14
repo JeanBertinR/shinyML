@@ -18,7 +18,7 @@
 #'
 #' @examples
 #' longley2 <- longley %>% mutate(Year = as.Date(as.character(Year),format = "%Y"))
-#' dashforecast(data =longley2,x = c("GNP_deflator","Unemployed" ,"Armed_Forces", "Population","Employed"),y = "GNP",date_column = "Year",share_app = TRUE,port = 5846 )
+#' dashforecast(data =longley2,x = c("GNP_deflator","Unemployed" ,"Armed_Forces", "Population","Employed"),y = "GNP",date_column = "Year",share_app = TRUE,port = 5845)
 #' @export
 
 dashforecast <- function(data = data,x,y,date_column, share_app = FALSE,port = NULL ){
@@ -48,9 +48,10 @@ dashforecast <- function(data = data,x,y,date_column, share_app = FALSE,port = N
                           )
                           ),
                           column(width = 12,tabBox(id = "results_models",
-                                                   tabPanel("Plot models on test period",dygraphOutput("output_curve",height = 200,width = 930)),
-                                                   tabPanel("Compare models performances",dataTableOutput("date_essai",width = 10)),
-                                                   tabPanel("Feature importance",plotlyOutput("feature_importance")),width = 12
+                                                   tabPanel("Result charts on test period",dygraphOutput("output_curve",height = 200,width = 930)),
+                                                   tabPanel("Compare models performances",dataTableOutput("date_essai",width = 700)),
+                                                   tabPanel("Feature importance",plotlyOutput("feature_importance")),
+                                                   tabPanel("Table of results",dataTableOutput("table_of_results")),width = 12
                           )
                           )
                         )
@@ -113,8 +114,6 @@ dashforecast <- function(data = data,x,y,date_column, share_app = FALSE,port = N
                      sliderInput(label = "Number of trees",min = 1,max = 100, inputId = "num_tree_random_forest",value = 20),
                      sliderInput(label = "Subsampling rate",min = 0.1,max = 1, inputId = "subsampling_rate_random_forest",value = 1),
                      sliderInput(label = "Max depth",min = 0,max = 20, inputId = "max_depth_random_forest",value = 5),
-                     #dataTableOutput("test_result"),
-                     
                      actionButton("run_random_forest","Run random forest model",style = 'color:white; background-color:darkblue; padding:4px; font-size:150%',
                                   icon = icon("users",lib = "font-awesome"))
                      
@@ -143,10 +142,10 @@ dashforecast <- function(data = data,x,y,date_column, share_app = FALSE,port = N
     
     server = function(session, input, output) {
       set.seed(122)
-      table_ml_gradient_boosted <- data.table(ml_gradient_boosted_trees = NA)
-      table_ml_random_forest <- data.table(ml_random_forest = NA)
-      table_ml_glm <- data.table(ml_generalized_linear_regression = NA)
-      table_ml_decision_tree <- data.table(ml_decision_tree = NA)
+      table_ml_gradient_boosted <- data.table(`Gradient boosted trees` = NA)
+      table_ml_random_forest <- data.table(`Random forest` = NA)
+      table_ml_glm <- data.table(`Generalized linear regression` = NA)
+      table_ml_decision_tree <- data.table(`Decision tree` = NA)
       
       
       
@@ -313,7 +312,7 @@ dashforecast <- function(data = data,x,y,date_column, share_app = FALSE,port = N
         
         datatable(
           performance_table %>% arrange(`MAPE(%)`) %>% as.data.table()
-          ,options = list(dom = 't')
+          , extensions = 'Buttons', options = list(dom = 'Bfrtip',buttons = c('csv', 'excel', 'pdf', 'print'))
         )
         
       })
@@ -350,11 +349,11 @@ dashforecast <- function(data = data,x,y,date_column, share_app = FALSE,port = N
                                      " )")))
             t2 <- Sys.time()
             
-            time_gbm <- data.frame(`Training time` =  paste0(round(t2 - t1,1)," seconds"), Model = "ml_gradient_boosted_trees") 
-            importance_gbm <- ml_feature_importances(fit) %>% mutate(model = "gradient_boosted_trees")
+            time_gbm <- data.frame(`Training time` =  paste0(round(t2 - t1,1)," seconds"), Model = "Gradient boosted trees") 
+            importance_gbm <- ml_feature_importances(fit) %>% mutate(model = "Gradient boosted trees")
             
-            table_ml_gradient_boosted <- sdf_predict(data_spark_test, fit) %>% collect %>% as.data.frame() %>% select(prediction)
-            names(table_ml_gradient_boosted)[names(table_ml_gradient_boosted) == 'prediction'] <- v_grad$type_model
+            table_ml_gradient_boosted <- sdf_predict(data_spark_test, fit) %>% collect %>% as.data.frame() %>% select(prediction) %>% mutate(prediction = round(prediction,3))
+            names(table_ml_gradient_boosted)[names(table_ml_gradient_boosted) == 'prediction'] <- "Gradient boosted trees"
             
           }
           
@@ -367,11 +366,11 @@ dashforecast <- function(data = data,x,y,date_column, share_app = FALSE,port = N
                                      ",max_depth  =",x$max_depth_random_forest,
                                      ")")))
             t2 <- Sys.time()
-            time_random_forest <- data.frame(`Training time` =  paste0(round(t2 - t1,1)," seconds"), Model = "ml_random_forest")
-            importance_random_forest <- ml_feature_importances(fit) %>% mutate(model = "random_forest")
+            time_random_forest <- data.frame(`Training time` =  paste0(round(t2 - t1,1)," seconds"), Model = "Random forest")
+            importance_random_forest <- ml_feature_importances(fit) %>% mutate(model = "Random forest")
             
-            table_ml_random_forest <- sdf_predict(data_spark_test, fit) %>% collect %>% as.data.frame() %>% select(prediction)
-            names(table_ml_random_forest)[names(table_ml_random_forest) == 'prediction'] <- v_random$type_model
+            table_ml_random_forest <- sdf_predict(data_spark_test, fit) %>% collect %>% as.data.frame() %>% select(prediction)%>% mutate(prediction = round(prediction,3))
+            names(table_ml_random_forest)[names(table_ml_random_forest) == 'prediction'] <- "Random forest"
             
           }
           
@@ -386,10 +385,10 @@ dashforecast <- function(data = data,x,y,date_column, share_app = FALSE,port = N
                                      ",max_iter =",x$max_iter_glm,
                                      ")")))
             t2 <- Sys.time()
-            time_glm <- data.frame(`Training time` =  paste0(round(t2 - t1,1)," seconds"), Model = "ml_generalized_linear_regression")
+            time_glm <- data.frame(`Training time` =  paste0(round(t2 - t1,1)," seconds"), Model = "Generalized linear regression")
             
-            table_ml_glm <- sdf_predict(data_spark_test, fit) %>% collect %>% as.data.frame() %>% select(prediction)
-            names(table_ml_glm)[names(table_ml_glm) == 'prediction'] <- v_glm$type_model
+            table_ml_glm <- sdf_predict(data_spark_test, fit) %>% collect %>% as.data.frame() %>% select(prediction)%>% mutate(prediction = round(prediction,3))
+            names(table_ml_glm)[names(table_ml_glm) == 'prediction'] <- "Generalized linear regression"
             
           }
           
@@ -402,11 +401,11 @@ dashforecast <- function(data = data,x,y,date_column, share_app = FALSE,port = N
                                      ",min_instances_per_node  =",x$min_instance_decision_tree,
                                      ")")))
             t2 <- Sys.time()
-            time_decision_tree <- data.frame(`Training time` =  paste0(round(t2 - t1,1)," seconds"), Model = "ml_decision_tree")
-            importance_decision_tree <- ml_feature_importances(fit) %>% mutate(model = "decision_tree")
+            time_decision_tree <- data.frame(`Training time` =  paste0(round(t2 - t1,1)," seconds"), Model = "Decision tree")
+            importance_decision_tree <- ml_feature_importances(fit) %>% mutate(model = "Decision tree")
             
-            table_ml_decision_tree <- sdf_predict(data_spark_test, fit) %>% collect %>% as.data.frame() %>% select(prediction)
-            names(table_ml_decision_tree)[names(table_ml_decision_tree) == 'prediction'] <- v_decision_tree$type_model
+            table_ml_decision_tree <- sdf_predict(data_spark_test, fit) %>% collect %>% as.data.frame() %>% select(prediction)%>% mutate(prediction = round(prediction,3))
+            names(table_ml_decision_tree)[names(table_ml_decision_tree) == 'prediction'] <- "Decision tree"
             
           }
           
@@ -437,15 +436,17 @@ dashforecast <- function(data = data,x,y,date_column, share_app = FALSE,port = N
         
       })
       
-      output$test_result <- renderDataTable({
-        table_forecast()[['results']]})
+      output$table_of_results <- renderDataTable({
+        
+        datatable(
+          table_forecast()[['results']],
+          extensions = 'Buttons', options = list(dom = 'Bfrtip',buttons = c('csv', 'excel', 'pdf', 'print'))
+        ) 
+        
+        
+      })
       
       
-      output$results_table <- renderDataTable(
-        
-        table_forecast()[['importance']]
-        
-      )
       
       output$feature_importance <- renderPlotly({
         
@@ -493,5 +494,4 @@ dashforecast <- function(data = data,x,y,date_column, share_app = FALSE,port = N
   else {runApp(app)}
   
 }
-
 
