@@ -41,7 +41,7 @@ dash_h20 <- function(data = data,x,y,date_column, share_app = FALSE,port = NULL 
       
       dashboardBody(
         fluidPage(
-          column(width = 12,
+          column(width = 12,align = "center",
                  fluidRow(
                    fluidRow(
                      box(
@@ -66,6 +66,35 @@ dash_h20 <- function(data = data,x,y,date_column, share_app = FALSE,port = NULL 
                                     icon = icon("cogs",lib = "font-awesome")),width = 12,height = 425
                      ),
                      
+                     
+                     box(
+                       title = "Generalized linear regresion",status = "warning",
+                       column(
+                         radioButtons(label = "Family",inputId = "glm_family",choices = c("gaussian","poisson", "gamma","tweedie"),
+                                      selected = "gaussian"),width = 6),
+                       column(
+                         radioButtons(label = "Link",inputId = "glm_link",choices = c("identity","log"),selected = "identity"),width = 6),
+                       
+                       materialSwitch(label = "Intercept term",inputId = "intercept_term_glm",status = "primary",value = TRUE),
+                       sliderInput(label = "Lambda",inputId = "reg_param_glm",min = 0,max = 10,value = 0),
+                       sliderInput(label = "Alpha (0:Ridge / 1:Lasso)",inputId = "alpha_param_glm",min = 0,max = 1,value = 0),
+                       sliderInput(label = "Maximum iteraions",inputId = "max_iter_glm",min = 50,max = 300,value = 100),
+                       actionButton("run_glm","Run generalized linear regression",style = 'color:white; background-color:orange; padding:4px; font-size:150%',
+                                    icon = icon("cogs",lib = "font-awesome"))
+                       ,width = 3 ),
+                     
+                     box(
+                       title = "Random Forest",status = "primary",
+                       
+                       sliderInput(label = "Number of trees",min = 1,max = 100, inputId = "num_tree_random_forest",value = 20),
+                       sliderInput(label = "Subsampling rate",min = 0.1,max = 1, inputId = "subsampling_rate_random_forest",value = 1),
+                       sliderInput(label = "Max depth",min = 0,max = 20, inputId = "max_depth_random_forest",value = 5),
+                       actionButton("run_random_forest","Run random forest model",style = 'color:white; background-color:darkblue; padding:4px; font-size:150%',
+                                    icon = icon("users",lib = "font-awesome"))
+                       
+                       ,width = 3),
+                     
+                     
                      box(
                        title = "Neural network model",status = "warning",
                        
@@ -77,13 +106,15 @@ dash_h20 <- function(data = data,x,y,date_column, share_app = FALSE,port = NULL 
                        ,width = 3 ),
                      
                      box(
-                       title = "Decision tree",status = "danger",
+                       title = "Gradient boosting trees",status = "success",
                        
-                       sliderInput(label = "Max depth",inputId = "max_depth_decision_tree",min = 0,max = 20,value = 5),
-                       sliderInput(label = "Max bins",inputId = "max_bins_decision_tree",min = 2,max = 60,value = 32),
-                       sliderInput(label = "Min instance per node",inputId = "min_instance_decision_tree",min = 1,max = 10,value = 1),
-                       actionButton("run_decision_tree","Run decision tree regression",style = 'color:white; background-color:red; padding:4px; font-size:150%',
-                                    icon = icon("cogs",lib = "font-awesome"))
+                       
+                       sliderInput(label = "Step size",min = 0,max = 1, inputId = "step_size_gbm",value = 0.1),
+                       sliderInput(label = "Subsampling rate",min = 0.1,max = 1, inputId = "subsampling_rate_gbm",value = 1),
+                       
+                       
+                       actionButton("run_gradient_boosting","Run gradient boosting model",style = 'color:white; background-color:darkgreen; padding:4px; font-size:150%',
+                                    icon = icon("users",lib = "font-awesome"))
                        
                        ,width = 3),
                      
@@ -104,7 +135,40 @@ dash_h20 <- function(data = data,x,y,date_column, share_app = FALSE,port = NULL 
       model <- reactiveValues()
       test_1 <- reactiveValues(date = eval(parse(text = paste0("mean(data$",date_column,")"))))
       table_neural_network <- data.table(`Neural network` = NA)
+      table_gradient_boosting <- data.table(`Gradient boosted trees` = NA)
+      table_glm <- data.table(`Generalized linear regression` = NA)
+      table_random_forest <-data.table(`Random forest` = NA) 
+      
+      
+      
       v_neural <- reactiveValues(type_model = NA)
+      v_grad <- reactiveValues(type_model = NA)
+      v_glm <- reactiveValues(type_model = NA)
+      v_random <- reactiveValues(type_model = NA)
+      
+      f <- reactiveValues(family_glm = "gaussian")
+      x <- reactiveValues(max_depth_random_forest = 5)
+      
+      
+      
+      observeEvent(input$train_all,{
+        
+        test_1$date <- input$test_selector[1]
+        model$train_variables <- input$input_variables
+        v_neural$type_model <- "ml_neural_network"
+        v_grad$type_model <- "ml_gradient_boosted_trees"
+        v_glm$type_model <- "ml_generalized_linear_regression"
+        v_random$type_model <- "ml_random_forest"
+        
+        f$family_glm <- input$glm_family
+        i$intercept_glm <- input$intercept_term_glm
+        x$reg_param_glm <- input$reg_param_glm
+        x$alpha_param_glm <- input$alpha_param_glm
+        x$max_iter_glm <- input$max_iter_glm
+        
+      })
+      
+      
       
       
       observeEvent(input$run_neural_network,{
@@ -112,6 +176,49 @@ dash_h20 <- function(data = data,x,y,date_column, share_app = FALSE,port = NULL 
         test_1$date <- input$test_selector[1]
         model$train_variables <- input$input_variables
         v_neural$type_model <- "ml_neural_network"
+        v_grad$type_model <- NA
+        v_glm$type_model <- NA
+        v_random$type_model <- NA
+      })
+      
+      
+      observeEvent(input$run_gradient_boosting,{
+        
+        test_1$date <- input$test_selector[1]
+        model$train_variables <- input$input_variables
+        v_grad$type_model <- "ml_gradient_boosted_trees"
+        v_neural$type_model <- NA
+        v_glm$type_model <- NA
+        v_random$type_model <- NA
+      })
+      
+      
+      observeEvent(input$run_glm,{
+        
+        test_1$date <- input$test_selector[1]
+        model$train_variables <- input$input_variables
+        v_grad$type_model <- NA
+        v_neural$type_model <- NA
+        v_random$type_model <- NA
+        v_glm$type_model <- "ml_generalized_linear_regression"
+        
+        f$family_glm <- input$glm_family
+        i$intercept_glm <- input$intercept_term_glm
+        x$reg_param_glm <- input$reg_param_glm
+        x$alpha_param_glm <- input$alpha_param_glm
+        x$max_iter_glm <- input$max_iter_glm
+      })
+      
+      
+      observeEvent(input$run_random_forest,{
+        
+        test_1$date <- input$test_selector[1]
+        model$train_variables <- input$input_variables
+        v_grad$type_model <- NA
+        v_neural$type_model <- NA
+        v_glm$type_model <- NA
+        v_random$type_model <- "ml_random_forest"
+        
       })
       
       
@@ -181,27 +288,75 @@ dash_h20 <- function(data = data,x,y,date_column, share_app = FALSE,port = NULL 
           
           if (!is.na(v_neural$type_model) & v_neural$type_model == "ml_neural_network"){
             
-            dl_fit1 <- h2o.deeplearning(x = "Unemployed",
+            dl_fit1 <- h2o.deeplearning(x = as.character(var_input_list),
                                         y = y,
                                         training_frame = data_h2o_train,
                                         model_id = "dl_fit1",
                                         hidden = c(5,5),
                                         seed = 1)
             
-            table_neural_network <- h2o.predict(dl_fit1,data_h2o_test) %>% 
-              as.data.table() 
+            table_neural_network <- h2o.predict(dl_fit1,data_h2o_test) %>% as.data.table() %>% rename(`Neural network` = predict)
             
           }
+          
+          
+          if (!is.na(v_grad$type_model) & v_grad$type_model == "ml_gradient_boosted_trees"){
+            
+            dl_fit1 <- h2o.gbm(x = as.character(var_input_list),
+                               y = y,
+                               training_frame = data_h2o_train,
+                               model_id = "dl_fit1",min_rows = 1,
+                               seed = 1)
+            
+            table_gradient_boosting <- h2o.predict(dl_fit1,data_h2o_test) %>% as.data.table()  %>% rename(`Gradient boosted trees` = predict)
+            
+          }
+          
+          
+          if (!is.na(v_glm$type_model) & v_glm$type_model == "ml_generalized_linear_regression"){
+            
+            dl_fit1 <- h2o.glm(x = as.character(var_input_list),
+                               y = y,
+                               family = f$family_glm,
+                               intercept = input$intercept_term_glm,
+                               lambda = x$reg_param_glm,
+                               alpha = x$alpha_param_glm,
+                               max_iterations = x$max_iter_glm,
+                               training_frame = data_h2o_train,
+                               model_id = "dl_fit1",
+                               seed = 1)
+            
+            table_glm <- h2o.predict(dl_fit1,data_h2o_test) %>% as.data.table()  %>% rename(`Generalized linear regression` = predict)
+            
+          }
+          
+          
+          if (!is.na(v_random$type_model) & v_random$type_model == "ml_random_forest"){
+            
+            dl_fit1 <- h2o.randomForest(x = as.character(var_input_list),
+                                        y = y,
+                                        training_frame = data_h2o_train,
+                                        model_id = "dl_fit1",
+                                        seed = 1)
+            
+            table_random_forest<- h2o.predict(dl_fit1,data_h2o_test) %>% as.data.table()  %>% rename(`Random forest` = predict)
+            
+          }
+          
+          
+          
+          
           
         }
         
         
         
-        cbind(data_results,table_neural_network)%>% as.data.table()
+        cbind(data_results,table_glm,table_random_forest,table_neural_network,table_gradient_boosting)%>% as.data.table()
         
         
         
         #length(var_input_list) %>% as.data.table()
+        #as.character(var_input_list) %>% as.data.table()
         #var_input_list %>% as.data.table()
         
       })
@@ -240,7 +395,7 @@ dash_h20 <- function(data = data,x,y,date_column, share_app = FALSE,port = NULL 
   
 }
 
-dash_h20(data =longley2,x = c("Unemployed","Armed_Forces"),y = "GNP",date_column = "Year",share_app = TRUE,port = 5845)
+dash_h20(data =longley2,x = c("Unemployed","Armed.Forces"),y = "GNP",date_column = "Year",share_app = TRUE,port = 5845)
 
 
 dash_h20(data =longley2,x = c("GNP_deflator","Unemployed" ,"Armed_Forces", "Population","Employed"),y = "GNP",date_column = "Year",share_app = TRUE,port = 5845)
