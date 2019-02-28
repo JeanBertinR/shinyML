@@ -1,4 +1,4 @@
-#' @title Create a shiny app to implement and compare supervised regression models on time series (framework used: h2o)
+#' @title Use Shiny and h2o machine learning framework to compare supervised regression models on time series
 #'
 #' @description This function creates in one line of code a shareable web app to compare supervised regression model performances.
 #'
@@ -18,7 +18,7 @@
 #'
 #' @examples
 #' longley2 <- longley %>% mutate(Year = as.Date(as.character(Year),format = "%Y"))
-#' dashforecast(data =longley2,x = c("GNP_deflator","Unemployed" ,"Armed_Forces", "Population","Employed"),y = "GNP",date_column = "Year",share_app = TRUE,port = 5845)
+#' dash_h20(data =longley2,x = c("GNP.deflator","Unemployed" ,"Armed.Forces", "Population","Employed"),y = "GNP",date_column = "Year",share_app = TRUE,port = 5845)
 #' @export
 
 dash_h20 <- function(data = data,x,y,date_column, share_app = FALSE,port = NULL ){
@@ -31,7 +31,7 @@ dash_h20 <- function(data = data,x,y,date_column, share_app = FALSE,port = NULL 
   app <- shinyApp(
     
     ui = dashboardPage(
-      dashboardHeader(title = "Compare forecast models"),
+      dashboardHeader(title = "H2O"),
       dashboardSidebar(
         sidebarMenu(
           menuItem("Dashboard", tabName = "dashboard", icon = icon("dashboard"),
@@ -174,10 +174,11 @@ dash_h20 <- function(data = data,x,y,date_column, share_app = FALSE,port = NULL 
       v_glm <- reactiveValues(type_model = NA)
       v_random <- reactiveValues(type_model = NA)
       
-      t <- reactiveValues(step_size_gbm = 0.1)
-      v <- reactiveValues(subsampling_rate_gbm = 1)
-      f <- reactiveValues(family_glm = "gaussian")
-      x <- reactiveValues(max_depth_random_forest = 5)
+      
+      t <- reactiveValues()
+      v <- reactiveValues()
+      f <- reactiveValues()
+      x <- reactiveValues()
       k <- reactiveValues()
       
       time_gbm <- data.table()
@@ -201,7 +202,6 @@ dash_h20 <- function(data = data,x,y,date_column, share_app = FALSE,port = NULL 
         v_random$type_model <- "ml_random_forest"
         
         f$family_glm <- input$glm_family
-        #i$intercept_glm <- input$intercept_term_glm
         x$reg_param_glm <- input$reg_param_glm
         x$alpha_param_glm <- input$alpha_param_glm
         x$max_iter_glm <- input$max_iter_glm
@@ -334,10 +334,6 @@ dash_h20 <- function(data = data,x,y,date_column, share_app = FALSE,port = NULL 
       
       
       
-      
-      
-      
-      
       table_forecast <- reactive({
         
         data_results <- eval(parse(text = paste0("data[,.(",date_column,",",y,")][",date_column,">'",test_1$date,"',]")))
@@ -373,7 +369,7 @@ dash_h20 <- function(data = data,x,y,date_column, share_app = FALSE,port = NULL 
             
             time_neural_network <- data.frame(`Training time` =  paste0(round(t2 - t1,1)," seconds"), Model = "Neural network")
             importance_neural_network <- h2o.varimp(dl_fit1) %>% as.data.table() %>% select(variable,scaled_importance) %>% mutate(model = "Neural network")
-            table_neural_network <- h2o.predict(dl_fit1,data_h2o_test) %>% as.data.table() %>% rename(`Neural network` = predict)
+            table_neural_network <- h2o.predict(dl_fit1,data_h2o_test) %>% as.data.table() %>% mutate(predict = round(predict,3)) %>% rename(`Neural network` = predict)
             
           }
           
@@ -393,7 +389,7 @@ dash_h20 <- function(data = data,x,y,date_column, share_app = FALSE,port = NULL 
             t2 <- Sys.time()
             time_gbm <- data.frame(`Training time` =  paste0(round(t2 - t1,1)," seconds"), Model = "Gradient boosted trees") 
             importance_gbm <- h2o.varimp(dl_fit1) %>% as.data.table() %>% select(variable,scaled_importance) %>% mutate(model = "Gradient boosted trees")
-            table_gradient_boosting <- h2o.predict(dl_fit1,data_h2o_test) %>% as.data.table()  %>% rename(`Gradient boosted trees` = predict)
+            table_gradient_boosting <- h2o.predict(dl_fit1,data_h2o_test) %>% as.data.table() %>% mutate(predict = round(predict,3)) %>% rename(`Gradient boosted trees` = predict)
             
           }
           
@@ -413,7 +409,7 @@ dash_h20 <- function(data = data,x,y,date_column, share_app = FALSE,port = NULL 
                                seed = 1)
             t2 <- Sys.time()
             time_glm <- data.frame(`Training time` =  paste0(round(t2 - t1,1)," seconds"), Model = "Generalized linear regression")
-            table_glm <- h2o.predict(dl_fit1,data_h2o_test) %>% as.data.table()  %>% rename(`Generalized linear regression` = predict)
+            table_glm <- h2o.predict(dl_fit1,data_h2o_test) %>% as.data.table() %>% mutate(predict = round(predict,3)) %>% rename(`Generalized linear regression` = predict)
             
           }
           
@@ -432,7 +428,7 @@ dash_h20 <- function(data = data,x,y,date_column, share_app = FALSE,port = NULL 
             t2 <- Sys.time()
             time_random_forest <- data.frame(`Training time` =  paste0(round(t2 - t1,1)," seconds"), Model = "Random forest")
             importance_random_forest <- h2o.varimp(dl_fit1) %>% as.data.table() %>% select(variable,scaled_importance) %>% mutate(model = "Random forest")
-            table_random_forest<- h2o.predict(dl_fit1,data_h2o_test) %>% as.data.table()  %>% rename(`Random forest` = predict)
+            table_random_forest<- h2o.predict(dl_fit1,data_h2o_test) %>% as.data.table() %>% mutate(predict = round(predict,3))  %>% rename(`Random forest` = predict)
             
           }
           
@@ -540,9 +536,3 @@ dash_h20 <- function(data = data,x,y,date_column, share_app = FALSE,port = NULL 
   
 }
 
-dash_h20(data =longley2,x = c("Unemployed","Armed.Forces"),y = "GNP",date_column = "Year",share_app = TRUE,port = 5845)
-
-
-
-
-dash_h20(data =longley2,x = c("GNP_deflator","Unemployed" ,"Armed_Forces", "Population","Employed"),y = "GNP",date_column = "Year",share_app = TRUE,port = 5845)
