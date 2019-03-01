@@ -10,7 +10,5 @@ License: GPL-2
 Encoding: UTF-8
 LazyData: False
 Depends:
-  h2o,shiny,shinydashboard,shinyWidgets,dygraphs,data.table,dplyr,plotly,sparklyr,DT,tidyr,rsparkling
-Suggests:
-  knitr
+ dplyr,shiny,shinydashboard,h2o,shinyWidgets,dygraphs,data.table,plotly,sparklyr,DT,tidyr,rsparkling
 RoxygenNote: 6.1.1

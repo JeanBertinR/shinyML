@@ -18,138 +18,138 @@
 #'
 #' @examples
 #' longley2 <- longley %>% mutate(Year = as.Date(as.character(Year),format = "%Y"))
-#' dash_h20(data =longley2,x = c("GNP.deflator","Unemployed" ,"Armed.Forces", "Population","Employed"),y = "GNP",date_column = "Year",share_app = TRUE,port = 5845)
+#' dash_h20(data =longley2,x = c("GNP_deflator","Unemployed" ,"Armed_Forces","Employed"),
+#'   y = "GNP",date_column = "Year",share_app = TRUE,port = 5845)
 #' @export
 
 dash_h20 <- function(data = data,x,y,date_column, share_app = FALSE,port = NULL ){
   
-  h2o.init()
+  h2o::h2o.init(port = 54321)
   
   
-  data <- data.table(data)
+  data <- data.table::data.table(data)
   
-  app <- shinyApp(
+  app <- shiny::shinyApp(
     
-    ui = dashboardPage(
-      dashboardHeader(title = "H2O"),
-      dashboardSidebar(
-        sidebarMenu(
-          menuItem("Dashboard", tabName = "dashboard", icon = icon("dashboard"),
-                   materialSwitch(inputId = "bar_chart_mode",label = "Bar chart mode",status = "primary",value = TRUE)
-          )
-        )),
-      
-      dashboardBody(
-        fluidPage(
-          
-          column(width = 12,
-                 column(width = 8,
-                        fluidRow(
-                          column(width = 12,box(dygraphOutput("input_curve", height = 120, width = 930),width = 12)
-                          ),
-                          column(width = 12,tabBox(id = "results_models",
-                                                   tabPanel("Result charts on test period",dygraphOutput("output_curve", height = 200, width = 930)),
-                                                   tabPanel("Compare models performances",dataTableOutput("date_essai",width = 700)),
-                                                   tabPanel("Feature importance",plotlyOutput("feature_importance")),
-                                                   tabPanel("Table of results",dataTableOutput("table_of_results")), width = 12
-                          )
-                          )
-                        )
-                        
-                 ),
-                 
-                 column(width = 4,align="center",
-                        fluidRow(
-                          box(
-                            title = "Controls",
-                            selectInput( inputId  = "input_variables",label = "Input variables: ",choices = x,multiple = TRUE,selected = x),
-                            sliderInput("train_selector", "Choose train period:",
-                                        min = eval(parse(text = paste0("min(data$",date_column,")"))),
-                                        max = eval(parse(text = paste0("max(data$",date_column,")"))),
-                                        value =  eval(parse(text = paste0("c(min(data$",date_column,"),mean(data$",date_column,"))")))),
-                            sliderInput("test_selector", "Choose test period:",
-                                        min = eval(parse(text = paste0("min(data$",date_column,")"))),
-                                        max = eval(parse(text = paste0("max(data$",date_column,")"))),
-                                        value = eval(parse(text = paste0("c(mean(data$",date_column,"),max(data$",date_column,"))")))),
-                            actionButton("train_all","Run all models !",style = 'color:white; background-color:red; padding:4px; font-size:150%',
-                                         icon = icon("cogs",lib = "font-awesome")),width = 12,height = 425
-                          )
-                        )
-                 )
-          ),
-          
-          column(width = 12,align = "center",
-                 fluidRow(
-                   
-                   box(
-                     title = "Generalized linear regresion",status = "warning",
-                     column(
-                       radioButtons(label = "Family",inputId = "glm_family",choices = c("gaussian","poisson", "gamma","tweedie"),
-                                    selected = "gaussian"),width = 6),
-                     column(
-                       radioButtons(label = "Link",inputId = "glm_link",choices = c("identity","log"),selected = "identity"),width = 6),
-                     
-                     materialSwitch(label = "Intercept term",inputId = "intercept_term_glm",status = "primary",value = TRUE),
-                     sliderInput(label = "Lambda",inputId = "reg_param_glm",min = 0,max = 10,value = 0),
-                     sliderInput(label = "Alpha (0:Ridge <-> 1:Lasso)",inputId = "alpha_param_glm",min = 0,max = 1,value = 0),
-                     sliderInput(label = "Maximum iteraions",inputId = "max_iter_glm",min = 50,max = 300,value = 100),
-                     actionButton("run_glm","Run generalized linear regression",style = 'color:white; background-color:orange; padding:4px; font-size:150%',
-                                  icon = icon("cogs",lib = "font-awesome"))
-                     ,width = 3 ),
-                   
-                   box(
-                     title = "Random Forest",status = "primary",
-                     
-                     sliderInput(label = "Number of trees",min = 1,max = 100, inputId = "num_tree_random_forest",value = 20),
-                     sliderInput(label = "Subsampling rate",min = 0.1,max = 1, inputId = "subsampling_rate_random_forest",value = 1),
-                     sliderInput(label = "Max depth",min = 1,max = 20, inputId = "max_depth_random_forest",value = 5),
-                     actionButton("run_random_forest","Run random forest model",style = 'color:white; background-color:darkblue; padding:4px; font-size:150%',
-                                  icon = icon("users",lib = "font-awesome"))
-                     
-                     ,width = 3),
-                   
-                   
-                   box(
-                     title = "Neural network model",status = "warning",
-                     
-                     column(
-                       radioButtons(label = "Activation function",inputId = "activation_neural_net",
-                                    choices = c( "Rectifier", "Maxout","Tanh", "RectifierWithDropout", "MaxoutWithDropout","TanhWithDropout"),selected = "Rectifier"),
-                       width = 6),
-                     column(
-                       radioButtons(label = "Loss function",inputId = "loss_neural_net",
-                                    choices = c("Automatic", "Quadratic", "Huber", "Absolute", "Quantile"),selected = "Automatic"),
-                       width = 6),
-                     
-                     textInput(label = "Hidden layers",inputId = "hidden_neural_net",value = "c(200,200)"),
-                     sliderInput(label = "Epochs",min = 10,max = 100, inputId = "epochs_neural_net",value = 10),
-                     sliderInput(label = "Learning rate",min = 0.001,max = 0.1, inputId = "rate_neural_net",value = 0.005),
-                     
-                     actionButton("run_neural_network","Run neural network regression",style = 'color:white; background-color:orange; padding:4px; font-size:150%',
-                                  icon = icon("cogs",lib = "font-awesome"))
-                     ,width = 3 ),
-                   
-                   
-                   
-                   
-                   box(
-                     title = "Gradient boosting trees",status = "success",
-                     
-                     
-                     sliderInput(label = "Max depth",min = 1,max = 20, inputId = "max_depth_gbm",value = 5),
-                     sliderInput(label = "Number of trees",min = 1,max = 100, inputId = "n_trees_gbm",value = 50),
-                     
-                     sliderInput(label = "Subsampling rate",min = 0.1,max = 1, inputId = "subsampling_rate_gbm",value = 1),
-                     sliderInput(label = "Learn rate",min = 0.1,max = 1, inputId = "learn_rate_gbm",value = 0.1),
-                     
-                     actionButton("run_gradient_boosting","Run gradient boosting model",style = 'color:white; background-color:darkgreen; padding:4px; font-size:150%',
-                                  icon = icon("users",lib = "font-awesome"))
-                     
-                     ,width = 3)
-                 )
-          )
-        )
-      )
+    ui = shinydashboard::dashboardPage(skin = "black",
+            shinydashboard::dashboardHeader(title = "H2O"),
+              shinydashboard::dashboardSidebar(
+                shinydashboard::sidebarMenu(
+                  shinydashboard::menuItem("Dashboard", tabName = "dashboard", icon = shiny::icon("dashboard"),
+                      shinyWidgets::materialSwitch(inputId = "bar_chart_mode",label = "Bar chart mode",status = "primary",value = TRUE)
+                           )
+                         )),
+                       
+            shinydashboard::dashboardBody(
+              shiny::fluidPage(
+                shiny::column(width = 12,
+                  shiny::column(width = 8,
+                    shiny::fluidRow(
+                      shiny::column(width = 12,shinydashboard::box(dygraphOutput("input_curve", height = 120, width = 930),width = 12)),
+                      shiny::column(width = 12,
+                                    shinydashboard::tabBox(id = "results_models",
+                                                           shiny::tabPanel("Result charts on test period",dygraphs::dygraphOutput("output_curve", height = 200, width = 930)),
+                                                           shiny::tabPanel("Compare models performances",dataTableOutput("date_essai",width = 700)),
+                                                           shiny::tabPanel("Feature importance",plotly::plotlyOutput("feature_importance")),
+                                                           shiny::tabPanel("Table of results",dataTableOutput("table_of_results")), width = 12
+                                             )
+                                           )
+                                         )
+                                         
+                                  ),
+                                  
+                  shiny::column(width = 4,align="center",
+                                shiny::fluidRow(
+                                  shinydashboard::box(
+                                             title = "Controls",
+                                             shiny::selectInput( inputId  = "input_variables",label = "Input variables: ",choices = x,multiple = TRUE,selected = x),
+                                             shiny::sliderInput("train_selector", "Choose train period:",
+                                                         min = eval(parse(text = paste0("min(data$",date_column,")"))),
+                                                         max = eval(parse(text = paste0("max(data$",date_column,")"))),
+                                                         value =  eval(parse(text = paste0("c(min(data$",date_column,"),mean(data$",date_column,"))")))),
+                                             shiny::sliderInput("test_selector", "Choose test period:",
+                                                         min = eval(parse(text = paste0("min(data$",date_column,")"))),
+                                                         max = eval(parse(text = paste0("max(data$",date_column,")"))),
+                                                         value = eval(parse(text = paste0("c(mean(data$",date_column,"),max(data$",date_column,"))")))),
+                                             shiny::actionButton("train_all","Run all models !",style = 'color:white; background-color:red; padding:4px; font-size:150%',
+                                                          icon = icon("cogs",lib = "font-awesome")),width = 12,height = 425
+                                           )
+                                         )
+                                  )
+                           ),
+                           
+                           column(width = 12,align = "center",
+                                  fluidRow(
+                                    
+                                    box(
+                                      title = "Generalized linear regresion",status = "warning",
+                                      column(
+                                        radioButtons(label = "Family",inputId = "glm_family",choices = c("gaussian","poisson", "gamma","tweedie"),
+                                                     selected = "gaussian"),width = 6),
+                                      column(
+                                        radioButtons(label = "Link",inputId = "glm_link",choices = c("identity","log"),selected = "identity"),width = 6),
+                                      
+                                      materialSwitch(label = "Intercept term",inputId = "intercept_term_glm",status = "primary",value = TRUE),
+                                      sliderInput(label = "Lambda",inputId = "reg_param_glm",min = 0,max = 10,value = 0),
+                                      sliderInput(label = "Alpha (0:Ridge <-> 1:Lasso)",inputId = "alpha_param_glm",min = 0,max = 1,value = 0),
+                                      sliderInput(label = "Maximum iteraions",inputId = "max_iter_glm",min = 50,max = 300,value = 100),
+                                      actionButton("run_glm","Run generalized linear regression",style = 'color:white; background-color:orange; padding:4px; font-size:150%',
+                                                   icon = icon("cogs",lib = "font-awesome"))
+                                      ,width = 3 ),
+                                    
+                                    box(
+                                      title = "Random Forest",status = "danger",
+                                      
+                                      sliderInput(label = "Number of trees",min = 1,max = 100, inputId = "num_tree_random_forest",value = 20),
+                                      sliderInput(label = "Subsampling rate",min = 0.1,max = 1, inputId = "subsampling_rate_random_forest",value = 1),
+                                      sliderInput(label = "Max depth",min = 1,max = 20, inputId = "max_depth_random_forest",value = 5),
+                                      actionButton("run_random_forest","Run random forest model",style = 'color:white; background-color:darkblue; padding:4px; font-size:150%',
+                                                   icon = icon("users",lib = "font-awesome"))
+                                      
+                                      ,width = 3),
+                                    
+                                    
+                                    box(
+                                      title = "Neural network model",status = "primary",
+                                      
+                                      column(
+                                        radioButtons(label = "Activation function",inputId = "activation_neural_net",
+                                                     choices = c( "Rectifier", "Maxout","Tanh", "RectifierWithDropout", "MaxoutWithDropout","TanhWithDropout"),selected = "Rectifier"),
+                                        width = 6),
+                                      column(
+                                        radioButtons(label = "Loss function",inputId = "loss_neural_net",
+                                                     choices = c("Automatic", "Quadratic", "Huber", "Absolute", "Quantile"),selected = "Automatic"),
+                                        width = 6),
+                                      
+                                      textInput(label = "Hidden layers",inputId = "hidden_neural_net",value = "c(200,200)"),
+                                      sliderInput(label = "Epochs",min = 10,max = 100, inputId = "epochs_neural_net",value = 10),
+                                      sliderInput(label = "Learning rate",min = 0.001,max = 0.1, inputId = "rate_neural_net",value = 0.005),
+                                      
+                                      actionButton("run_neural_network","Run neural network regression",style = 'color:white; background-color:orange; padding:4px; font-size:150%',
+                                                   icon = icon("cogs",lib = "font-awesome"))
+                                      ,width = 3 ),
+                                    
+                                    
+                                    
+                                    
+                                    box(
+                                      title = "Gradient boosting trees",status = "success",
+                                      
+                                      
+                                      sliderInput(label = "Max depth",min = 1,max = 20, inputId = "max_depth_gbm",value = 5),
+                                      sliderInput(label = "Number of trees",min = 1,max = 100, inputId = "n_trees_gbm",value = 50),
+                                      
+                                      sliderInput(label = "Subsampling rate",min = 0.1,max = 1, inputId = "subsampling_rate_gbm",value = 1),
+                                      sliderInput(label = "Learn rate",min = 0.1,max = 1, inputId = "learn_rate_gbm",value = 0.1),
+                                      
+                                      actionButton("run_gradient_boosting","Run gradient boosting model",style = 'color:white; background-color:darkgreen; padding:4px; font-size:150%',
+                                                   icon = icon("users",lib = "font-awesome"))
+                                      
+                                      ,width = 3)
+                                  )
+                           )
+                         )
+                       )
     ),
     
     
@@ -162,10 +162,10 @@ dash_h20 <- function(data = data,x,y,date_column, share_app = FALSE,port = NULL 
       set.seed(122)
       model <- reactiveValues()
       test_1 <- reactiveValues(date = eval(parse(text = paste0("mean(data$",date_column,")"))))
-      table_neural_network <- data.table(`Neural network` = NA)
-      table_gradient_boosting <- data.table(`Gradient boosted trees` = NA)
-      table_glm <- data.table(`Generalized linear regression` = NA)
-      table_random_forest <-data.table(`Random forest` = NA) 
+      table_neural_network <- data.table::data.table(`Neural network` = NA)
+      table_gradient_boosting <- data.table::data.table(`Gradient boosted trees` = NA)
+      table_glm <- data.table::data.table(`Generalized linear regression` = NA)
+      table_random_forest <-data.table::data.table(`Random forest` = NA) 
       
       
       
@@ -181,15 +181,15 @@ dash_h20 <- function(data = data,x,y,date_column, share_app = FALSE,port = NULL 
       x <- reactiveValues()
       k <- reactiveValues()
       
-      time_gbm <- data.table()
-      time_random_forest <- data.table()
-      time_glm <- data.table()
-      time_neural_network <- data.table()
+      time_gbm <- data.table::data.table()
+      time_random_forest <- data.table::data.table()
+      time_glm <- data.table::data.table()
+      time_neural_network <- data.table::data.table()
       
       
-      importance_gbm <- data.table()
-      importance_random_forest <- data.table()
-      importance_neural_network <- data.table()
+      importance_gbm <- data.table::data.table()
+      importance_random_forest <- data.table::data.table()
+      importance_neural_network <- data.table::data.table()
       
       
       observeEvent(input$train_all,{
@@ -296,7 +296,7 @@ dash_h20 <- function(data = data,x,y,date_column, share_app = FALSE,port = NULL 
       output$input_curve <- renderDygraph({
         
         
-        curve_entries <- dygraph(data = eval(parse(text = paste0("data.table:::`[.data.table`(data,j =.(",date_column,",",y,"))"))))  %>% 
+        curve_entries <- dygraph(data = eval(parse(text = paste0("data.table::data.table:::`[.data.table::data.table`(data,j =.(",date_column,",",y,"))"))))  %>% 
           dyShading(from = input$train_selector[1],to = input$train_selector[2],color = "snow" ) %>%
           dyShading(from = input$test_selector[1],to = input$test_selector[2],color = "azure" ) %>%
           dyEvent(x = input$train_selector[1]) %>%
@@ -346,8 +346,8 @@ dash_h20 <- function(data = data,x,y,date_column, share_app = FALSE,port = NULL 
         
         if (length(var_input_list) != 0){   
           
-          data_train <- eval(parse(text = paste0("data %>% filter(",date_column,"<='", test_1$date,"') %>% as.data.table()")))
-          data_test <- eval(parse(text = paste0("data %>% filter(",date_column,">'", test_1$date,"') %>% as.data.table()")))
+          data_train <- eval(parse(text = paste0("data %>% filter(",date_column,"<='", test_1$date,"') %>% data.table::as.data.table()")))
+          data_test <- eval(parse(text = paste0("data %>% filter(",date_column,">'", test_1$date,"') %>% data.table::as.data.table()")))
           
           data_h2o_train <- as.h2o(data_train)
           data_h2o_test <- as.h2o(data_test)
@@ -368,8 +368,8 @@ dash_h20 <- function(data = data,x,y,date_column, share_app = FALSE,port = NULL 
             t2 <- Sys.time()
             
             time_neural_network <- data.frame(`Training time` =  paste0(round(t2 - t1,1)," seconds"), Model = "Neural network")
-            importance_neural_network <- h2o.varimp(dl_fit1) %>% as.data.table() %>% select(variable,scaled_importance) %>% mutate(model = "Neural network")
-            table_neural_network <- h2o.predict(dl_fit1,data_h2o_test) %>% as.data.table() %>% mutate(predict = round(predict,3)) %>% rename(`Neural network` = predict)
+            importance_neural_network <- h2o.varimp(dl_fit1) %>% data.table::as.data.table() %>% select(variable,scaled_importance) %>% mutate(model = "Neural network")
+            table_neural_network <- h2o.predict(dl_fit1,data_h2o_test) %>% data.table::as.data.table() %>% mutate(predict = round(predict,3)) %>% rename(`Neural network` = predict)
             
           }
           
@@ -388,8 +388,8 @@ dash_h20 <- function(data = data,x,y,date_column, share_app = FALSE,port = NULL 
                                seed = 1)
             t2 <- Sys.time()
             time_gbm <- data.frame(`Training time` =  paste0(round(t2 - t1,1)," seconds"), Model = "Gradient boosted trees") 
-            importance_gbm <- h2o.varimp(dl_fit1) %>% as.data.table() %>% select(variable,scaled_importance) %>% mutate(model = "Gradient boosted trees")
-            table_gradient_boosting <- h2o.predict(dl_fit1,data_h2o_test) %>% as.data.table() %>% mutate(predict = round(predict,3)) %>% rename(`Gradient boosted trees` = predict)
+            importance_gbm <- h2o.varimp(dl_fit1) %>% data.table::as.data.table() %>% select(variable,scaled_importance) %>% mutate(model = "Gradient boosted trees")
+            table_gradient_boosting <- h2o.predict(dl_fit1,data_h2o_test) %>% data.table::as.data.table() %>% mutate(predict = round(predict,3)) %>% rename(`Gradient boosted trees` = predict)
             
           }
           
@@ -409,7 +409,7 @@ dash_h20 <- function(data = data,x,y,date_column, share_app = FALSE,port = NULL 
                                seed = 1)
             t2 <- Sys.time()
             time_glm <- data.frame(`Training time` =  paste0(round(t2 - t1,1)," seconds"), Model = "Generalized linear regression")
-            table_glm <- h2o.predict(dl_fit1,data_h2o_test) %>% as.data.table() %>% mutate(predict = round(predict,3)) %>% rename(`Generalized linear regression` = predict)
+            table_glm <- h2o.predict(dl_fit1,data_h2o_test) %>% data.table::as.data.table() %>% mutate(predict = round(predict,3)) %>% rename(`Generalized linear regression` = predict)
             
           }
           
@@ -427,8 +427,8 @@ dash_h20 <- function(data = data,x,y,date_column, share_app = FALSE,port = NULL 
                                         seed = 1)
             t2 <- Sys.time()
             time_random_forest <- data.frame(`Training time` =  paste0(round(t2 - t1,1)," seconds"), Model = "Random forest")
-            importance_random_forest <- h2o.varimp(dl_fit1) %>% as.data.table() %>% select(variable,scaled_importance) %>% mutate(model = "Random forest")
-            table_random_forest<- h2o.predict(dl_fit1,data_h2o_test) %>% as.data.table() %>% mutate(predict = round(predict,3))  %>% rename(`Random forest` = predict)
+            importance_random_forest <- h2o.varimp(dl_fit1) %>% data.table::as.data.table() %>% select(variable,scaled_importance) %>% mutate(model = "Random forest")
+            table_random_forest<- h2o.predict(dl_fit1,data_h2o_test) %>% data.table::as.data.table() %>% mutate(predict = round(predict,3))  %>% rename(`Random forest` = predict)
             
           }
           
@@ -440,8 +440,8 @@ dash_h20 <- function(data = data,x,y,date_column, share_app = FALSE,port = NULL 
         
         
         table_training_time <- rbind(time_gbm,time_random_forest,time_glm,time_neural_network)
-        table_importance <- rbind(importance_gbm,importance_random_forest,importance_neural_network) %>% as.data.table()
-        table_results <- cbind(data_results,table_glm,table_random_forest,table_neural_network,table_gradient_boosting)%>% as.data.table()
+        table_importance <- rbind(importance_gbm,importance_random_forest,importance_neural_network) %>% data.table::as.data.table()
+        table_results <- cbind(data_results,table_glm,table_random_forest,table_neural_network,table_gradient_boosting)%>% data.table::as.data.table()
         
         list(traning_time = table_training_time, importance = table_importance, results = table_results)
         
@@ -463,7 +463,7 @@ dash_h20 <- function(data = data,x,y,date_column, share_app = FALSE,port = NULL 
         }
         
         datatable(
-          performance_table %>% arrange(`MAPE(%)`) %>% as.data.table()
+          performance_table %>% arrange(`MAPE(%)`) %>% data.table::as.data.table()
           , extensions = 'Buttons', options = list(dom = 'Bfrtip',buttons = c('csv', 'excel', 'pdf', 'print'))
         )
       })
@@ -535,4 +535,8 @@ dash_h20 <- function(data = data,x,y,date_column, share_app = FALSE,port = NULL 
   
   
 }
+
+
+
+
 
