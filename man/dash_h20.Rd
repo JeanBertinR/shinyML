@@ -25,7 +25,14 @@ The time serie must be a data.frame or a data.table and must contain at least on
 This function creates in one line of code a shareable web app to compare supervised regression model performances.
 }
 \examples{
+\dontrun{
+library(dashR)
+library(dplyr)
+Sys.setenv(http_proxy="") 
+Sys.setenv(http_proxy_user="") 
+Sys.setenv(https_proxy_user="")
 longley2 <- longley \%>\% mutate(Year = as.Date(as.character(Year),format = "\%Y"))
 dash_h20(data =longley2,x = c("GNP_deflator","Unemployed" ,"Armed_Forces","Employed"),
-  y = "GNP",date_column = "Year",share_app = TRUE,port = 5845)
+  y = "GNP",date_column = "Year",share_app = TRUE,port = 3951)
+}
 }

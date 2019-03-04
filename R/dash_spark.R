@@ -17,9 +17,23 @@
 #' @return NULL
 #'
 #' @examples
+#'\dontrun{
+#' library(dashR)
+#' library(dplyr)
+#' Sys.setenv(http_proxy="") 
+#' Sys.setenv(http_proxy_user="") 
+#' Sys.setenv(https_proxy_user="")
 #' longley2 <- longley %>% mutate(Year = as.Date(as.character(Year),format = "%Y"))
 #' dash_spark(data =longley2,x = c("GNP_deflator","Unemployed" ,"Armed_Forces","Employed"),
-#'   y = "GNP",date_column = "Year",share_app = TRUE,port = 5845)
+#'   y = "GNP",date_column = "Year",share_app = TRUE,port = 3952)
+#'}
+#' @import shiny shinydashboard sparklyr dygraphs data.table ggplot2
+#' @importFrom DT datatable 
+#' @importFrom dplyr %>% select mutate group_by summarise arrange rename
+#' @importFrom plotly plotlyOutput renderPlotly ggplotly
+#' @importFrom tidyr gather
+#' @importFrom shinyWidgets materialSwitch
+#' @importFrom stats predict reorder
 #' @export
 
 dash_spark <- function(data = data,x,y,date_column, share_app = FALSE,port = NULL ){
@@ -51,7 +65,7 @@ dash_spark <- function(data = data,x,y,date_column, share_app = FALSE,port = NUL
                           ),
                           column(width = 12,tabBox(id = "results_models",
                                                    tabPanel("Result charts on test period",dygraphOutput("output_curve",height = 200,width = 930)),
-                                                   tabPanel("Compare models performances",dataTableOutput("date_essai",width = 700)),
+                                                   tabPanel("Compare models performances",dataTableOutput("date_essai")),
                                                    tabPanel("Feature importance",plotlyOutput("feature_importance")),
                                                    tabPanel("Table of results",dataTableOutput("table_of_results")),width = 12
                           )
@@ -161,6 +175,15 @@ dash_spark <- function(data = data,x,y,date_column, share_app = FALSE,port = NUL
       importance_decision_tree <- data.table()
       
       
+      Model <- NULL
+      Predicted_value <- NULL
+      `.` <- NULL
+      `MAPE(%)` <- NULL
+      fit <- NULL
+      prediction <- NULL
+      feature <- NULL
+      importance <- NULL
+      
       model <- reactiveValues(train_variables = NA)
       
       
@@ -247,7 +270,9 @@ dash_spark <- function(data = data,x,y,date_column, share_app = FALSE,port = NUL
         
         data <- as.data.table(data)
         
-        curve_entries <- dygraph(data = eval(parse(text = paste0("data.table:::`[.data.table`(data,j =.(",date_column,",",y,"))"))))  %>% 
+        
+
+        curve_entries <- dygraph(data = eval(parse(text = paste0("data.table::data.table:::`[.data.table::data.table`(data,j =.(",date_column,",",y,"))")))) %>%
           dyShading(from = input$train_selector[1],to = input$train_selector[2],color = "snow" ) %>%
           dyShading(from = input$test_selector[1],to = input$test_selector[2],color = "azure" ) %>%
           dyEvent(x = input$train_selector[1]) %>%
@@ -321,9 +346,6 @@ dash_spark <- function(data = data,x,y,date_column, share_app = FALSE,port = NUL
       
       table_forecast <- reactive({
         
-        
-        # data_results <- eval(parse(text = paste0("data.table:::`[.data.table`(data,j =.(",date_column,",",y,"))")))
-        # data_results <- eval(parse(text = paste0("data_results %>% filter(",date_column,">'", test_1$date,"') %>% as.data.table()")))
         data_results <- eval(parse(text = paste0("data[,.(",date_column,",",y,")][",date_column,">'",test_1$date,"',]")))
         var_input_list <- ""
         
@@ -421,7 +443,7 @@ dash_spark <- function(data = data,x,y,date_column, share_app = FALSE,port = NUL
         table_results <- cbind(data_results,table_ml_gradient_boosted,table_ml_random_forest,table_ml_glm,table_ml_decision_tree) %>% 
           as.data.table()
         
-        list(traning_time = table_training_time, importance = table_importance, results = table_results)
+        list(traning_time = table_training_time, table_importance = table_importance, results = table_results)
         
       })
       
@@ -454,11 +476,11 @@ dash_spark <- function(data = data,x,y,date_column, share_app = FALSE,port = NUL
       
       output$feature_importance <- renderPlotly({
         
-        if (nrow(table_forecast()[['importance']]) != 0){
+        if (nrow(table_forecast()[['table_importance']]) != 0){
           ggplotly(
             
-            ggplot(data = table_forecast()[['importance']])+
-              geom_bar(aes(reorder(feature,importance),importance,fill =  model),stat = "identity",width = 0.3)+
+            ggplot(data = table_forecast()[['table_importance']])+
+              geom_bar(aes(reorder(`feature`,`importance`),`importance`,fill =  model),stat = "identity",width = 0.3)+
               facet_wrap(~ model)+
               coord_flip()+
               xlab("")+
