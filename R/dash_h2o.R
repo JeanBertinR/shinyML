@@ -293,17 +293,17 @@ dash_h20 <- function(data = data,x,y,date_column, share_app = FALSE,port = NULL 
       
       
       
-      output$input_curve <- renderDygraph({
+      output$input_curve <- dygraphs::renderDygraph({
         
         
-        curve_entries <- dygraph(data = eval(parse(text = paste0("data.table::data.table:::`[.data.table::data.table`(data,j =.(",date_column,",",y,"))"))))  %>% 
-          dyShading(from = input$train_selector[1],to = input$train_selector[2],color = "snow" ) %>%
-          dyShading(from = input$test_selector[1],to = input$test_selector[2],color = "azure" ) %>%
-          dyEvent(x = input$train_selector[1]) %>%
-          dyEvent(x = input$train_selector[2]) %>%
-          dyEvent(x = input$test_selector[2]) %>%
-          dySeries(y,fillGraph = TRUE) %>% 
-          dyAxis("y",valueRange = c(0,1.5 * max(eval(parse(text =paste0("data$",y))))))
+        curve_entries <- dygraphs::dygraph(data = eval(parse(text = paste0("data.table::data.table:::`[.data.table::data.table`(data,j =.(",date_column,",",y,"))"))))  %>% 
+          dygraphs::dyShading(from = input$train_selector[1],to = input$train_selector[2],color = "snow" ) %>%
+          dygraphs::dyShading(from = input$test_selector[1],to = input$test_selector[2],color = "azure" ) %>%
+          dygraphs::dyEvent(x = input$train_selector[1]) %>%
+          dygraphs::dyEvent(x = input$train_selector[2]) %>%
+          dygraphs::dyEvent(x = input$test_selector[2]) %>%
+          dygraphs::dySeries(y,fillGraph = TRUE) %>% 
+          dygraphs::dyAxis("y",valueRange = c(0,1.5 * max(eval(parse(text =paste0("data$",y))))))
         
         
         
@@ -315,18 +315,18 @@ dash_h20 <- function(data = data,x,y,date_column, share_app = FALSE,port = NULL 
       })
       
       
-      
-      output$output_curve <- renderDygraph({
+       
+      output$output_curve <- dygraphs::renderDygraph({
         
         
-        output_dygraph <- dygraph(data = table_forecast()[['results']]) %>% 
-          dyAxis("y",valueRange = c(0,1.5 * max(eval(parse(text =paste0("table_forecast()[['results']]$",y)))))) 
+        output_dygraph <- dygraphs::dygraph(data = table_forecast()[['results']]) %>%
+          dygraphs::dyAxis("y",valueRange = c(0,1.5 * max(eval(parse(text =paste0("table_forecast()[['results']]$",y)))))) 
         
         if (input$bar_chart_mode == TRUE){
           output_dygraph <- output_dygraph %>% dyBarChart()
         }
         
-        output_dygraph %>% dyLegend(width = 800)
+        output_dygraph %>% dygraphs::dyLegend(width = 800)
         
         
         
@@ -334,7 +334,7 @@ dash_h20 <- function(data = data,x,y,date_column, share_app = FALSE,port = NULL 
       
       
       
-      table_forecast <- reactive({
+      table_forecast <- shiny::reactive({
         
         data_results <- eval(parse(text = paste0("data[,.(",date_column,",",y,")][",date_column,">'",test_1$date,"',]")))
         var_input_list <- c()
@@ -349,13 +349,13 @@ dash_h20 <- function(data = data,x,y,date_column, share_app = FALSE,port = NULL 
           data_train <- eval(parse(text = paste0("data %>% filter(",date_column,"<='", test_1$date,"') %>% data.table::as.data.table()")))
           data_test <- eval(parse(text = paste0("data %>% filter(",date_column,">'", test_1$date,"') %>% data.table::as.data.table()")))
           
-          data_h2o_train <- as.h2o(data_train)
-          data_h2o_test <- as.h2o(data_test)
+          data_h2o_train <- h2o::as.h2o(data_train)
+          data_h2o_test <- h2o::as.h2o(data_test)
           
           if (!is.na(v_neural$type_model) & v_neural$type_model == "ml_neural_network"){
             
             t1 <- Sys.time()
-            dl_fit1 <- h2o.deeplearning(x = as.character(var_input_list),
+            dl_fit1 <- h2o::h2o.deeplearning(x = as.character(var_input_list),
                                         y = y,
                                         training_frame = data_h2o_train,
                                         model_id = "dl_fit1",
@@ -368,8 +368,8 @@ dash_h20 <- function(data = data,x,y,date_column, share_app = FALSE,port = NULL 
             t2 <- Sys.time()
             
             time_neural_network <- data.frame(`Training time` =  paste0(round(t2 - t1,1)," seconds"), Model = "Neural network")
-            importance_neural_network <- h2o.varimp(dl_fit1) %>% data.table::as.data.table() %>% select(variable,scaled_importance) %>% mutate(model = "Neural network")
-            table_neural_network <- h2o.predict(dl_fit1,data_h2o_test) %>% data.table::as.data.table() %>% mutate(predict = round(predict,3)) %>% rename(`Neural network` = predict)
+            importance_neural_network <- h2o::h2o.varimp(dl_fit1) %>% data.table::as.data.table() %>% select(variable,scaled_importance) %>% mutate(model = "Neural network")
+            table_neural_network <- h2o::h2o.predict(dl_fit1,data_h2o_test) %>% data.table::as.data.table() %>% mutate(predict = round(predict,3)) %>% rename(`Neural network` = predict)
             
           }
           
@@ -377,7 +377,7 @@ dash_h20 <- function(data = data,x,y,date_column, share_app = FALSE,port = NULL 
           if (!is.na(v_grad$type_model) & v_grad$type_model == "ml_gradient_boosted_trees"){
             
             t1 <- Sys.time()
-            dl_fit1 <- h2o.gbm(x = as.character(var_input_list),
+            dl_fit1 <- h2o::h2o.gbm(x = as.character(var_input_list),
                                y = y,
                                sample_rate = v$subsampling_rate_gbm,
                                ntrees = x$n_trees_gbm,
@@ -388,8 +388,8 @@ dash_h20 <- function(data = data,x,y,date_column, share_app = FALSE,port = NULL 
                                seed = 1)
             t2 <- Sys.time()
             time_gbm <- data.frame(`Training time` =  paste0(round(t2 - t1,1)," seconds"), Model = "Gradient boosted trees") 
-            importance_gbm <- h2o.varimp(dl_fit1) %>% data.table::as.data.table() %>% select(variable,scaled_importance) %>% mutate(model = "Gradient boosted trees")
-            table_gradient_boosting <- h2o.predict(dl_fit1,data_h2o_test) %>% data.table::as.data.table() %>% mutate(predict = round(predict,3)) %>% rename(`Gradient boosted trees` = predict)
+            importance_gbm <- h2o::h2o.varimp(dl_fit1) %>% data.table::as.data.table() %>% select(variable,scaled_importance) %>% mutate(model = "Gradient boosted trees")
+            table_gradient_boosting <- h2o::h2o.predict(dl_fit1,data_h2o_test) %>% data.table::as.data.table() %>% mutate(predict = round(predict,3)) %>% rename(`Gradient boosted trees` = predict)
             
           }
           
@@ -397,7 +397,7 @@ dash_h20 <- function(data = data,x,y,date_column, share_app = FALSE,port = NULL 
           if (!is.na(v_glm$type_model) & v_glm$type_model == "ml_generalized_linear_regression"){
             
             t1 <- Sys.time()
-            dl_fit1 <- h2o.glm(x = as.character(var_input_list),
+            dl_fit1 <- h2o::h2o.glm(x = as.character(var_input_list),
                                y = y,
                                family = f$family_glm,
                                intercept = input$intercept_term_glm,
@@ -409,7 +409,7 @@ dash_h20 <- function(data = data,x,y,date_column, share_app = FALSE,port = NULL 
                                seed = 1)
             t2 <- Sys.time()
             time_glm <- data.frame(`Training time` =  paste0(round(t2 - t1,1)," seconds"), Model = "Generalized linear regression")
-            table_glm <- h2o.predict(dl_fit1,data_h2o_test) %>% data.table::as.data.table() %>% mutate(predict = round(predict,3)) %>% rename(`Generalized linear regression` = predict)
+            table_glm <- h2o::h2o.predict(dl_fit1,data_h2o_test) %>% data.table::as.data.table() %>% mutate(predict = round(predict,3)) %>% rename(`Generalized linear regression` = predict)
             
           }
           
@@ -417,7 +417,7 @@ dash_h20 <- function(data = data,x,y,date_column, share_app = FALSE,port = NULL 
           if (!is.na(v_random$type_model) & v_random$type_model == "ml_random_forest"){
             
             t1 <- Sys.time()
-            dl_fit1 <- h2o.randomForest(x = as.character(var_input_list),
+            dl_fit1 <- h2o::h2o.randomForest(x = as.character(var_input_list),
                                         y = y,
                                         ntrees = t$num_tree_random_forest,
                                         sample_rate = v$subsampling_rate_random_forest,
@@ -427,8 +427,8 @@ dash_h20 <- function(data = data,x,y,date_column, share_app = FALSE,port = NULL 
                                         seed = 1)
             t2 <- Sys.time()
             time_random_forest <- data.frame(`Training time` =  paste0(round(t2 - t1,1)," seconds"), Model = "Random forest")
-            importance_random_forest <- h2o.varimp(dl_fit1) %>% data.table::as.data.table() %>% select(variable,scaled_importance) %>% mutate(model = "Random forest")
-            table_random_forest<- h2o.predict(dl_fit1,data_h2o_test) %>% data.table::as.data.table() %>% mutate(predict = round(predict,3))  %>% rename(`Random forest` = predict)
+            importance_random_forest <- h2o::h2o.varimp(dl_fit1) %>% data.table::as.data.table() %>% select(variable,scaled_importance) %>% mutate(model = "Random forest")
+            table_random_forest<- h2o::h2o.predict(dl_fit1,data_h2o_test) %>% data.table::as.data.table() %>% mutate(predict = round(predict,3))  %>% rename(`Random forest` = predict)
             
           }
           
@@ -449,7 +449,7 @@ dash_h20 <- function(data = data,x,y,date_column, share_app = FALSE,port = NULL 
       })
       
       
-      output$date_essai <- renderDataTable({
+      output$date_essai <- DT::renderDataTable({
         
         
         performance_table <-  table_forecast()[['results']] %>% 
@@ -469,9 +469,9 @@ dash_h20 <- function(data = data,x,y,date_column, share_app = FALSE,port = NULL 
       })
       
       
-      output$table_of_results <- renderDataTable({
+      output$table_of_results <- DT::renderDataTable({
         
-        datatable(
+        DT::datatable(
           table_forecast()[['results']],
           extensions = 'Buttons', options = list(dom = 'Bfrtip',buttons = c('csv', 'excel', 'pdf', 'print'))
         ) 
@@ -480,23 +480,23 @@ dash_h20 <- function(data = data,x,y,date_column, share_app = FALSE,port = NULL 
       })
       
       
-      output$table_test <-renderDataTable({
+      output$table_test <-DT::renderDataTable({
         
         table_forecast()[['importance']]
       })
       
       
-      output$feature_importance <- renderPlotly({
+      output$feature_importance <- plotly::renderPlotly({
         
         if (nrow(table_forecast()[['importance']]) != 0){
-          ggplotly(
-            ggplot(data = table_forecast()[['importance']])+
-              geom_bar(aes(reorder(variable,scaled_importance),scaled_importance,fill =  model),stat = "identity",width = 0.3)+
-              facet_wrap(~ model)+
-              coord_flip()+
-              xlab("")+
-              ylab("")+
-              theme(legend.position="none")
+          plotly::ggplotly(
+            ggplot2::ggplot(data = table_forecast()[['importance']])+
+              ggplot2::geom_bar(ggplot2::aes(reorder(variable,scaled_importance),scaled_importance,fill =  model),stat = "identity",width = 0.3)+
+              ggplot2::facet_wrap(~ model)+
+              ggplot2::coord_flip()+
+              ggplot2::xlab("")+
+              ggplot2::ylab("")+
+              ggplot2::theme(legend.position="none")
           )
         }
         
@@ -507,12 +507,12 @@ dash_h20 <- function(data = data,x,y,date_column, share_app = FALSE,port = NULL 
       
       
       shiny::observeEvent(input$train_selector,{
-        updateSliderInput(session,'test_selector',
+        shiny::updateSliderInput(session,'test_selector',
                           value= c(input$train_selector[2],input$test_selector[2]) ) 
       })
       
       shiny::observeEvent(input$test_selector,{
-        updateSliderInput(session,'train_selector',
+        shiny::updateSliderInput(session,'train_selector',
                           value= c(input$train_selector[1],input$test_selector[1]) ) 
       })
       
@@ -527,11 +527,11 @@ dash_h20 <- function(data = data,x,y,date_column, share_app = FALSE,port = NULL 
     else if (nchar(port) == 4){
       ip_adress <- gsub(".*? ([[:digit:]])", "\\1", system("ipconfig", intern=TRUE)[grep("IPv4", system("ipconfig", intern=TRUE))]) 
       message("Forecast dashboard shared on LAN at ",ip_adress,":",port)
-      runApp(app,host = "0.0.0.0",port = port,quiet = TRUE)
+      shiny::runApp(app,host = "0.0.0.0",port = port,quiet = TRUE)
     }
   }
   
-  else {runApp(app)}
+  else {shiny::runApp(app)}
   
   
 }
