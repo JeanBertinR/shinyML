@@ -26,7 +26,8 @@
 #' dash_h20(data =longley2,x = c("GNP_deflator","Unemployed" ,"Armed_Forces","Employed"),
 #'   y = "GNP",date_column = "Year",share_app = TRUE,port = 3951)
 #'}
-#' @import shiny shinydashboard dygraphs data.table ggplot2
+#' @rawNamespace import (shiny,except = c(dataTableOutput,renderDataTable))
+#' @import shinydashboard dygraphs data.table ggplot2
 #' @importFrom dplyr %>% select mutate group_by summarise arrange rename
 #' @importFrom tidyr gather
 #' @importFrom DT renderDataTable dataTableOutput datatable
@@ -65,9 +66,9 @@ dash_h20 <- function(data = data,x,y,date_column, share_app = FALSE,port = NULL 
                       column(width = 12,
                                     tabBox(id = "results_models",
                                                            tabPanel("Result charts on test period",dygraphOutput("output_curve", height = 200, width = 930)),
-                                                           tabPanel("Compare models performances",DT::dataTableOutput("date_essai")),
+                                                           tabPanel("Compare models performances",dataTableOutput("date_essai")),
                                                            tabPanel("Feature importance",plotlyOutput("feature_importance")),
-                                                           tabPanel("Table of results",DT::dataTableOutput("table_of_results")), width = 12
+                                                           tabPanel("Table of results",dataTableOutput("table_of_results")), width = 12
                                              )
                                            )
                                          )

@@ -26,7 +26,8 @@
 #' dash_spark(data =longley2,x = c("GNP_deflator","Unemployed" ,"Armed_Forces","Employed"),
 #'   y = "GNP",date_column = "Year",share_app = TRUE,port = 3952)
 #'}
-#' @import shiny shinydashboard sparklyr dygraphs data.table ggplot2
+#' @rawNamespace import (shiny,except = c(dataTableOutput,renderDataTable))
+#' @import  shinydashboard sparklyr dygraphs data.table ggplot2
 #' @importFrom dplyr %>% select mutate group_by summarise arrange rename
 #' @importFrom plotly plotlyOutput renderPlotly ggplotly
 #' @importFrom DT renderDataTable dataTableOutput datatable
@@ -35,7 +36,7 @@
 #' @importFrom stats predict reorder
 #' @export
 
-dash_spark <- function(data = data,x,y,date_column, share_app = FALSE,port = NULL ){
+dash_spark <- function(data = data,x,y,date_column, share_app = FALSE,port = NULL){
   
   
   data <- data.table(data)

@@ -2,10 +2,10 @@
 
 export(dash_h20)
 export(dash_spark)
+import (shiny,except = c(dataTableOutput,renderDataTable))
 import(data.table)
 import(dygraphs)
 import(ggplot2)
-import(shiny)
 import(shinydashboard)
 import(sparklyr)
 importFrom(DT,dataTableOutput)
