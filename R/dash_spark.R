@@ -29,7 +29,7 @@
 #' @import shiny shinydashboard sparklyr dygraphs data.table ggplot2
 #' @importFrom dplyr %>% select mutate group_by summarise arrange rename
 #' @importFrom plotly plotlyOutput renderPlotly ggplotly
-#' @importFrom DT datatable
+#' @importFrom DT renderDataTable dataTableOutput datatable
 #' @importFrom tidyr gather
 #' @importFrom shinyWidgets materialSwitch
 #' @importFrom stats predict reorder

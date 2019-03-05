@@ -29,7 +29,7 @@
 #' @import shiny shinydashboard dygraphs data.table ggplot2
 #' @importFrom dplyr %>% select mutate group_by summarise arrange rename
 #' @importFrom tidyr gather
-#' @importFrom DT datatable
+#' @importFrom DT renderDataTable dataTableOutput datatable
 #' @importFrom h2o h2o.init as.h2o h2o.deeplearning h2o.varimp h2o.predict h2o.gbm h2o.glm h2o.randomForest
 #' @importFrom plotly plotlyOutput renderPlotly ggplotly
 #' @importFrom shinyWidgets materialSwitch
