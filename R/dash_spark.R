@@ -323,7 +323,7 @@ dash_spark <- function(data = data,x,y,date_column, share_app = FALSE,port = NUL
       })
       
       
-      output$date_essai <- renderDataTable({
+      output$date_essai <- DT::renderDataTable({
         
         performance_table <-  table_forecast()[['results']] %>% 
           gather(key = Model,value = Predicted_value,-date_column,-y) %>% 
@@ -335,7 +335,7 @@ dash_spark <- function(data = data,x,y,date_column, share_app = FALSE,port = NUL
           performance_table <- performance_table %>% merge(.,table_forecast()[['traning_time']],by = "Model")
         }
         
-        datatable(
+        DT::datatable(
           performance_table %>% arrange(`MAPE(%)`) %>% as.data.table()
           , extensions = 'Buttons', options = list(dom = 'Bfrtip',buttons = c('csv', 'excel', 'pdf', 'print'))
         )
@@ -461,9 +461,9 @@ dash_spark <- function(data = data,x,y,date_column, share_app = FALSE,port = NUL
         
       })
       
-      output$table_of_results <- renderDataTable({
+      output$table_of_results <- DT::renderDataTable({
         
-        datatable(
+        DT::datatable(
           table_forecast()[['results']],
           extensions = 'Buttons', options = list(dom = 'Bfrtip',buttons = c('csv', 'excel', 'pdf', 'print'))
         ) 
