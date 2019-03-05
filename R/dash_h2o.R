@@ -19,7 +19,6 @@
 #' @examples
 #'\dontrun{
 #' library(dashR)
-#' library(dplyr)
 #' Sys.setenv(http_proxy="") 
 #' Sys.setenv(http_proxy_user="") 
 #' Sys.setenv(https_proxy_user="")
@@ -27,7 +26,7 @@
 #' dash_h20(data =longley2,x = c("GNP_deflator","Unemployed" ,"Armed_Forces","Employed"),
 #'   y = "GNP",date_column = "Year",share_app = TRUE,port = 3951)
 #'}
-#' @import shiny shinydashboard dygraphs data.table  ggplot2
+#' @import shiny shinydashboard dygraphs data.table ggplot2
 #' @importFrom dplyr %>% select mutate group_by summarise arrange rename
 #' @importFrom tidyr gather
 #' @importFrom DT datatable

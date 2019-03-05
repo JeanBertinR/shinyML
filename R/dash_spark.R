@@ -19,7 +19,6 @@
 #' @examples
 #'\dontrun{
 #' library(dashR)
-#' library(dplyr)
 #' Sys.setenv(http_proxy="") 
 #' Sys.setenv(http_proxy_user="") 
 #' Sys.setenv(https_proxy_user="")
@@ -28,9 +27,9 @@
 #'   y = "GNP",date_column = "Year",share_app = TRUE,port = 3952)
 #'}
 #' @import shiny shinydashboard sparklyr dygraphs data.table ggplot2
-#' @importFrom DT datatable 
 #' @importFrom dplyr %>% select mutate group_by summarise arrange rename
 #' @importFrom plotly plotlyOutput renderPlotly ggplotly
+#' @importFrom DT datatable
 #' @importFrom tidyr gather
 #' @importFrom shinyWidgets materialSwitch
 #' @importFrom stats predict reorder

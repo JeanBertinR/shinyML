@@ -10,5 +10,7 @@ License: GPL-2
 Encoding: UTF-8
 LazyData: False
 Imports:
- dplyr,shiny,shinydashboard,h2o,shinyWidgets,dygraphs,data.table,plotly,sparklyr,DT,tidyr,ggplot2
+ shiny,shinydashboard,h2o,shinyWidgets,dygraphs,plotly,sparklyr,tidyr,ggplot2
+Depends:
+ dplyr,data.table,DT
 RoxygenNote: 6.1.1
