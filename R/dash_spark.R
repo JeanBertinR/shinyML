@@ -64,9 +64,9 @@ dash_spark <- function(data = data,x,y,date_column, share_app = FALSE,port = NUL
                           ),
                           column(width = 12,tabBox(id = "results_models",
                                                    tabPanel("Result charts on test period",dygraphOutput("output_curve",height = 200,width = 930)),
-                                                   tabPanel("Compare models performances",DT::dataTableOutput("date_essai")),
+                                                   tabPanel("Compare models performances",dataTableOutput("date_essai")),
                                                    tabPanel("Feature importance",plotlyOutput("feature_importance")),
-                                                   tabPanel("Table of results",DT::dataTableOutput("table_of_results")),width = 12
+                                                   tabPanel("Table of results",dataTableOutput("table_of_results")),width = 12
                           )
                           )
                         )
@@ -323,7 +323,7 @@ dash_spark <- function(data = data,x,y,date_column, share_app = FALSE,port = NUL
       })
       
       
-      output$date_essai <- DT::renderDataTable({
+      output$date_essai <- renderDataTable({
         
         performance_table <-  table_forecast()[['results']] %>% 
           gather(key = Model,value = Predicted_value,-date_column,-y) %>% 
@@ -335,7 +335,7 @@ dash_spark <- function(data = data,x,y,date_column, share_app = FALSE,port = NUL
           performance_table <- performance_table %>% merge(.,table_forecast()[['traning_time']],by = "Model")
         }
         
-        DT::datatable(
+        datatable(
           performance_table %>% arrange(`MAPE(%)`) %>% as.data.table()
           , extensions = 'Buttons', options = list(dom = 'Bfrtip',buttons = c('csv', 'excel', 'pdf', 'print'))
         )
@@ -461,9 +461,9 @@ dash_spark <- function(data = data,x,y,date_column, share_app = FALSE,port = NUL
         
       })
       
-      output$table_of_results <- DT::renderDataTable({
+      output$table_of_results <- renderDataTable({
         
-        DT::datatable(
+        datatable(
           table_forecast()[['results']],
           extensions = 'Buttons', options = list(dom = 'Bfrtip',buttons = c('csv', 'excel', 'pdf', 'print'))
         ) 
