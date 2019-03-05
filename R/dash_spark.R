@@ -29,7 +29,7 @@
 #' @import shiny shinydashboard sparklyr dygraphs data.table ggplot2
 #' @importFrom dplyr %>% select mutate group_by summarise arrange rename
 #' @importFrom plotly plotlyOutput renderPlotly ggplotly
-#' @importFrom DT renderDataTable datatable
+#' @importFrom DT datatable
 #' @importFrom tidyr gather
 #' @importFrom shinyWidgets materialSwitch
 #' @importFrom stats predict reorder
@@ -64,9 +64,9 @@ dash_spark <- function(data = data,x,y,date_column, share_app = FALSE,port = NUL
                           ),
                           column(width = 12,tabBox(id = "results_models",
                                                    tabPanel("Result charts on test period",dygraphOutput("output_curve",height = 200,width = 930)),
-                                                   tabPanel("Compare models performances",dataTableOutput("date_essai")),
+                                                   tabPanel("Compare models performances",DT::dataTableOutput("date_essai")),
                                                    tabPanel("Feature importance",plotlyOutput("feature_importance")),
-                                                   tabPanel("Table of results",dataTableOutput("table_of_results")),width = 12
+                                                   tabPanel("Table of results",DT::dataTableOutput("table_of_results")),width = 12
                           )
                           )
                         )
