@@ -14,36 +14,42 @@ knitr::opts_chunk$set(
 ```
 # dashR
 
-The goal of dashR is to ...
+Implement in one line of code a shareable web app to compare supervised machine learning regression models! 
+
+With dashR, you can compare your favorite regression models issued from H2O or Spark frameworks without any effort. 
+
+
 
 ## Installation
 
-You can install the released version of dashR frocqsdfsm [CRAN](https://CRAN.R-project.org) with:
 
-``` r
-install.packages("dashR")
+You can install the released version of dashR from [CRAN](https://CRAN.R-project.org) with:
+
+```{r eval=FALSE}
+install.packages("manipulateWidget")
 ```
 
-## Example
+You can also install the latest development version from github:
 
-This is a basic example which shows you how to solve a common problem:
-
-```{r example}
-## basic example code
+```{r eval=FALSE}
+devtools::install_github("JeanBertinR/dashR", ref="develop")
 ```
 
-What is special about using `README.Rmd` instead of just `README.md`? You can include R chunks like so:
+## Getting started
 
-```{r cars}
-summary(cars)
+This is a basic example which shows you how to run the app:
+
+```{r example, message=FALSE, out.width=600, out.height=400}
+
+library(dashR)
+longley2 <- longley %>% mutate(Year = as.Date(as.character(Year),format = "%Y"))
+#dash_spark(data =longley2,x = c("GNP_deflator","Unemployed" ,"Armed_Forces","Employed"),y = "GNP",date_column = "Year",share_app = TRUE,port = 3951)
 ```
 
-You'll still need to render `README.Rmd` regularly, to keep `README.md` up-to-date.
 
-You can also embed plots, for example:
+![An example of output of manipulateWidget](vignettes/run_glm.gif)
 
-```{r pressure, echo = FALSE}
-plot(pressure)
-```
 
-In that case, don't forget to commit and push the resulting figure files, so they display on GitHub!
+
+
+
