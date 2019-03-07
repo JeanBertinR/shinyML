@@ -15,7 +15,7 @@ You can install the released version of dashR from
 [CRAN](https://CRAN.R-project.org) with:
 
 ``` r
-install.packages("manipulateWidget")
+install.packages("dashR")
 ```
 
 You can also install the latest development version from github:
