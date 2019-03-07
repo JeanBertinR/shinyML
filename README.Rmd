@@ -39,11 +39,11 @@ devtools::install_github("JeanBertinR/dashR", ref="develop")
 
 This is a basic example which shows you how to run the app:
 
-```{r example, message=FALSE, out.width=600, out.height=400}
+```{r example, eval=FALSE, message=FALSE, out.width=600, out.height=400}
 
 library(dashR)
 longley2 <- longley %>% mutate(Year = as.Date(as.character(Year),format = "%Y"))
-#dash_spark(data =longley2,x = c("GNP_deflator","Unemployed" ,"Armed_Forces","Employed"),y = "GNP",date_column = "Year",share_app = TRUE,port = 3951)
+dash_spark(data =longley2,x = c("GNP_deflator","Unemployed" ,"Armed_Forces","Employed"),y = "GNP",date_column = "Year",share_app = TRUE,port = 3951)
 ```
 
 
