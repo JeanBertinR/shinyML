@@ -19,6 +19,7 @@
 #' @examples
 #'\dontrun{
 #' library(dashR)
+#' library(dplyr)
 #' Sys.setenv(http_proxy="") 
 #' Sys.setenv(http_proxy_user="") 
 #' Sys.setenv(https_proxy_user="")
@@ -26,17 +27,16 @@
 #' dash_spark(data =longley2,x = c("GNP_deflator","Unemployed" ,"Armed_Forces","Employed"),
 #'   y = "GNP",date_column = "Year",share_app = TRUE,port = 3952)
 #'}
-#' @rawNamespace import (shiny,except = c(dataTableOutput,renderDataTable))
-#' @import  shinydashboard sparklyr dygraphs data.table ggplot2
+#' @import shiny shinydashboard sparklyr dygraphs data.table ggplot2
+#' @importFrom DT datatable 
 #' @importFrom dplyr %>% select mutate group_by summarise arrange rename
 #' @importFrom plotly plotlyOutput renderPlotly ggplotly
-#' @importFrom DT renderDataTable dataTableOutput datatable
 #' @importFrom tidyr gather
 #' @importFrom shinyWidgets materialSwitch
 #' @importFrom stats predict reorder
 #' @export
 
-dash_spark <- function(data = data,x,y,date_column, share_app = FALSE,port = NULL){
+dash_spark <- function(data = data,x,y,date_column, share_app = FALSE,port = NULL ){
   
   
   data <- data.table(data)
@@ -272,7 +272,8 @@ dash_spark <- function(data = data,x,y,date_column, share_app = FALSE,port = NUL
         
         
 
-        curve_entries <- dygraph(data = eval(parse(text = paste0("data.table:::`[.data.table`(data,j =.(",date_column,",",y,"))")))) %>%
+        curve_entries <- dygraph(data = eval(parse(text = paste0("data.table:::`[.data.table`(data,j =.(",date_column,",",y,"))"))),
+                                 main = paste("Evolution of",y,"as a function of time")) %>%
           dyShading(from = input$train_selector[1],to = input$train_selector[2],color = "snow" ) %>%
           dyShading(from = input$test_selector[1],to = input$test_selector[2],color = "azure" ) %>%
           dyEvent(x = input$train_selector[1]) %>%
@@ -280,7 +281,7 @@ dash_spark <- function(data = data,x,y,date_column, share_app = FALSE,port = NUL
           dyEvent(x = input$test_selector[2]) %>%
           dySeries(y,fillGraph = TRUE) %>% 
           dyAxis("y",valueRange = c(0,1.5 * max(eval(parse(text =paste0("data$",y)))))) %>% 
-          dyOptions(colors = "blue")
+          dyOptions(colors = "darkblue")
         
         
         
