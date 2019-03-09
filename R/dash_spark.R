@@ -271,9 +271,10 @@ dash_spark <- function(data = data,x,y,date_column, share_app = FALSE,port = NUL
         data <- as.data.table(data)
         
         
-
-        curve_entries <- dygraph(data = eval(parse(text = paste0("data.table:::`[.data.table`(data,j =.(",date_column,",",y,"))"))),
-                                 main = paste("Evolution of",y,"as a function of time")) %>%
+        curve_entries <- dygraph(data = eval(parse(text = paste0("data[,.(",date_column,",",y,")]"))),
+                                 main = paste("Evolution of",y,"as a function of time")) %>% 
+        #dygraph(data = eval(parse(text = paste0("data.table::data.table:::`[.data.table::data.table`(data,j =.(",date_column,",",y,"))"))),
+                  
           dyShading(from = input$train_selector[1],to = input$train_selector[2],color = "snow" ) %>%
           dyShading(from = input$test_selector[1],to = input$test_selector[2],color = "azure" ) %>%
           dyEvent(x = input$train_selector[1]) %>%
