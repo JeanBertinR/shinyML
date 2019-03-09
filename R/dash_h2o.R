@@ -26,11 +26,10 @@
 #' dash_h20(data =longley2,x = c("GNP_deflator","Unemployed" ,"Armed_Forces","Employed"),
 #'   y = "GNP",date_column = "Year",share_app = TRUE,port = 3951)
 #'}
-#' @rawNamespace import (shiny,except = c(dataTableOutput,renderDataTable))
-#' @import shinydashboard dygraphs data.table ggplot2
+#' @import shiny shinydashboard dygraphs data.table ggplot2
 #' @importFrom dplyr %>% select mutate group_by summarise arrange rename
 #' @importFrom tidyr gather
-#' @importFrom DT renderDataTable dataTableOutput datatable
+#' @importFrom DT renderDT DTOutput datatable
 #' @importFrom h2o h2o.init as.h2o h2o.deeplearning h2o.varimp h2o.predict h2o.gbm h2o.glm h2o.randomForest
 #' @importFrom plotly plotlyOutput renderPlotly ggplotly
 #' @importFrom shinyWidgets materialSwitch
@@ -66,9 +65,9 @@ dash_h20 <- function(data = data,x,y,date_column, share_app = FALSE,port = NULL 
                       column(width = 12,
                                     tabBox(id = "results_models",
                                                            tabPanel("Result charts on test period",dygraphOutput("output_curve", height = 200, width = 930)),
-                                                           tabPanel("Compare models performances",dataTableOutput("date_essai")),
+                                                           tabPanel("Compare models performances",DTOutput("date_essai")),
                                                            tabPanel("Feature importance",plotlyOutput("feature_importance")),
-                                                           tabPanel("Table of results",dataTableOutput("table_of_results")), width = 12
+                                                           tabPanel("Table of results",DTOutput("table_of_results")), width = 12
                                              )
                                            )
                                          )
@@ -317,7 +316,8 @@ dash_h20 <- function(data = data,x,y,date_column, share_app = FALSE,port = NULL 
       output$input_curve <- renderDygraph({
         
         
-        curve_entries <- dygraph(data = eval(parse(text = paste0("data.table:::`[.data.table`(data,j =.(",date_column,",",y,"))"))))  %>%
+        curve_entries <- dygraph(data = eval(parse(text = paste0("data[,.(",date_column,",",y,")]"))),
+                                 main = paste("Evolution of",y,"as a function of time")) %>% 
           dyShading(from = input$train_selector[1],to = input$train_selector[2],color = "snow" ) %>%
           dyShading(from = input$test_selector[1],to = input$test_selector[2],color = "azure" ) %>%
           dyEvent(x = input$train_selector[1]) %>%
@@ -340,7 +340,7 @@ dash_h20 <- function(data = data,x,y,date_column, share_app = FALSE,port = NULL 
       output$output_curve <- renderDygraph({
         
         
-        output_dygraph <- dygraph(data = table_forecast()[['results']]) %>%
+        output_dygraph <- dygraph(data = table_forecast()[['results']],main = "Prediction results on test period") %>%
           dyAxis("y",valueRange = c(0,1.5 * max(eval(parse(text =paste0("table_forecast()[['results']]$",y)))))) 
         
         if (input$bar_chart_mode == TRUE){
@@ -470,7 +470,7 @@ dash_h20 <- function(data = data,x,y,date_column, share_app = FALSE,port = NULL 
       })
       
       
-      output$date_essai <- renderDataTable({
+      output$date_essai <- renderDT({
         
         
         performance_table <-  table_forecast()[['results']] %>% 
@@ -490,7 +490,7 @@ dash_h20 <- function(data = data,x,y,date_column, share_app = FALSE,port = NULL 
       })
       
       
-      output$table_of_results <- renderDataTable({
+      output$table_of_results <- renderDT({
         
         datatable(
           table_forecast()[['results']],
@@ -498,10 +498,10 @@ dash_h20 <- function(data = data,x,y,date_column, share_app = FALSE,port = NULL 
         ) 
         
         
-      })
+      },server = FALSE)
       
       
-      output$table_test <-renderDataTable({
+      output$table_test <-renderDT({
         
         table_forecast()[['table_importance']]
       })

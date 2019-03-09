@@ -27,6 +27,7 @@ This function creates in one line of code a shareable web app to compare supervi
 \examples{
 \dontrun{
 library(dashR)
+library(dplyr)
 Sys.setenv(http_proxy="") 
 Sys.setenv(http_proxy_user="") 
 Sys.setenv(https_proxy_user="")
