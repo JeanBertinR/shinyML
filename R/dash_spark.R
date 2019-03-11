@@ -356,9 +356,10 @@ dash_spark <- function(data = data,x,y,date_column, share_app = FALSE,port = NUL
         
         if (var_input_list != "+"){  
           
+
           
-          data_spark_train <- eval(parse(text = paste0( "data %>% filter(",date_column,"<='", test_1$date,"') %>% as.data.table()")))
-          data_spark_test <- eval(parse(text = paste0("data %>% filter(",date_column,">'", test_1$date,"') %>% as.data.table()")))
+          data_spark_train <- eval(parse(text = paste0("data[",date_column,"<='",test_1$date,"',]")))
+          data_spark_test <- eval(parse(text = paste0("data[",date_column,">'",test_1$date,"',]")))
           
           data_spark_train <- copy_to(sc, data_spark_train, "data_spark_train", overwrite = TRUE)
           data_spark_test <- copy_to(sc, data_spark_test, "data_spark_test", overwrite = TRUE)

@@ -5,6 +5,10 @@ library(dplyr)
 library(shinyWidgets)
 library(tidyr)
 library(DT)
+library(h2o)
+library(dygraphs)
+library(plotly)
+library(sparklyr)
 
   
 longley2 <- longley %>% mutate(Year = as.Date(as.character(Year),format = "%Y"))

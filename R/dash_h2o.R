@@ -44,6 +44,7 @@ dash_h20 <- function(data = data,x,y,date_column, share_app = FALSE,port = NULL 
   
 
   data <- data.table(data)
+  x <- gsub("_",".",x)
   
   app <- shinyApp(
     
@@ -119,7 +120,7 @@ dash_h20 <- function(data = data,x,y,date_column, share_app = FALSE,port = NULL 
                                       sliderInput(label = "Number of trees",min = 1,max = 100, inputId = "num_tree_random_forest",value = 20),
                                       sliderInput(label = "Subsampling rate",min = 0.1,max = 1, inputId = "subsampling_rate_random_forest",value = 1),
                                       sliderInput(label = "Max depth",min = 1,max = 20, inputId = "max_depth_random_forest",value = 5),
-                                      actionButton("run_random_forest","Run random forest model",style = 'color:white; background-color:darkblue; padding:4px; font-size:150%',
+                                      actionButton("run_random_forest","Run random forest model",style = 'color:white; background-color:red; padding:4px; font-size:150%',
                                                    icon = icon("users",lib = "font-awesome"))
                                       
                                       ,width = 3),
@@ -141,7 +142,7 @@ dash_h20 <- function(data = data,x,y,date_column, share_app = FALSE,port = NULL 
                                       sliderInput(label = "Epochs",min = 10,max = 100, inputId = "epochs_neural_net",value = 10),
                                       sliderInput(label = "Learning rate",min = 0.001,max = 0.1, inputId = "rate_neural_net",value = 0.005),
                                       
-                                      actionButton("run_neural_network","Run neural network regression",style = 'color:white; background-color:orange; padding:4px; font-size:150%',
+                                      actionButton("run_neural_network","Run neural network regression",style = 'color:white; background-color:blue; padding:4px; font-size:150%',
                                                    icon = icon("cogs",lib = "font-awesome"))
                                       ,width = 3 ),
                                     
@@ -175,6 +176,7 @@ dash_h20 <- function(data = data,x,y,date_column, share_app = FALSE,port = NULL 
     server = function(session, input, output) {
       set.seed(122)
       model <- reactiveValues()
+      train_1 <- reactiveValues()
       test_1 <- reactiveValues(date = eval(parse(text = paste0("mean(data$",date_column,")"))))
       table_neural_network <- data.table(`Neural network` = NA)
       table_gradient_boosting <- data.table(`Gradient boosted trees` = NA)
@@ -214,6 +216,7 @@ dash_h20 <- function(data = data,x,y,date_column, share_app = FALSE,port = NULL 
       
       observeEvent(input$train_all,{
         
+        train_1$date <- input$train_selector[1]
         test_1$date <- input$test_selector[1]
         model$train_variables <- input$input_variables
         v_neural$type_model <- "ml_neural_network"
@@ -248,6 +251,7 @@ dash_h20 <- function(data = data,x,y,date_column, share_app = FALSE,port = NULL 
       
       observeEvent(input$run_neural_network,{
         
+        train_1$date <- input$train_selector[1]
         test_1$date <- input$test_selector[1]
         model$train_variables <- input$input_variables
         v_neural$type_model <- "ml_neural_network"
@@ -265,6 +269,7 @@ dash_h20 <- function(data = data,x,y,date_column, share_app = FALSE,port = NULL 
       
       observeEvent(input$run_gradient_boosting,{
         
+        train_1$date <- input$train_selector[1]
         test_1$date <- input$test_selector[1]
         model$train_variables <- input$input_variables
         v_grad$type_model <- "ml_gradient_boosted_trees"
@@ -281,6 +286,7 @@ dash_h20 <- function(data = data,x,y,date_column, share_app = FALSE,port = NULL 
       
       observeEvent(input$run_glm,{
         
+        train_1$date <- input$train_selector[1]
         test_1$date <- input$test_selector[1]
         model$train_variables <- input$input_variables
         v_grad$type_model <- NA
@@ -289,7 +295,6 @@ dash_h20 <- function(data = data,x,y,date_column, share_app = FALSE,port = NULL 
         v_glm$type_model <- "ml_generalized_linear_regression"
         
         f$family_glm <- input$glm_family
-        i$intercept_glm <- input$intercept_term_glm
         x$reg_param_glm <- input$reg_param_glm
         x$alpha_param_glm <- input$alpha_param_glm
         x$max_iter_glm <- input$max_iter_glm
@@ -298,6 +303,7 @@ dash_h20 <- function(data = data,x,y,date_column, share_app = FALSE,port = NULL 
       
       observeEvent(input$run_random_forest,{
         
+        train_1$date <- input$train_selector[1]
         test_1$date <- input$test_selector[1]
         model$train_variables <- input$input_variables
         v_grad$type_model <- NA
@@ -367,8 +373,10 @@ dash_h20 <- function(data = data,x,y,date_column, share_app = FALSE,port = NULL 
         
         if (length(var_input_list) != 0){   
           
-          data_train <- eval(parse(text = paste0("data %>% filter(",date_column,"<='", test_1$date,"') %>% as.data.table()")))
-          data_test <- eval(parse(text = paste0("data %>% filter(",date_column,">'", test_1$date,"') %>% as.data.table()")))
+
+          data_train <- eval(parse(text = paste0("data[",date_column,"<='",test_1$date,"',][",date_column,">='",train_1$date,"',]")))
+          
+          data_test <- eval(parse(text = paste0("data[",date_column,">'",test_1$date,"',]")))
           
           data_h2o_train <- as.h2o(data_train)
           data_h2o_test <- as.h2o(data_test)
@@ -558,6 +566,9 @@ dash_h20 <- function(data = data,x,y,date_column, share_app = FALSE,port = NULL 
 }
 
 
+dash_h20(data =longley2,x = c("Unemployed" ,"Armed_Forces","Employed"),
+         y = "GNP",date_column = "Year",share_app = TRUE,port = 3951)
 
 
+x <- c("Unemployed" ,"ArmedForces","Employed")
 
