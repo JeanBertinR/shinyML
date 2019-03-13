@@ -39,45 +39,45 @@
 #' @export
 
 dash_h20 <- function(data = data,x,y,date_column, share_app = FALSE,port = NULL ){
-
+  
   h2o.init(port = 54321)
   
-
+  
   data <- data.table(data)
   x <- gsub("_",".",x)
   
   app <- shinyApp(
     
     ui = dashboardPage(skin = "black",
-            dashboardHeader(title = "H2O"),
-              dashboardSidebar(
-                sidebarMenu(
-                  menuItem("Dashboard", tabName = "dashboard", icon = icon("dashboard"),
-                      materialSwitch(inputId = "bar_chart_mode",label = "Bar chart mode",status = "primary",value = TRUE)
+                       dashboardHeader(title = "H2O"),
+                       dashboardSidebar(
+                         sidebarMenu(
+                           menuItem("Dashboard", tabName = "dashboard", icon = icon("dashboard"),
+                                    materialSwitch(inputId = "bar_chart_mode",label = "Bar chart mode",status = "primary",value = TRUE)
                            )
                          )),
                        
-            dashboardBody(
-              fluidPage(
-                column(width = 12,
-                  column(width = 8,
-                    fluidRow(
-                      column(width = 12,box(dygraphOutput("input_curve", height = 120, width = 930),width = 12)),
-                      column(width = 12,
-                                    tabBox(id = "results_models",
-                                                           tabPanel("Result charts on test period",dygraphOutput("output_curve", height = 200, width = 930)),
-                                                           tabPanel("Compare models performances",DTOutput("date_essai")),
-                                                           tabPanel("Feature importance",plotlyOutput("feature_importance")),
-                                                           tabPanel("Table of results",DTOutput("table_of_results")), width = 12
-                                             )
+                       dashboardBody(
+                         fluidPage(
+                           column(width = 12,
+                                  column(width = 8,
+                                         fluidRow(
+                                           column(width = 12,box(dygraphOutput("input_curve", height = 120, width = 930),width = 12)),
+                                           column(width = 12,
+                                                  tabBox(id = "results_models",
+                                                         tabPanel("Result charts on test period",dygraphOutput("output_curve", height = 200, width = 930)),
+                                                         tabPanel("Compare models performances",DTOutput("date_essai")),
+                                                         tabPanel("Feature importance",plotlyOutput("feature_importance")),
+                                                         tabPanel("Table of results",DTOutput("table_of_results")), width = 12
+                                                  )
                                            )
                                          )
                                          
                                   ),
                                   
-                  column(width = 4,align="center",
-                                fluidRow(
-                                  box(
+                                  column(width = 4,align="center",
+                                         fluidRow(
+                                           box(
                                              title = "Controls",
                                              selectInput( inputId  = "input_variables",label = "Input variables: ",choices = x,multiple = TRUE,selected = x),
                                              sliderInput("train_selector", "Choose train period:",
@@ -95,10 +95,10 @@ dash_h20 <- function(data = data,x,y,date_column, share_app = FALSE,port = NULL 
                                   )
                            ),
                            
-                column(width = 12,align = "center",
-                              fluidRow(
+                           column(width = 12,align = "center",
+                                  fluidRow(
                                     
-                                box(
+                                    box(
                                       title = "Generalized linear regresion",status = "warning",
                                       column(
                                         radioButtons(label = "Family",inputId = "glm_family",choices = c("gaussian","poisson", "gamma","tweedie"),
@@ -108,25 +108,25 @@ dash_h20 <- function(data = data,x,y,date_column, share_app = FALSE,port = NULL 
                                       
                                       materialSwitch(label = "Intercept term",inputId = "intercept_term_glm",status = "primary",value = TRUE),
                                       sliderInput(label = "Lambda",inputId = "reg_param_glm",min = 0,max = 10,value = 0),
-                                      sliderInput(label = "Alpha (0:Ridge <-> 1:Lasso)",inputId = "alpha_param_glm",min = 0,max = 1,value = 0),
+                                      sliderInput(label = "Alpha (0:Ridge <-> 1:Lasso)",inputId = "alpha_param_glm",min = 0,max = 1,value = 0.5),
                                       sliderInput(label = "Maximum iteraions",inputId = "max_iter_glm",min = 50,max = 300,value = 100),
                                       actionButton("run_glm","Run generalized linear regression",style = 'color:white; background-color:orange; padding:4px; font-size:150%',
                                                    icon = icon("cogs",lib = "font-awesome"))
                                       ,width = 3 ),
                                     
-                                box(
+                                    box(
                                       title = "Random Forest",status = "danger",
                                       
-                                      sliderInput(label = "Number of trees",min = 1,max = 100, inputId = "num_tree_random_forest",value = 20),
-                                      sliderInput(label = "Subsampling rate",min = 0.1,max = 1, inputId = "subsampling_rate_random_forest",value = 1),
-                                      sliderInput(label = "Max depth",min = 1,max = 20, inputId = "max_depth_random_forest",value = 5),
+                                      sliderInput(label = "Number of trees",min = 1,max = 100, inputId = "num_tree_random_forest",value = 50),
+                                      sliderInput(label = "Subsampling rate",min = 0.1,max = 1, inputId = "subsampling_rate_random_forest",value = 0.6320000291),
+                                      sliderInput(label = "Max depth",min = 1,max = 50, inputId = "max_depth_random_forest",value = 20),
                                       actionButton("run_random_forest","Run random forest model",style = 'color:white; background-color:red; padding:4px; font-size:150%',
                                                    icon = icon("users",lib = "font-awesome"))
                                       
                                       ,width = 3),
                                     
                                     
-                                box(
+                                    box(
                                       title = "Neural network model",status = "primary",
                                       
                                       column(
@@ -149,7 +149,7 @@ dash_h20 <- function(data = data,x,y,date_column, share_app = FALSE,port = NULL 
                                     
                                     
                                     
-                                box(
+                                    box(
                                       title = "Gradient boosting trees",status = "success",
                                       
                                       
@@ -169,7 +169,7 @@ dash_h20 <- function(data = data,x,y,date_column, share_app = FALSE,port = NULL 
                        )
     ),
     
-
+    
     
     
     
@@ -342,7 +342,7 @@ dash_h20 <- function(data = data,x,y,date_column, share_app = FALSE,port = NULL 
       })
       
       
-       
+      
       output$output_curve <- renderDygraph({
         
         
@@ -373,7 +373,7 @@ dash_h20 <- function(data = data,x,y,date_column, share_app = FALSE,port = NULL 
         
         if (length(var_input_list) != 0){   
           
-
+          
           data_train <- eval(parse(text = paste0("data[",date_column,"<='",test_1$date,"',][",date_column,">='",train_1$date,"',]")))
           
           data_test <- eval(parse(text = paste0("data[",date_column,">'",test_1$date,"',]")))
@@ -392,8 +392,7 @@ dash_h20 <- function(data = data,x,y,date_column, share_app = FALSE,port = NULL 
                                         loss = f$loss_neural_net,
                                         hidden = eval(parse(text = k$hidden_neural_net)) ,
                                         epochs = x$epochs_neural_net,
-                                        rate = x$rate_neural_net,
-                                        seed = 1)
+                                        rate = x$rate_neural_net)
             t2 <- Sys.time()
             
             time_neural_network <- data.frame(`Training time` =  paste0(round(t2 - t1,1)," seconds"), Model = "Neural network")
@@ -413,8 +412,7 @@ dash_h20 <- function(data = data,x,y,date_column, share_app = FALSE,port = NULL 
                                max_depth = x$max_depth_gbm,
                                learn_rate = x$learn_rate_gbm,
                                training_frame = data_h2o_train,
-                               model_id = "dl_fit1",min_rows = 1,
-                               seed = 1)
+                               model_id = "dl_fit1")
             t2 <- Sys.time()
             time_gbm <- data.frame(`Training time` =  paste0(round(t2 - t1,1)," seconds"), Model = "Gradient boosted trees") 
             importance_gbm <- h2o.varimp(dl_fit1) %>% as.data.table() %>% select(`variable`,scaled_importance) %>% mutate(model = "Gradient boosted trees")
@@ -434,8 +432,7 @@ dash_h20 <- function(data = data,x,y,date_column, share_app = FALSE,port = NULL 
                                alpha = x$alpha_param_glm,
                                max_iterations = x$max_iter_glm,
                                training_frame = data_h2o_train,
-                               model_id = "dl_fit1",
-                               seed = 1)
+                               model_id = "dl_fit1")
             t2 <- Sys.time()
             time_glm <- data.frame(`Training time` =  paste0(round(t2 - t1,1)," seconds"), Model = "Generalized linear regression")
             table_glm <- h2o.predict(dl_fit1,data_h2o_test) %>% as.data.table() %>% mutate(predict = round(predict,3)) %>% rename(`Generalized linear regression` = predict)
@@ -452,8 +449,7 @@ dash_h20 <- function(data = data,x,y,date_column, share_app = FALSE,port = NULL 
                                         sample_rate = v$subsampling_rate_random_forest,
                                         max_depth = x$max_depth_random_forest,
                                         training_frame = data_h2o_train,
-                                        model_id = "dl_fit1",
-                                        seed = 1)
+                                        model_id = "dl_fit1")
             t2 <- Sys.time()
             time_random_forest <- data.frame(`Training time` =  paste0(round(t2 - t1,1)," seconds"), Model = "Random forest")
             importance_random_forest <- h2o.varimp(dl_fit1) %>% as.data.table() %>% select(`variable`,scaled_importance) %>% mutate(model = "Random forest")
@@ -571,4 +567,3 @@ dash_h20(data =longley2,x = c("Unemployed" ,"Armed_Forces","Employed"),
 
 
 x <- c("Unemployed" ,"ArmedForces","Employed")
-

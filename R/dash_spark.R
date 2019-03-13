@@ -116,7 +116,7 @@ dash_spark <- function(data = data,x,y,date_column, share_app = FALSE,port = NUL
                    box(
                      title = "Decision tree",status = "danger",
                      
-                     sliderInput(label = "Max depth",inputId = "max_depth_decision_tree",min = 1,max = 20,value = 5),
+                     sliderInput(label = "Max depth",inputId = "max_depth_decision_tree",min = 1,max = 50,value = 20),
                      sliderInput(label = "Max bins",inputId = "max_bins_decision_tree",min = 2,max = 60,value = 32),
                      sliderInput(label = "Min instance per node",inputId = "min_instance_decision_tree",min = 1,max = 10,value = 1),
                      actionButton("run_decision_tree","Run decision tree regression",style = 'color:white; background-color:red; padding:4px; font-size:150%',
@@ -127,9 +127,9 @@ dash_spark <- function(data = data,x,y,date_column, share_app = FALSE,port = NUL
                    box(
                      title = "Random Forest",status = "primary",
                      
-                     sliderInput(label = "Number of trees",min = 1,max = 100, inputId = "num_tree_random_forest",value = 20),
+                     sliderInput(label = "Number of trees",min = 1,max = 100, inputId = "num_tree_random_forest",value = 50),
                      sliderInput(label = "Subsampling rate",min = 0.1,max = 1, inputId = "subsampling_rate_random_forest",value = 1),
-                     sliderInput(label = "Max depth",min = 1,max = 20, inputId = "max_depth_random_forest",value = 5),
+                     sliderInput(label = "Max depth",min = 1,max = 50, inputId = "max_depth_random_forest",value = 20),
                      actionButton("run_random_forest","Run random forest model",style = 'color:white; background-color:darkblue; padding:4px; font-size:150%',
                                   icon = icon("users",lib = "font-awesome"))
                      
@@ -356,7 +356,7 @@ dash_spark <- function(data = data,x,y,date_column, share_app = FALSE,port = NUL
         
         if (var_input_list != "+"){  
           
-
+          
           
           data_spark_train <- eval(parse(text = paste0("data[",date_column,"<='",test_1$date,"',]")))
           data_spark_test <- eval(parse(text = paste0("data[",date_column,">'",test_1$date,"',]")))
@@ -370,7 +370,7 @@ dash_spark <- function(data = data,x,y,date_column, share_app = FALSE,port = NUL
             
             t1 <- Sys.time()
             
-
+            
             eval(parse(text = paste0("fit <- data_spark_train %>% ml_gradient_boosted_trees(", y ," ~ " ,var_input_list ,
                                      ",step_size =",t$step_size_gbm,
                                      ",subsampling_rate =",v$subsampling_rate_gbm,
@@ -382,7 +382,7 @@ dash_spark <- function(data = data,x,y,date_column, share_app = FALSE,port = NUL
             
             table_ml_gradient_boosted <- sdf_predict(data_spark_test, fit) %>% collect %>% as.data.frame() %>% select(prediction) %>% mutate(prediction = round(prediction,3)) %>% 
               rename(`Gradient boosted trees` = prediction)
-
+            
           }
           
           if (!is.na(v_random$type_model) & v_random$type_model == "ml_random_forest"){
@@ -399,7 +399,7 @@ dash_spark <- function(data = data,x,y,date_column, share_app = FALSE,port = NUL
             
             table_ml_random_forest <- sdf_predict(data_spark_test, fit) %>% collect %>% as.data.frame() %>% select(prediction)%>% mutate(prediction = round(prediction,3)) %>% 
               rename(`Random forest` = prediction)
-
+            
           }
           
           if (!is.na(v_glm$type_model) & v_glm$type_model == "ml_generalized_linear_regression"){
@@ -417,7 +417,7 @@ dash_spark <- function(data = data,x,y,date_column, share_app = FALSE,port = NUL
             
             table_ml_glm <- sdf_predict(data_spark_test, fit) %>% collect %>% as.data.frame() %>% select(prediction)%>% mutate(prediction = round(prediction,3)) %>% 
               rename(`Generalized linear regression` = prediction)
-
+            
           }
           
           if (!is.na(v_decision_tree$type_model) & v_decision_tree$type_model == "ml_decision_tree"){
@@ -434,7 +434,7 @@ dash_spark <- function(data = data,x,y,date_column, share_app = FALSE,port = NUL
             
             table_ml_decision_tree <- sdf_predict(data_spark_test, fit) %>% collect %>% as.data.frame() %>% select(prediction)%>% mutate(prediction = round(prediction,3)) %>% 
               rename(`Decision tree` = prediction)
-
+            
           }
           
         }
@@ -522,4 +522,3 @@ dash_spark <- function(data = data,x,y,date_column, share_app = FALSE,port = NUL
   else {runApp(app)}
   
 }
-
