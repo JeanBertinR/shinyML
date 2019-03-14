@@ -30,7 +30,7 @@
 #' @importFrom dplyr %>% select mutate group_by summarise arrange rename
 #' @importFrom tidyr gather
 #' @importFrom DT renderDT DTOutput datatable
-#' @importFrom h2o h2o.init as.h2o h2o.deeplearning h2o.varimp h2o.predict h2o.gbm h2o.glm h2o.randomForest
+#' @importFrom h2o h2o.init as.h2o h2o.deeplearning h2o.varimp h2o.predict h2o.gbm h2o.glm h2o.randomForest h2o.automl
 #' @importFrom plotly plotlyOutput renderPlotly ggplotly
 #' @importFrom shinyWidgets materialSwitch
 #' @importFrom stats predict reorder
@@ -40,10 +40,8 @@
 
 dash_h20 <- function(data = data,x,y,date_column, share_app = FALSE,port = NULL ){
   
-  h2o.init(port = 54321)
-  
-  
   data <- data.table(data)
+  
   x <- gsub("_",".",x)
   
   app <- shinyApp(
@@ -88,8 +86,11 @@ dash_h20 <- function(data = data,x,y,date_column, share_app = FALSE,port = NULL 
                                                          min = eval(parse(text = paste0("min(data$",date_column,")"))),
                                                          max = eval(parse(text = paste0("max(data$",date_column,")"))),
                                                          value = eval(parse(text = paste0("c(mean(data$",date_column,"),max(data$",date_column,"))")))),
-                                             actionButton("train_all","Run all models !",style = 'color:white; background-color:red; padding:4px; font-size:150%',
-                                                          icon = icon("cogs",lib = "font-awesome")),width = 12,height = 425
+                                             actionButton("train_all","Run tuned models !",style = 'color:white; background-color:red; padding:4px; font-size:150%',
+                                                          icon = icon("cogs",lib = "font-awesome")),
+                                             actionButton("run_auto_ml","Run auto ML",style = 'color:white; background-color:red; padding:4px; font-size:150%',
+                                                          icon = icon("cogs",lib = "font-awesome")),
+                                             width = 12,height = 425
                                            )
                                          )
                                   )
@@ -142,7 +143,7 @@ dash_h20 <- function(data = data,x,y,date_column, share_app = FALSE,port = NULL 
                                       sliderInput(label = "Epochs",min = 10,max = 100, inputId = "epochs_neural_net",value = 10),
                                       sliderInput(label = "Learning rate",min = 0.001,max = 0.1, inputId = "rate_neural_net",value = 0.005),
                                       
-                                      actionButton("run_neural_network","Run neural network regression",style = 'color:white; background-color:blue; padding:4px; font-size:150%',
+                                      actionButton("run_neural_network","Run neural network regression",style = 'color:white; background-color:darkblue; padding:4px; font-size:150%',
                                                    icon = icon("cogs",lib = "font-awesome"))
                                       ,width = 3 ),
                                     
@@ -163,6 +164,7 @@ dash_h20 <- function(data = data,x,y,date_column, share_app = FALSE,port = NULL 
                                                    icon = icon("users",lib = "font-awesome"))
                                       
                                       ,width = 3)
+                                    
                                   )
                            )
                          )
@@ -175,20 +177,23 @@ dash_h20 <- function(data = data,x,y,date_column, share_app = FALSE,port = NULL 
     
     server = function(session, input, output) {
       set.seed(122)
+      
       model <- reactiveValues()
       train_1 <- reactiveValues()
+      
       test_1 <- reactiveValues(date = eval(parse(text = paste0("mean(data$",date_column,")"))))
       table_neural_network <- data.table(`Neural network` = NA)
       table_gradient_boosting <- data.table(`Gradient boosted trees` = NA)
       table_glm <- data.table(`Generalized linear regression` = NA)
       table_random_forest <-data.table(`Random forest` = NA) 
-      
+      table_auto_ml <-data.table(`Auto ML` = NA) 
       
       
       v_neural <- reactiveValues(type_model = NA)
       v_grad <- reactiveValues(type_model = NA)
       v_glm <- reactiveValues(type_model = NA)
       v_random <- reactiveValues(type_model = NA)
+      v_auto_ml <- reactiveValues(type_model = NA)
       
       
       t <- reactiveValues()
@@ -201,7 +206,7 @@ dash_h20 <- function(data = data,x,y,date_column, share_app = FALSE,port = NULL 
       time_random_forest <- data.table()
       time_glm <- data.table()
       time_neural_network <- data.table()
-      
+      time_auto_ml <- data.table()
       
       importance_gbm <- data.table()
       importance_random_forest <- data.table()
@@ -223,6 +228,7 @@ dash_h20 <- function(data = data,x,y,date_column, share_app = FALSE,port = NULL 
         v_grad$type_model <- "ml_gradient_boosted_trees"
         v_glm$type_model <- "ml_generalized_linear_regression"
         v_random$type_model <- "ml_random_forest"
+        v_auto_ml$type_model <- NA
         
         f$family_glm <- input$glm_family
         x$reg_param_glm <- input$reg_param_glm
@@ -258,6 +264,7 @@ dash_h20 <- function(data = data,x,y,date_column, share_app = FALSE,port = NULL 
         v_grad$type_model <- NA
         v_glm$type_model <- NA
         v_random$type_model <- NA
+        v_auto_ml$type_model <- NA
         
         k$hidden_neural_net <- input$hidden_neural_net
         x$epochs_neural_net <- input$epochs_neural_net
@@ -276,6 +283,7 @@ dash_h20 <- function(data = data,x,y,date_column, share_app = FALSE,port = NULL 
         v_neural$type_model <- NA
         v_glm$type_model <- NA
         v_random$type_model <- NA
+        v_auto_ml$type_model <- NA
         
         v$subsampling_rate_gbm <- input$subsampling_rate_gbm
         x$n_trees_gbm <- input$n_trees_gbm
@@ -292,6 +300,8 @@ dash_h20 <- function(data = data,x,y,date_column, share_app = FALSE,port = NULL 
         v_grad$type_model <- NA
         v_neural$type_model <- NA
         v_random$type_model <- NA
+        v_auto_ml$type_model <- NA
+        
         v_glm$type_model <- "ml_generalized_linear_regression"
         
         f$family_glm <- input$glm_family
@@ -309,6 +319,8 @@ dash_h20 <- function(data = data,x,y,date_column, share_app = FALSE,port = NULL 
         v_grad$type_model <- NA
         v_neural$type_model <- NA
         v_glm$type_model <- NA
+        v_auto_ml$type_model <- NA
+        
         v_random$type_model <- "ml_random_forest"
         
         t$num_tree_random_forest <- input$num_tree_random_forest
@@ -316,6 +328,24 @@ dash_h20 <- function(data = data,x,y,date_column, share_app = FALSE,port = NULL 
         x$max_depth_random_forest <-  input$max_depth_random_forest
         
       })
+      
+      
+      
+      observeEvent(input$run_auto_ml,{
+        
+        v_grad$type_model <- NA
+        v_neural$type_model <- NA
+        v_glm$type_model <- NA
+        v_random$type_model <- NA
+        v_auto_ml$type_model <- "ml_auto"
+        
+        train_1$date <- input$train_selector[1]
+        test_1$date <- input$test_selector[1]
+        model$train_variables <- input$input_variables
+        
+      })
+      
+      
       
       
       
@@ -411,7 +441,7 @@ dash_h20 <- function(data = data,x,y,date_column, share_app = FALSE,port = NULL 
                                ntrees = x$n_trees_gbm,
                                max_depth = x$max_depth_gbm,
                                learn_rate = x$learn_rate_gbm,
-                               training_frame = data_h2o_train,
+                               training_frame = data_h2o_train,min_rows = 4,
                                model_id = "dl_fit1")
             t2 <- Sys.time()
             time_gbm <- data.frame(`Training time` =  paste0(round(t2 - t1,1)," seconds"), Model = "Gradient boosted trees") 
@@ -457,6 +487,23 @@ dash_h20 <- function(data = data,x,y,date_column, share_app = FALSE,port = NULL 
             
           }
           
+          if (!is.na(v_auto_ml$type_model) & v_auto_ml$type_model == "ml_auto"){
+            
+        
+            dl_fit1 <- h2o.automl(x = as.character(var_input_list),
+                                        y = y,
+                                        training_frame = data_h2o_train,max_runtime_secs = 30)
+      
+            
+            
+            time_auto_ml <- data.frame(`Training time` =  "10 seconds", Model = "Auto ML")
+            table_auto_ml<- h2o.predict(dl_fit1,data_h2o_test) %>% as.data.table() %>% mutate(predict = round(predict,3))  %>% rename(`Auto ML` = predict)
+            
+          }
+          
+          
+          
+          
           
           
           
@@ -464,9 +511,9 @@ dash_h20 <- function(data = data,x,y,date_column, share_app = FALSE,port = NULL 
         }
         
         
-        table_training_time <- rbind(time_gbm,time_random_forest,time_glm,time_neural_network)
+        table_training_time <- rbind(time_gbm,time_random_forest,time_glm,time_neural_network,time_auto_ml)
         table_importance <- rbind(importance_gbm,importance_random_forest,importance_neural_network) %>% as.data.table()
-        table_results <- cbind(data_results,table_glm,table_random_forest,table_neural_network,table_gradient_boosting)%>% as.data.table()
+        table_results <- cbind(data_results,table_glm,table_random_forest,table_neural_network,table_gradient_boosting,table_auto_ml)%>% as.data.table()
         
         list(traning_time = table_training_time, table_importance = table_importance, results = table_results)
         
@@ -513,15 +560,19 @@ dash_h20 <- function(data = data,x,y,date_column, share_app = FALSE,port = NULL 
       
       output$feature_importance <- renderPlotly({
         
+
         if (nrow(table_forecast()[['table_importance']]) != 0){
+          
+          
           ggplotly(
-            ggplot(data = table_forecast()[['importance']])+
-              ggplot2::geom_bar(aes(reorder(variable,scaled_importance),scaled_importance,fill =  model),stat = "identity",width = 0.3)+
-              facet_wrap(~ model)+
-              coord_flip()+
-              xlab("")+
-              ylab("")+
-              theme(legend.position="none")
+            
+          ggplot(data = table_forecast()[['table_importance']])+
+            geom_bar(aes(x = reorder(`variable`,scaled_importance),y = scaled_importance,fill =  `model`),stat = "identity",width = 0.3)+
+            facet_wrap( model ~ .)+
+            coord_flip()+
+            xlab("")+
+            ylab("")+
+            theme(legend.position="none")
           )
         }
         
@@ -561,9 +612,3 @@ dash_h20 <- function(data = data,x,y,date_column, share_app = FALSE,port = NULL 
   
 }
 
-
-dash_h20(data =longley2,x = c("Unemployed" ,"Armed_Forces","Employed"),
-         y = "GNP",date_column = "Year",share_app = TRUE,port = 3951)
-
-
-x <- c("Unemployed" ,"ArmedForces","Employed")

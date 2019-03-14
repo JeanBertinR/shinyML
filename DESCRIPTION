@@ -8,9 +8,24 @@ Description: This package creates in one line of code a shareable web app to com
     Four main classes of regression algorithms (generalized linear regression, decision tree, random forest, gradient boosted ) might be tuned on Spark framework to forecast the outcome of given time series. 
 License: GPL-2
 Encoding: UTF-8
-LazyData: False
 Imports:
- shiny,shinydashboard,h2o,shinyWidgets,dygraphs,plotly,sparklyr,tidyr,DT,ggplot2
+ shiny(>= 1.0.3),
+ shinydashboard,
+ h2o,
+ shinyWidgets,
+ dygraphs,
+ plotly,
+ sparklyr,
+ tidyr,
+ DT,
+ ggplot2
+Suggests: 
+ knitr, 
+ rmarkdown
 Depends:
- dplyr,data.table
+ dplyr,
+ data.table
+LazyData: True
 RoxygenNote: 6.1.1
+VignetteBuilder: knitr
+
