@@ -44,6 +44,9 @@ dash_h20 <- function(data = data,x,y,date_column, share_app = FALSE,port = NULL 
   
   x <- gsub("_",".",x)
   
+  h2o.init()
+  
+  
   app <- shinyApp(
     
     ui = dashboardPage(skin = "black",
