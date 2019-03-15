@@ -42,8 +42,7 @@ dash_h20 <- function(data = data,x,y,date_column, share_app = FALSE,port = NULL 
   
   data <- data.table(data)
   
-  x <- gsub("_",".",x)
-  
+
   h2o.init()
   
   
