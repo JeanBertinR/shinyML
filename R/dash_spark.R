@@ -504,6 +504,58 @@ dash_spark <- function(data = data,x,y,date_column, share_app = FALSE,port = NUL
       })
       
       
+      
+      observeEvent(input$train_all,{
+        
+        sendSweetAlert(
+          session = session,
+          title = "The four machine learning algorithms are currently running !",
+          text = "Click ok to see results",
+          type = "success"
+        )
+      })
+      
+      observeEvent(input$run_gradient_boosting,{
+        
+        sendSweetAlert(
+          session = session,
+          title = "Gradient boosting model is currently running !",
+          text = "Click ok to see results",
+          type = "success"
+        )
+      })
+      
+      observeEvent(input$run_decision_tree,{
+        
+        sendSweetAlert(
+          session = session,
+          title = "Decision trees model is currently running !",
+          text = "Click ok to see results",
+          type = "success"
+        )
+      })
+      
+      observeEvent(input$run_glm,{
+        
+        sendSweetAlert(
+          session = session,
+          title = "Generalized linear regression model is currently running !",
+          text = "Click ok to see results",
+          type = "success"
+        )
+      })
+      
+      observeEvent(input$run_random_forest,{
+        
+        sendSweetAlert(
+          session = session,
+          title = "Random forest model is currently running !",
+          text = "Click ok to see results",
+          type = "success"
+        )
+      })
+
+      
     }
   )
   

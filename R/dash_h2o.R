@@ -167,6 +167,7 @@ dash_h20 <- function(data = data,x,y,date_column, share_app = FALSE,port = NULL 
                                       
                                       ,width = 3)
                                     
+
                                   )
                            )
                          )
@@ -594,6 +595,69 @@ dash_h20 <- function(data = data,x,y,date_column, share_app = FALSE,port = NULL 
                           value= c(input$train_selector[1],input$test_selector[1]) ) 
       })
       
+      
+      
+      observeEvent(input$train_all,{
+        
+        sendSweetAlert(
+          session = session,
+          title = "The four machine learning algorithms are currently running !",
+          text = "Click ok to see results",
+          type = "success"
+        )
+      })
+      
+      observeEvent(input$run_gradient_boosting,{
+        
+        sendSweetAlert(
+          session = session,
+          title = "Gradient boosting model is currently running !",
+          text = "Click ok to see results",
+          type = "success"
+        )
+      })
+      
+      observeEvent(input$run_neural_network,{
+        
+        sendSweetAlert(
+          session = session,
+          title = "Neural network model is currently running !",
+          text = "Click ok to see results",
+          type = "success"
+        )
+      })
+      
+      observeEvent(input$run_glm,{
+        
+        sendSweetAlert(
+          session = session,
+          title = "Generalized linear regression model is currently running !",
+          text = "Click ok to see results",
+          type = "success"
+        )
+      })
+      
+      observeEvent(input$run_random_forest,{
+        
+        sendSweetAlert(
+          session = session,
+          title = "Random forest model is currently running !",
+          text = "Click ok to see results",
+          type = "success"
+        )
+      })
+      
+      observeEvent(input$run_auto_ml,{
+        
+        sendSweetAlert(
+          session = session,
+          title = "Auto ML algorithm is currently running !",
+          text = "Click ok to close this window",
+          type = "success"
+        )
+      })
+      
+
     }
   )
   
@@ -613,4 +677,3 @@ dash_h20 <- function(data = data,x,y,date_column, share_app = FALSE,port = NULL 
   
   
 }
-
