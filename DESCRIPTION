@@ -18,7 +18,8 @@ Imports:
  sparklyr,
  tidyr,
  DT,
- ggplot2
+ ggplot2,
+ shinycssloaders
 Suggests: 
  knitr, 
  rmarkdown

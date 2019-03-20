@@ -26,13 +26,13 @@
 #' dash_h20(data =longley2,x = c("GNP_deflator","Unemployed" ,"Armed_Forces","Employed"),
 #'   y = "GNP",date_column = "Year",share_app = TRUE,port = 3951)
 #'}
-#' @import shiny shinydashboard dygraphs data.table ggplot2
+#' @import shiny shinydashboard dygraphs data.table ggplot2 shinycssloaders
 #' @importFrom dplyr %>% select mutate group_by summarise arrange rename
 #' @importFrom tidyr gather
 #' @importFrom DT renderDT DTOutput datatable
 #' @importFrom h2o h2o.init as.h2o h2o.deeplearning h2o.varimp h2o.predict h2o.gbm h2o.glm h2o.randomForest h2o.automl
 #' @importFrom plotly plotlyOutput renderPlotly ggplotly
-#' @importFrom shinyWidgets materialSwitch
+#' @importFrom shinyWidgets materialSwitch sendSweetAlert
 #' @importFrom stats predict reorder
 #' 
 #' 
@@ -65,10 +65,10 @@ dash_h20 <- function(data = data,x,y,date_column, share_app = FALSE,port = NULL 
                                            column(width = 12,box(dygraphOutput("input_curve", height = 120, width = 930),width = 12)),
                                            column(width = 12,
                                                   tabBox(id = "results_models",
-                                                         tabPanel("Result charts on test period",dygraphOutput("output_curve", height = 200, width = 930)),
-                                                         tabPanel("Compare models performances",DTOutput("date_essai")),
-                                                         tabPanel("Feature importance",plotlyOutput("feature_importance")),
-                                                         tabPanel("Table of results",DTOutput("table_of_results")), width = 12
+                                                         tabPanel("Result charts on test period",withSpinner(dygraphOutput("output_curve", height = 200, width = 930))),
+                                                         tabPanel("Compare models performances",withSpinner(DTOutput("date_essai"))),
+                                                         tabPanel("Feature importance",withSpinner(plotlyOutput("feature_importance"))),
+                                                         tabPanel("Table of results",withSpinner(DTOutput("table_of_results"))), width = 12
                                                   )
                                            )
                                          )
@@ -121,7 +121,7 @@ dash_h20 <- function(data = data,x,y,date_column, share_app = FALSE,port = NULL 
                                       title = "Random Forest",status = "danger",
                                       
                                       sliderInput(label = "Number of trees",min = 1,max = 100, inputId = "num_tree_random_forest",value = 50),
-                                      sliderInput(label = "Subsampling rate",min = 0.1,max = 1, inputId = "subsampling_rate_random_forest",value = 0.6320000291),
+                                      sliderInput(label = "Subsampling rate",min = 0.1,max = 1, inputId = "subsampling_rate_random_forest",value = 0.6),
                                       sliderInput(label = "Max depth",min = 1,max = 50, inputId = "max_depth_random_forest",value = 20),
                                       actionButton("run_random_forest","Run random forest model",style = 'color:white; background-color:red; padding:4px; font-size:150%',
                                                    icon = icon("users",lib = "font-awesome"))
@@ -563,6 +563,25 @@ dash_h20 <- function(data = data,x,y,date_column, share_app = FALSE,port = NULL 
       
       output$feature_importance <- renderPlotly({
         
+        
+        validate(
+          need(!is.na(v_neural$type_model)|!is.na(v_grad$type_model)|!is.na(v_glm$type_model)|!is.na(v_random$type_model)|!is.na(v_auto_ml$type_model),
+               
+               "Please run at least one model to see results"))
+        
+        
+        validate(
+          need(is.na(v_glm$type_model),
+               
+               "Feature importance not available for generalized linear regression model"))
+        
+        
+        validate(
+          need(is.na(v_auto_ml$type_model),
+               
+               "Feature importance not available here"))
+        
+        
 
         if (nrow(table_forecast()[['table_importance']]) != 0){
           
@@ -607,46 +626,7 @@ dash_h20 <- function(data = data,x,y,date_column, share_app = FALSE,port = NULL 
         )
       })
       
-      observeEvent(input$run_gradient_boosting,{
-        
-        sendSweetAlert(
-          session = session,
-          title = "Gradient boosting model is currently running !",
-          text = "Click ok to see results",
-          type = "success"
-        )
-      })
-      
-      observeEvent(input$run_neural_network,{
-        
-        sendSweetAlert(
-          session = session,
-          title = "Neural network model is currently running !",
-          text = "Click ok to see results",
-          type = "success"
-        )
-      })
-      
-      observeEvent(input$run_glm,{
-        
-        sendSweetAlert(
-          session = session,
-          title = "Generalized linear regression model is currently running !",
-          text = "Click ok to see results",
-          type = "success"
-        )
-      })
-      
-      observeEvent(input$run_random_forest,{
-        
-        sendSweetAlert(
-          session = session,
-          title = "Random forest model is currently running !",
-          text = "Click ok to see results",
-          type = "success"
-        )
-      })
-      
+
       observeEvent(input$run_auto_ml,{
         
         sendSweetAlert(

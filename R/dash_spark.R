@@ -27,12 +27,12 @@
 #' dash_spark(data =longley2,x = c("GNP_deflator","Unemployed" ,"Armed_Forces","Employed"),
 #'   y = "GNP",date_column = "Year",share_app = TRUE,port = 3952)
 #'}
-#' @import shiny shinydashboard dygraphs data.table ggplot2 sparklyr
+#' @import shiny shinydashboard dygraphs data.table ggplot2 sparklyr shinycssloaders
 #' @importFrom dplyr %>% select mutate group_by summarise arrange rename
 #' @importFrom tidyr gather
 #' @importFrom DT renderDT DTOutput datatable
 #' @importFrom plotly plotlyOutput renderPlotly ggplotly
-#' @importFrom shinyWidgets materialSwitch
+#' @importFrom shinyWidgets materialSwitch sendSweetAlert
 #' @importFrom stats predict reorder
 #' @export
 
@@ -64,10 +64,10 @@ dash_spark <- function(data = data,x,y,date_column, share_app = FALSE,port = NUL
                           )
                           ),
                           column(width = 12,tabBox(id = "results_models",
-                                                   tabPanel("Result charts on test period",dygraphOutput("output_curve",height = 200,width = 930)),
-                                                   tabPanel("Compare models performances",DTOutput("date_essai")),
-                                                   tabPanel("Feature importance",plotlyOutput("feature_importance")),
-                                                   tabPanel("Table of results",DTOutput("table_of_results")),width = 12
+                                                   tabPanel("Result charts on test period",withSpinner(dygraphOutput("output_curve",height = 200,width = 930))),
+                                                   tabPanel("Compare models performances",withSpinner(DTOutput("date_essai"))),
+                                                   tabPanel("Feature importance",withSpinner(plotlyOutput("feature_importance"))),
+                                                   tabPanel("Table of results",withSpinner(DTOutput("table_of_results"))),width = 12
                           )
                           )
                         )
@@ -478,6 +478,20 @@ dash_spark <- function(data = data,x,y,date_column, share_app = FALSE,port = NUL
       
       output$feature_importance <- renderPlotly({
         
+        
+        validate(
+          need(!is.na(v_decision_tree$type_model)|!is.na(v_grad$type_model)|!is.na(v_glm$type_model)|!is.na(v_random$type_model),
+               
+               "Please run at least one model to see results"))
+        
+        
+        validate(
+          need(is.na(v_glm$type_model),
+               
+               "Feature importance not available for generalized linear regression model"))
+        
+
+        
         if (nrow(table_forecast()[['table_importance']]) != 0){
           ggplotly(
             
@@ -515,45 +529,6 @@ dash_spark <- function(data = data,x,y,date_column, share_app = FALSE,port = NUL
         )
       })
       
-      observeEvent(input$run_gradient_boosting,{
-        
-        sendSweetAlert(
-          session = session,
-          title = "Gradient boosting model is currently running !",
-          text = "Click ok to see results",
-          type = "success"
-        )
-      })
-      
-      observeEvent(input$run_decision_tree,{
-        
-        sendSweetAlert(
-          session = session,
-          title = "Decision trees model is currently running !",
-          text = "Click ok to see results",
-          type = "success"
-        )
-      })
-      
-      observeEvent(input$run_glm,{
-        
-        sendSweetAlert(
-          session = session,
-          title = "Generalized linear regression model is currently running !",
-          text = "Click ok to see results",
-          type = "success"
-        )
-      })
-      
-      observeEvent(input$run_random_forest,{
-        
-        sendSweetAlert(
-          session = session,
-          title = "Random forest model is currently running !",
-          text = "Click ok to see results",
-          type = "success"
-        )
-      })
 
       
     }
