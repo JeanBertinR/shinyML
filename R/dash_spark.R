@@ -158,13 +158,6 @@ dash_spark <- function(data = data,x,y,date_column, share_app = FALSE,port = NUL
     
     server = function(session, input, output) {
       set.seed(122)
-      table_ml_gradient_boosted <- data.table(`Gradient boosted trees` = 0)
-      table_ml_random_forest <- data.table(`Random forest` = 0)
-      table_ml_glm <- data.table(`Generalized linear regression` = 0)
-      table_ml_decision_tree <- data.table(`Decision tree` = 0)
-      
-      
-      
       time_gbm <- data.table()
       time_random_forest <- data.table()
       time_glm <- data.table()

@@ -186,13 +186,6 @@ dash_h20 <- function(data = data,x,y,date_column, share_app = FALSE,port = NULL)
       train_1 <- reactiveValues()
       
       test_1 <- reactiveValues(date = eval(parse(text = paste0("mean(data$",date_column,")"))))
-      table_neural_network <- data.table(`Neural network` = 0)
-      table_gradient_boosting <- data.table(`Gradient boosted trees` = 0)
-      table_glm <- data.table(`Generalized linear regression` = 0)
-      table_random_forest <-data.table(`Random forest` = 0) 
-      table_auto_ml <-data.table(`Auto ML` = 0) 
-      
-      
       v_neural <- reactiveValues(type_model = NA)
       v_grad <- reactiveValues(type_model = NA)
       v_glm <- reactiveValues(type_model = NA)
