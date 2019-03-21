@@ -38,13 +38,13 @@
 #' 
 #' @export
 
-dash_h20 <- function(data = data,x,y,date_column, share_app = FALSE,port = NULL ){
+dash_h20 <- function(data = data,x,y,date_column, share_app = FALSE,port = NULL){
   
   data <- data.table(data)
   
-
-  h2o.init()
   
+  h2o.init()
+  h2o.no_progress()
   
   app <- shinyApp(
     
@@ -59,6 +59,7 @@ dash_h20 <- function(data = data,x,y,date_column, share_app = FALSE,port = NULL 
                        
                        dashboardBody(
                          fluidPage(
+                           useShinyjs(),
                            column(width = 12,
                                   column(width = 8,
                                          fluidRow(
@@ -101,21 +102,21 @@ dash_h20 <- function(data = data,x,y,date_column, share_app = FALSE,port = NULL 
                            column(width = 12,align = "center",
                                   fluidRow(
                                     
-                                    box(
-                                      title = "Generalized linear regresion",status = "warning",
-                                      column(
-                                        radioButtons(label = "Family",inputId = "glm_family",choices = c("gaussian","poisson", "gamma","tweedie"),
-                                                     selected = "gaussian"),width = 6),
-                                      column(
-                                        radioButtons(label = "Link",inputId = "glm_link",choices = c("identity","log"),selected = "identity"),width = 6),
-                                      
-                                      materialSwitch(label = "Intercept term",inputId = "intercept_term_glm",status = "primary",value = TRUE),
-                                      sliderInput(label = "Lambda",inputId = "reg_param_glm",min = 0,max = 10,value = 0),
-                                      sliderInput(label = "Alpha (0:Ridge <-> 1:Lasso)",inputId = "alpha_param_glm",min = 0,max = 1,value = 0.5),
-                                      sliderInput(label = "Maximum iteraions",inputId = "max_iter_glm",min = 50,max = 300,value = 100),
-                                      actionButton("run_glm","Run generalized linear regression",style = 'color:white; background-color:orange; padding:4px; font-size:150%',
-                                                   icon = icon("cogs",lib = "font-awesome"))
-                                      ,width = 3 ),
+                                    box(id = "glm",collapsible = T,collapsed = F,
+                                        title = "Generalized linear regresion",status = "warning",
+                                        column(
+                                          radioButtons(label = "Family",inputId = "glm_family",choices = c("gaussian","poisson", "gamma","tweedie"),
+                                                       selected = "gaussian"),width = 6),
+                                        column(
+                                          radioButtons(label = "Link",inputId = "glm_link",choices = c("identity","log"),selected = "identity"),width = 6),
+                                        
+                                        materialSwitch(label = "Intercept term",inputId = "intercept_term_glm",status = "primary",value = TRUE),
+                                        sliderInput(label = "Lambda",inputId = "reg_param_glm",min = 0,max = 10,value = 0),
+                                        sliderInput(label = "Alpha (0:Ridge <-> 1:Lasso)",inputId = "alpha_param_glm",min = 0,max = 1,value = 0.5),
+                                        sliderInput(label = "Maximum iteraions",inputId = "max_iter_glm",min = 50,max = 300,value = 100),
+                                        actionButton("run_glm","Run generalized linear regression",style = 'color:white; background-color:orange; padding:4px; font-size:150%',
+                                                     icon = icon("cogs",lib = "font-awesome"))
+                                        ,width = 3 ),
                                     
                                     box(
                                       title = "Random Forest",status = "danger",
@@ -167,8 +168,9 @@ dash_h20 <- function(data = data,x,y,date_column, share_app = FALSE,port = NULL 
                                       
                                       ,width = 3)
                                     
-
+                                    
                                   )
+                                  
                            )
                          )
                        )
@@ -185,11 +187,11 @@ dash_h20 <- function(data = data,x,y,date_column, share_app = FALSE,port = NULL 
       train_1 <- reactiveValues()
       
       test_1 <- reactiveValues(date = eval(parse(text = paste0("mean(data$",date_column,")"))))
-      table_neural_network <- data.table(`Neural network` = NA)
-      table_gradient_boosting <- data.table(`Gradient boosted trees` = NA)
-      table_glm <- data.table(`Generalized linear regression` = NA)
-      table_random_forest <-data.table(`Random forest` = NA) 
-      table_auto_ml <-data.table(`Auto ML` = NA) 
+      table_neural_network <- data.table(`Neural network` = 0)
+      table_gradient_boosting <- data.table(`Gradient boosted trees` = 0)
+      table_glm <- data.table(`Generalized linear regression` = 0)
+      table_random_forest <-data.table(`Random forest` = 0) 
+      table_auto_ml <-data.table(`Auto ML` = 0) 
       
       
       v_neural <- reactiveValues(type_model = NA)
@@ -326,6 +328,7 @@ dash_h20 <- function(data = data,x,y,date_column, share_app = FALSE,port = NULL 
         
         v_random$type_model <- "ml_random_forest"
         
+        
         t$num_tree_random_forest <- input$num_tree_random_forest
         v$subsampling_rate_random_forest <- input$subsampling_rate_random_forest
         x$max_depth_random_forest <-  input$max_depth_random_forest
@@ -378,7 +381,7 @@ dash_h20 <- function(data = data,x,y,date_column, share_app = FALSE,port = NULL 
       
       output$output_curve <- renderDygraph({
         
-        
+
         output_dygraph <- dygraph(data = table_forecast()[['results']],main = "Prediction results on test period") %>%
           dyAxis("y",valueRange = c(0,1.5 * max(eval(parse(text =paste0("table_forecast()[['results']]$",y)))))) 
         
@@ -397,6 +400,7 @@ dash_h20 <- function(data = data,x,y,date_column, share_app = FALSE,port = NULL 
       table_forecast <- reactive({
         
         data_results <- eval(parse(text = paste0("data[,.(",date_column,",",y,")][",date_column,">'",test_1$date,"',]")))
+        table_results <- data_results
         var_input_list <- c()
         
         for (i in 1:length(model$train_variables)){
@@ -431,6 +435,7 @@ dash_h20 <- function(data = data,x,y,date_column, share_app = FALSE,port = NULL 
             time_neural_network <- data.frame(`Training time` =  paste0(round(t2 - t1,1)," seconds"), Model = "Neural network")
             importance_neural_network <- h2o.varimp(dl_fit1) %>% as.data.table() %>% select(`variable`,scaled_importance) %>% mutate(model = "Neural network")
             table_neural_network <- h2o.predict(dl_fit1,data_h2o_test) %>% as.data.table() %>% mutate(predict = round(predict,3)) %>% rename(`Neural network` = predict)
+            table_results <- cbind(data_results,table_neural_network)%>% as.data.table()
             
           }
           
@@ -450,6 +455,7 @@ dash_h20 <- function(data = data,x,y,date_column, share_app = FALSE,port = NULL 
             time_gbm <- data.frame(`Training time` =  paste0(round(t2 - t1,1)," seconds"), Model = "Gradient boosted trees") 
             importance_gbm <- h2o.varimp(dl_fit1) %>% as.data.table() %>% select(`variable`,scaled_importance) %>% mutate(model = "Gradient boosted trees")
             table_gradient_boosting <- h2o.predict(dl_fit1,data_h2o_test) %>% as.data.table() %>% mutate(predict = round(predict,3)) %>% rename(`Gradient boosted trees` = predict)
+            table_results <- cbind(data_results,table_gradient_boosting)%>% as.data.table()
             
           }
           
@@ -469,6 +475,7 @@ dash_h20 <- function(data = data,x,y,date_column, share_app = FALSE,port = NULL 
             t2 <- Sys.time()
             time_glm <- data.frame(`Training time` =  paste0(round(t2 - t1,1)," seconds"), Model = "Generalized linear regression")
             table_glm <- h2o.predict(dl_fit1,data_h2o_test) %>% as.data.table() %>% mutate(predict = round(predict,3)) %>% rename(`Generalized linear regression` = predict)
+            table_results <- cbind(data_results,table_glm)%>% as.data.table()
             
           }
           
@@ -487,36 +494,34 @@ dash_h20 <- function(data = data,x,y,date_column, share_app = FALSE,port = NULL 
             time_random_forest <- data.frame(`Training time` =  paste0(round(t2 - t1,1)," seconds"), Model = "Random forest")
             importance_random_forest <- h2o.varimp(dl_fit1) %>% as.data.table() %>% select(`variable`,scaled_importance) %>% mutate(model = "Random forest")
             table_random_forest<- h2o.predict(dl_fit1,data_h2o_test) %>% as.data.table() %>% mutate(predict = round(predict,3))  %>% rename(`Random forest` = predict)
+            table_results <- cbind(data_results,table_random_forest)%>% as.data.table()
             
           }
           
           if (!is.na(v_auto_ml$type_model) & v_auto_ml$type_model == "ml_auto"){
             
-        
+            
             dl_fit1 <- h2o.automl(x = as.character(var_input_list),
-                                        y = y,
-                                        training_frame = data_h2o_train,max_runtime_secs = 30)
-      
+                                  y = y,
+                                  training_frame = data_h2o_train,max_runtime_secs = 30)
+            
             
             
             time_auto_ml <- data.frame(`Training time` =  "10 seconds", Model = "Auto ML")
             table_auto_ml<- h2o.predict(dl_fit1,data_h2o_test) %>% as.data.table() %>% mutate(predict = round(predict,3))  %>% rename(`Auto ML` = predict)
-            
+            table_results <- cbind(data_results,table_auto_ml)%>% as.data.table()
           }
           
-          
-          
-          
-          
-          
-          
+          if (!is.na(v_neural$type_model) & !is.na(v_grad$type_model) & !is.na(v_glm$type_model) & !is.na(v_random$type_model)){
+            
+            table_results <- cbind(data_results,table_glm,table_random_forest,table_neural_network,table_gradient_boosting)%>% as.data.table()
+          }
           
         }
         
         
         table_training_time <- rbind(time_gbm,time_random_forest,time_glm,time_neural_network,time_auto_ml)
         table_importance <- rbind(importance_gbm,importance_random_forest,importance_neural_network) %>% as.data.table()
-        table_results <- cbind(data_results,table_glm,table_random_forest,table_neural_network,table_gradient_boosting,table_auto_ml)%>% as.data.table()
         
         list(traning_time = table_training_time, table_importance = table_importance, results = table_results)
         
@@ -582,19 +587,19 @@ dash_h20 <- function(data = data,x,y,date_column, share_app = FALSE,port = NULL 
                "Feature importance not available here"))
         
         
-
+        
         if (nrow(table_forecast()[['table_importance']]) != 0){
           
           
           ggplotly(
             
-          ggplot(data = table_forecast()[['table_importance']])+
-            geom_bar(aes(x = reorder(`variable`,scaled_importance),y = scaled_importance,fill =  `model`),stat = "identity",width = 0.3)+
-            facet_wrap( model ~ .)+
-            coord_flip()+
-            xlab("")+
-            ylab("")+
-            theme(legend.position="none")
+            ggplot(data = table_forecast()[['table_importance']])+
+              geom_bar(aes(x = reorder(`variable`,scaled_importance),y = scaled_importance,fill =  `model`),stat = "identity",width = 0.3)+
+              facet_wrap( model ~ .)+
+              coord_flip()+
+              xlab("")+
+              ylab("")+
+              theme(legend.position="none")
           )
         }
         
@@ -626,7 +631,7 @@ dash_h20 <- function(data = data,x,y,date_column, share_app = FALSE,port = NULL 
         )
       })
       
-
+      
       observeEvent(input$run_auto_ml,{
         
         sendSweetAlert(
@@ -637,7 +642,6 @@ dash_h20 <- function(data = data,x,y,date_column, share_app = FALSE,port = NULL 
         )
       })
       
-
     }
   )
   

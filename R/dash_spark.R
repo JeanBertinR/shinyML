@@ -158,10 +158,10 @@ dash_spark <- function(data = data,x,y,date_column, share_app = FALSE,port = NUL
     
     server = function(session, input, output) {
       set.seed(122)
-      table_ml_gradient_boosted <- data.table(`Gradient boosted trees` = NA)
-      table_ml_random_forest <- data.table(`Random forest` = NA)
-      table_ml_glm <- data.table(`Generalized linear regression` = NA)
-      table_ml_decision_tree <- data.table(`Decision tree` = NA)
+      table_ml_gradient_boosted <- data.table(`Gradient boosted trees` = 0)
+      table_ml_random_forest <- data.table(`Random forest` = 0)
+      table_ml_glm <- data.table(`Generalized linear regression` = 0)
+      table_ml_decision_tree <- data.table(`Decision tree` = 0)
       
       
       
@@ -348,6 +348,7 @@ dash_spark <- function(data = data,x,y,date_column, share_app = FALSE,port = NUL
       table_forecast <- reactive({
         
         data_results <- eval(parse(text = paste0("data[,.(",date_column,",",y,")][",date_column,">'",test_1$date,"',]")))
+        table_results <- data_results
         var_input_list <- ""
         
         
@@ -382,6 +383,7 @@ dash_spark <- function(data = data,x,y,date_column, share_app = FALSE,port = NUL
             
             table_ml_gradient_boosted <- sdf_predict(data_spark_test, fit) %>% collect %>% as.data.frame() %>% select(prediction) %>% mutate(prediction = round(prediction,3)) %>% 
               rename(`Gradient boosted trees` = prediction)
+            table_results <- cbind(data_results,table_ml_gradient_boosted) %>% as.data.table()
             
           }
           
@@ -399,6 +401,7 @@ dash_spark <- function(data = data,x,y,date_column, share_app = FALSE,port = NUL
             
             table_ml_random_forest <- sdf_predict(data_spark_test, fit) %>% collect %>% as.data.frame() %>% select(prediction)%>% mutate(prediction = round(prediction,3)) %>% 
               rename(`Random forest` = prediction)
+            table_results <- cbind(data_results,table_ml_random_forest) %>% as.data.table()
             
           }
           
@@ -417,6 +420,7 @@ dash_spark <- function(data = data,x,y,date_column, share_app = FALSE,port = NUL
             
             table_ml_glm <- sdf_predict(data_spark_test, fit) %>% collect %>% as.data.frame() %>% select(prediction)%>% mutate(prediction = round(prediction,3)) %>% 
               rename(`Generalized linear regression` = prediction)
+            table_results <- cbind(data_results,table_ml_glm) %>% as.data.table()
             
           }
           
@@ -434,16 +438,23 @@ dash_spark <- function(data = data,x,y,date_column, share_app = FALSE,port = NUL
             
             table_ml_decision_tree <- sdf_predict(data_spark_test, fit) %>% collect %>% as.data.frame() %>% select(prediction)%>% mutate(prediction = round(prediction,3)) %>% 
               rename(`Decision tree` = prediction)
+            table_results <- cbind(data_results,table_ml_decision_tree) %>% as.data.table()
             
           }
           
+          if (!is.na(v_decision_tree$type_model) & !is.na(v_grad$type_model) & !is.na(v_glm$type_model) & !is.na(v_random$type_model))
+          
+            table_results <- cbind(data_results,table_ml_gradient_boosted,table_ml_random_forest,table_ml_glm,table_ml_decision_tree) %>% 
+            as.data.table()
+          
         }
+        
+        
+        
+        
         
         table_training_time <- rbind(time_gbm,time_random_forest,time_glm,time_decision_tree)
         table_importance <- rbind(importance_gbm,importance_random_forest,importance_decision_tree) %>% as.data.table()
-        
-        table_results <- cbind(data_results,table_ml_gradient_boosted,table_ml_random_forest,table_ml_glm,table_ml_decision_tree) %>% 
-          as.data.table()
         
         list(traning_time = table_training_time, table_importance = table_importance, results = table_results)
         
