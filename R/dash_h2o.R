@@ -30,7 +30,7 @@
 #' @importFrom dplyr %>% select mutate group_by summarise arrange rename
 #' @importFrom tidyr gather
 #' @importFrom DT renderDT DTOutput datatable
-#' @importFrom h2o h2o.init as.h2o h2o.deeplearning h2o.varimp h2o.predict h2o.gbm h2o.glm h2o.randomForest h2o.automl
+#' @importFrom h2o h2o.init as.h2o h2o.deeplearning h2o.varimp h2o.predict h2o.gbm h2o.glm h2o.randomForest h2o.automl 
 #' @importFrom plotly plotlyOutput renderPlotly ggplotly
 #' @importFrom shinyWidgets materialSwitch sendSweetAlert
 #' @importFrom stats predict reorder
@@ -44,7 +44,7 @@ dash_h20 <- function(data = data,x,y,date_column, share_app = FALSE,port = NULL)
   
   
   h2o.init()
-  h2o.no_progress()
+  h2o::h2o.no_progress()
   
   app <- shinyApp(
     
@@ -59,7 +59,6 @@ dash_h20 <- function(data = data,x,y,date_column, share_app = FALSE,port = NULL)
                        
                        dashboardBody(
                          fluidPage(
-                           useShinyjs(),
                            column(width = 12,
                                   column(width = 8,
                                          fluidRow(
