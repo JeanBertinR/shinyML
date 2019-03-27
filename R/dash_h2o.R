@@ -186,6 +186,7 @@ dash_h20 <- function(data = data,x,y,date_column, share_app = FALSE,port = NULL)
       train_1 <- reactiveValues()
       
       test_1 <- reactiveValues(date = eval(parse(text = paste0("mean(data$",date_column,")"))))
+      test_2 <- reactiveValues(date = eval(parse(text = paste0("max(data$",date_column,")"))))
       v_neural <- reactiveValues(type_model = NA)
       v_grad <- reactiveValues(type_model = NA)
       v_glm <- reactiveValues(type_model = NA)
@@ -220,6 +221,7 @@ dash_h20 <- function(data = data,x,y,date_column, share_app = FALSE,port = NULL)
         
         train_1$date <- input$train_selector[1]
         test_1$date <- input$test_selector[1]
+        test_2$date <- input$test_selector[2]
         model$train_variables <- input$input_variables
         v_neural$type_model <- "ml_neural_network"
         v_grad$type_model <- "ml_gradient_boosted_trees"
@@ -256,6 +258,7 @@ dash_h20 <- function(data = data,x,y,date_column, share_app = FALSE,port = NULL)
         
         train_1$date <- input$train_selector[1]
         test_1$date <- input$test_selector[1]
+        test_2$date <- input$test_selector[2]
         model$train_variables <- input$input_variables
         v_neural$type_model <- "ml_neural_network"
         v_grad$type_model <- NA
@@ -275,6 +278,7 @@ dash_h20 <- function(data = data,x,y,date_column, share_app = FALSE,port = NULL)
         
         train_1$date <- input$train_selector[1]
         test_1$date <- input$test_selector[1]
+        test_2$date <- input$test_selector[2]
         model$train_variables <- input$input_variables
         v_grad$type_model <- "ml_gradient_boosted_trees"
         v_neural$type_model <- NA
@@ -293,6 +297,7 @@ dash_h20 <- function(data = data,x,y,date_column, share_app = FALSE,port = NULL)
         
         train_1$date <- input$train_selector[1]
         test_1$date <- input$test_selector[1]
+        test_2$date <- input$test_selector[2]
         model$train_variables <- input$input_variables
         v_grad$type_model <- NA
         v_neural$type_model <- NA
@@ -312,6 +317,7 @@ dash_h20 <- function(data = data,x,y,date_column, share_app = FALSE,port = NULL)
         
         train_1$date <- input$train_selector[1]
         test_1$date <- input$test_selector[1]
+        test_2$date <- input$test_selector[2]
         model$train_variables <- input$input_variables
         v_grad$type_model <- NA
         v_neural$type_model <- NA
@@ -339,6 +345,7 @@ dash_h20 <- function(data = data,x,y,date_column, share_app = FALSE,port = NULL)
         
         train_1$date <- input$train_selector[1]
         test_1$date <- input$test_selector[1]
+        test_2$date <- input$test_selector[2]
         model$train_variables <- input$input_variables
         
       })
@@ -373,7 +380,7 @@ dash_h20 <- function(data = data,x,y,date_column, share_app = FALSE,port = NULL)
       
       output$output_curve <- renderDygraph({
         
-
+        
         output_dygraph <- dygraph(data = table_forecast()[['results']],main = "Prediction results on test period") %>%
           dyAxis("y",valueRange = c(0,1.5 * max(eval(parse(text =paste0("table_forecast()[['results']]$",y)))))) 
         
@@ -391,7 +398,7 @@ dash_h20 <- function(data = data,x,y,date_column, share_app = FALSE,port = NULL)
       
       table_forecast <- reactive({
         
-        data_results <- eval(parse(text = paste0("data[,.(",date_column,",",y,")][",date_column,">'",test_1$date,"',]")))
+        data_results <- eval(parse(text = paste0("data[,.(",date_column,",",y,")][",date_column,">'",test_1$date,"',][",date_column,"< '",test_2$date,"',]")))
         table_results <- data_results
         var_input_list <- c()
         
@@ -405,7 +412,7 @@ dash_h20 <- function(data = data,x,y,date_column, share_app = FALSE,port = NULL)
           
           data_train <- eval(parse(text = paste0("data[",date_column,"<='",test_1$date,"',][",date_column,">='",train_1$date,"',]")))
           
-          data_test <- eval(parse(text = paste0("data[",date_column,">'",test_1$date,"',]")))
+          data_test <- eval(parse(text = paste0("data[",date_column,">'",test_1$date,"',][",date_column,"< '",test_2$date,"',]")))
           
           data_h2o_train <- as.h2o(data_train)
           data_h2o_test <- as.h2o(data_test)
