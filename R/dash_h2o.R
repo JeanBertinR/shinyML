@@ -365,7 +365,8 @@ dash_h20 <- function(data = data,x,y,date_column, share_app = FALSE,port = NULL)
           dyEvent(x = input$train_selector[2]) %>%
           dyEvent(x = input$test_selector[2]) %>%
           dySeries(y,fillGraph = TRUE) %>% 
-          dyAxis("y",valueRange = c(0,1.5 * max(eval(parse(text =paste0("data$",y))))))
+          dyAxis("y",valueRange = c(0,1.5 * max(eval(parse(text =paste0("data$",y)))))) %>% 
+          dyOptions(animatedZooms = TRUE)
         
         
         
@@ -382,7 +383,8 @@ dash_h20 <- function(data = data,x,y,date_column, share_app = FALSE,port = NULL)
         
         
         output_dygraph <- dygraph(data = table_forecast()[['results']],main = "Prediction results on test period") %>%
-          dyAxis("y",valueRange = c(0,1.5 * max(eval(parse(text =paste0("table_forecast()[['results']]$",y)))))) 
+          dyAxis("y",valueRange = c(0,1.5 * max(eval(parse(text =paste0("table_forecast()[['results']]$",y)))))) %>% 
+          dyOptions(animatedZooms = TRUE)
         
         if (input$bar_chart_mode == TRUE){
           output_dygraph <- output_dygraph %>% dyBarChart()

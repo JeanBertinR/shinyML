@@ -167,6 +167,9 @@ dash_spark <- function(data = data,x,y,date_column, share_app = FALSE,port = NUL
       importance_random_forest <- data.table()
       importance_decision_tree <- data.table()
       
+      test_1 <- reactiveValues(date = eval(parse(text = paste0("mean(data$",date_column,")"))))
+      test_2 <- reactiveValues(date = eval(parse(text = paste0("max(data$",date_column,")"))))
+      
       
       Model <- NULL
       Predicted_value <- NULL
@@ -192,12 +195,42 @@ dash_spark <- function(data = data,x,y,date_column, share_app = FALSE,port = NUL
       v_glm <- reactiveValues(type_model = NA)
       v_decision_tree <- reactiveValues(type_model = NA)
       
-      
+      observeEvent(input$train_all,{
+        
+        test_1$date <- input$test_selector[1]
+        test_2$date <- input$test_selector[2]
+        model$train_variables <- input$input_variables
+        v_decision_tree$type_model <- "ml_decision_tree"
+        v_glm$type_model <- "ml_generalized_linear_regression"
+        v_grad$type_model <- "ml_gradient_boosted_trees"
+        v_random$type_model <- "ml_random_forest"
+        
+        t$step_size_gbm <- input$step_size_gbm
+        v$subsampling_rate_gbm <- input$subsampling_rate_gbm
+        
+        t$num_tree_random_forest <- input$num_tree_random_forest
+        v$subsampling_rate_random_forest <- input$subsampling_rate_random_forest
+        x$max_depth_random_forest <-  input$max_depth_random_forest
+        
+        
+        f$family_glm <- input$glm_family
+        l$link_glm <- input$glm_link
+        i$intercept_glm <- input$intercept_term_glm
+        x$reg_param_glm <- input$reg_param_glm
+        x$max_iter_glm <- input$max_iter_glm
+        
+        x$max_depth_decision_tree <- input$max_depth_decision_tree
+        x$max_bins_decision_tree <- input$max_bins_decision_tree
+        x$min_instance_decision_tree <- input$min_instance_decision_tree
+        
+        
+      })
       
       
       observeEvent(input$run_gradient_boosting,{
         
         test_1$date <- input$test_selector[1]
+        test_2$date <- input$test_selector[2]
         model$train_variables <- input$input_variables
         t$step_size_gbm <- input$step_size_gbm
         v$subsampling_rate_gbm <- input$subsampling_rate_gbm
@@ -212,6 +245,7 @@ dash_spark <- function(data = data,x,y,date_column, share_app = FALSE,port = NUL
       observeEvent(input$run_random_forest,{
         
         test_1$date <- input$test_selector[1]
+        test_2$date <- input$test_selector[2]
         model$train_variables <- input$input_variables
         t$num_tree_random_forest <- input$num_tree_random_forest
         v$subsampling_rate_random_forest <- input$subsampling_rate_random_forest
@@ -226,6 +260,7 @@ dash_spark <- function(data = data,x,y,date_column, share_app = FALSE,port = NUL
       observeEvent(input$run_glm,{
         
         test_1$date <- input$test_selector[1]
+        test_2$date <- input$test_selector[2]
         model$train_variables <- input$input_variables
         f$family_glm <- input$glm_family
         l$link_glm <- input$glm_link
@@ -245,6 +280,7 @@ dash_spark <- function(data = data,x,y,date_column, share_app = FALSE,port = NUL
       observeEvent(input$run_decision_tree,{
         
         test_1$date <- input$test_selector[1]
+        test_2$date <- input$test_selector[2]
         model$train_variables <- input$input_variables
         x$max_depth_decision_tree <- input$max_depth_decision_tree
         x$max_bins_decision_tree <- input$max_bins_decision_tree
@@ -273,7 +309,7 @@ dash_spark <- function(data = data,x,y,date_column, share_app = FALSE,port = NUL
           dyEvent(x = input$test_selector[2]) %>%
           dySeries(y,fillGraph = TRUE) %>% 
           dyAxis("y",valueRange = c(0,1.5 * max(eval(parse(text =paste0("data$",y)))))) %>% 
-          dyOptions(colors = "darkblue")
+          dyOptions(colors = "darkblue",animatedZooms = TRUE)
         
         
         
@@ -285,62 +321,10 @@ dash_spark <- function(data = data,x,y,date_column, share_app = FALSE,port = NUL
       })
       
       
-      test_1 <- reactiveValues(date = eval(parse(text = paste0("mean(data$",date_column,")"))))
-      
-      observeEvent(input$train_all,{
-        
-        test_1$date <- input$test_selector[1]
-        model$train_variables <- input$input_variables
-        v_decision_tree$type_model <- "ml_decision_tree"
-        v_glm$type_model <- "ml_generalized_linear_regression"
-        v_grad$type_model <- "ml_gradient_boosted_trees"
-        v_random$type_model <- "ml_random_forest"
-        
-        t$step_size_gbm <- input$step_size_gbm
-        v$subsampling_rate_gbm <- input$subsampling_rate_gbm
-        
-        t$num_tree_random_forest <- input$num_tree_random_forest
-        v$subsampling_rate_random_forest <- input$subsampling_rate_random_forest
-        x$max_depth_random_forest <-  input$max_depth_random_forest
-        
-        
-        f$family_glm <- input$glm_family
-        l$link_glm <- input$glm_link
-        i$intercept_glm <- input$intercept_term_glm
-        x$reg_param_glm <- input$reg_param_glm
-        x$max_iter_glm <- input$max_iter_glm
-        
-        x$max_depth_decision_tree <- input$max_depth_decision_tree
-        x$max_bins_decision_tree <- input$max_bins_decision_tree
-        x$min_instance_decision_tree <- input$min_instance_decision_tree
-        
-        
-      })
-      
-      
-      output$date_essai <- renderDT({
-        
-        performance_table <-  table_forecast()[['results']] %>% 
-          gather(key = Model,value = Predicted_value,-date_column,-y) %>% 
-          group_by(Model) %>% 
-          summarise(`MAPE(%)` = round(100 * mean(abs((Predicted_value - eval(parse(text = y)))/eval(parse(text = y))),na.rm = TRUE),1),
-                    RMSE = round(sqrt(mean((Predicted_value - eval(parse(text = y)))**2)),0)) 
-        
-        if (nrow(table_forecast()[['traning_time']]) != 0){
-          performance_table <- performance_table %>% merge(.,table_forecast()[['traning_time']],by = "Model")
-        }
-        
-        datatable(
-          performance_table %>% arrange(`MAPE(%)`) %>% as.data.table()
-          , extensions = 'Buttons', options = list(dom = 'Bfrtip',buttons = c('csv', 'excel', 'pdf', 'print'))
-        )
-        
-      })
-      
       
       table_forecast <- reactive({
         
-        data_results <- eval(parse(text = paste0("data[,.(",date_column,",",y,")][",date_column,">'",test_1$date,"',]")))
+        data_results <- eval(parse(text = paste0("data[,.(",date_column,",",y,")][",date_column,">'",test_1$date,"',][",date_column,"< '",test_2$date,"',]")))
         table_results <- data_results
         var_input_list <- ""
         
@@ -353,7 +337,7 @@ dash_spark <- function(data = data,x,y,date_column, share_app = FALSE,port = NUL
           
           
           data_spark_train <- eval(parse(text = paste0("data[",date_column,"<='",test_1$date,"',]")))
-          data_spark_test <- eval(parse(text = paste0("data[",date_column,">'",test_1$date,"',]")))
+          data_spark_test <- eval(parse(text = paste0("data[",date_column,">'",test_1$date,"',][",date_column,"< '",test_2$date,"',]")))
           
           data_spark_train <- copy_to(sc, data_spark_train, "data_spark_train", overwrite = TRUE)
           data_spark_test <- copy_to(sc, data_spark_test, "data_spark_test", overwrite = TRUE)
@@ -436,7 +420,7 @@ dash_spark <- function(data = data,x,y,date_column, share_app = FALSE,port = NUL
           }
           
           if (!is.na(v_decision_tree$type_model) & !is.na(v_grad$type_model) & !is.na(v_glm$type_model) & !is.na(v_random$type_model))
-          
+            
             table_results <- cbind(data_results,table_ml_gradient_boosted,table_ml_random_forest,table_ml_glm,table_ml_decision_tree) %>% 
             as.data.table()
           
@@ -454,10 +438,36 @@ dash_spark <- function(data = data,x,y,date_column, share_app = FALSE,port = NUL
       })
       
       
+      
+      
+      output$date_essai <- renderDT({
+        
+        performance_table <-  table_forecast()[['results']] %>% 
+          gather(key = Model,value = Predicted_value,-date_column,-y) %>% 
+          group_by(Model) %>% 
+          summarise(`MAPE(%)` = round(100 * mean(abs((Predicted_value - eval(parse(text = y)))/eval(parse(text = y))),na.rm = TRUE),1),
+                    RMSE = round(sqrt(mean((Predicted_value - eval(parse(text = y)))**2)),0)) 
+        
+        if (nrow(table_forecast()[['traning_time']]) != 0){
+          performance_table <- performance_table %>% merge(.,table_forecast()[['traning_time']],by = "Model")
+        }
+        
+        datatable(
+          performance_table %>% arrange(`MAPE(%)`) %>% as.data.table()
+          , extensions = 'Buttons', options = list(dom = 'Bfrtip',buttons = c('csv', 'excel', 'pdf', 'print'))
+        )
+        
+      })
+      
+      
+  
+      
+      
       output$output_curve <- renderDygraph({
         
         output_dygraph <- dygraph(data = table_forecast()[['results']],main = "Prediction results on test period") %>% 
-          dyAxis("y",valueRange = c(0,1.5 * max(eval(parse(text =paste0("table_forecast()[['results']]$",y)))))) 
+          dyAxis("y",valueRange = c(0,1.5 * max(eval(parse(text =paste0("table_forecast()[['results']]$",y)))))) %>% 
+          dyOptions(animatedZooms = TRUE)
         
         
         if (input$bar_chart_mode == TRUE){
