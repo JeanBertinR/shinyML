@@ -41,6 +41,8 @@
 dash_h20 <- function(data = data,x,y,date_column, share_app = FALSE,port = NULL){
   
   data <- data.table(data)
+  #list_auto_ml <- c("DRF","GLM", "XGBoost", "GBM", "DeepLearning" , "StackedEnsemble")
+  #list_auto_ml <- c("DRF","GLM","GBM", "DeepLearning")
   
   
   h2o.init()
@@ -76,22 +78,54 @@ dash_h20 <- function(data = data,x,y,date_column, share_app = FALSE,port = NULL)
                                   
                                   column(width = 4,align="center",
                                          fluidRow(
-                                           box(
-                                             title = "Controls",
-                                             selectInput( inputId  = "input_variables",label = "Input variables: ",choices = x,multiple = TRUE,selected = x),
-                                             sliderInput("train_selector", "Choose train period:",
-                                                         min = eval(parse(text = paste0("min(data$",date_column,")"))),
-                                                         max = eval(parse(text = paste0("max(data$",date_column,")"))),
-                                                         value =  eval(parse(text = paste0("c(min(data$",date_column,"),mean(data$",date_column,"))")))),
-                                             sliderInput("test_selector", "Choose test period:",
-                                                         min = eval(parse(text = paste0("min(data$",date_column,")"))),
-                                                         max = eval(parse(text = paste0("max(data$",date_column,")"))),
-                                                         value = eval(parse(text = paste0("c(mean(data$",date_column,"),max(data$",date_column,"))")))),
-                                             actionButton("train_all","Run tuned models !",style = 'color:white; background-color:red; padding:4px; font-size:150%',
-                                                          icon = icon("cogs",lib = "font-awesome")),
-                                             actionButton("run_auto_ml","Run auto ML",style = 'color:white; background-color:red; padding:4px; font-size:150%',
-                                                          icon = icon("cogs",lib = "font-awesome")),
-                                             width = 12,height = 425
+                                           box(width = 12,
+                                               #title = "Controls",
+                                               tabBox(id = "yfd",width = 12,
+                                                      tabPanel("Global parameters",
+                                                               selectInput( inputId  = "input_variables",label = "Input variables: ",choices = x,multiple = TRUE,selected = x),
+                                                               sliderInput("train_selector", "Choose train period:",
+                                                                           min = eval(parse(text = paste0("min(data$",date_column,")"))),
+                                                                           max = eval(parse(text = paste0("max(data$",date_column,")"))),
+                                                                           value =  eval(parse(text = paste0("c(min(data$",date_column,"),mean(data$",date_column,"))")))),
+                                                               sliderInput("test_selector", "Choose test period:",
+                                                                           min = eval(parse(text = paste0("min(data$",date_column,")"))),
+                                                                           max = eval(parse(text = paste0("max(data$",date_column,")"))),
+                                                                           value = eval(parse(text = paste0("c(mean(data$",date_column,"),max(data$",date_column,"))")))),
+                                                               actionButton("train_all","Run tuned models !",style = 'color:white; background-color:red; padding:4px; font-size:150%',
+                                                                            icon = icon("cogs",lib = "font-awesome")),
+                                                               width = 12,height = 425),
+                                                      tabPanel("Auto ML",
+                                                               br(),
+                                                               #column(width = 6,
+                                                               knobInput(
+                                                                 inputId = "run_time_auto_ml",
+                                                                 label = "Max running time (in seconds)",
+                                                                 value = 15,
+                                                                 min = 10,max = 60,
+                                                                 displayPrevious = TRUE, 
+                                                                 lineCap = "round",
+                                                                 fgColor = "#428BCA",
+                                                                 inputColor = "#428BCA"
+                                                                 
+                                                               ),
+                                                               # column(width = 6,
+                                                               # pickerInput(
+                                                               #   inputId = "auto_ml_models", 
+                                                               #   label = "Authorized models", 
+                                                               #   choices = list_auto_ml, 
+                                                               #   selected = list_auto_ml,
+                                                               #   options = list(
+                                                               #     `actions-box` = TRUE,
+                                                               #     size = 10,
+                                                               #     `selected-text-format` = "count > 3"
+                                                               #   ), 
+                                                               #   multiple = TRUE
+                                                               # )),
+                                                               
+                                                               br(),
+                                                               actionButton("run_auto_ml","Run auto ML",style = 'color:white; background-color:red; padding:4px; font-size:150%',
+                                                                            icon = icon("cogs",lib = "font-awesome")))
+                                               )
                                            )
                                          )
                                   )
@@ -341,6 +375,8 @@ dash_h20 <- function(data = data,x,y,date_column, share_app = FALSE,port = NULL)
         v_glm$type_model <- NA
         v_random$type_model <- NA
         v_auto_ml$type_model <- "ml_auto"
+        x$run_time_auto_ml <-  input$run_time_auto_ml
+        f$auto_ml_models   <- input$auto_ml_models
         
         train_1$date <- input$train_selector[1]
         test_1$date <- input$test_selector[1]
@@ -502,9 +538,12 @@ dash_h20 <- function(data = data,x,y,date_column, share_app = FALSE,port = NULL)
           if (!is.na(v_auto_ml$type_model) & v_auto_ml$type_model == "ml_auto"){
             
             
+            
             dl_auto_ml <- h2o.automl(x = as.character(var_input_list),
                                      y = y,
-                                     training_frame = data_h2o_train,max_runtime_secs = 3)
+                                     training_frame = data_h2o_train,max_runtime_secs = x$run_time_auto_ml,
+                                     #exclude_algos = list_auto_ml[!(list_auto_ml %in% f$auto_ml_models)]
+            )
             
             
             
