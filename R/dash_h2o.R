@@ -45,7 +45,6 @@ dash_h20 <- function(data = data,x,y,date_column, share_app = FALSE,port = NULL)
   
   h2o.init()
   h2o::h2o.no_progress()
-  
   app <- shinyApp(
     
     ui = dashboardPage(skin = "black",
@@ -402,6 +401,7 @@ dash_h20 <- function(data = data,x,y,date_column, share_app = FALSE,port = NULL)
         
         data_results <- eval(parse(text = paste0("data[,.(",date_column,",",y,")][",date_column,">'",test_1$date,"',][",date_column,"< '",test_2$date,"',]")))
         table_results <- data_results
+        dl_auto_ml <- NA
         var_input_list <- c()
         
         for (i in 1:length(model$train_variables)){
@@ -502,14 +502,14 @@ dash_h20 <- function(data = data,x,y,date_column, share_app = FALSE,port = NULL)
           if (!is.na(v_auto_ml$type_model) & v_auto_ml$type_model == "ml_auto"){
             
             
-            dl_fit1 <- h2o.automl(x = as.character(var_input_list),
-                                  y = y,
-                                  training_frame = data_h2o_train,max_runtime_secs = 30)
+            dl_auto_ml <- h2o.automl(x = as.character(var_input_list),
+                                     y = y,
+                                     training_frame = data_h2o_train,max_runtime_secs = 3)
             
             
             
             time_auto_ml <- data.frame(`Training time` =  "10 seconds", Model = "Auto ML")
-            table_auto_ml<- h2o.predict(dl_fit1,data_h2o_test) %>% as.data.table() %>% mutate(predict = round(predict,3))  %>% rename(`Auto ML` = predict)
+            table_auto_ml<- h2o.predict(dl_auto_ml,data_h2o_test) %>% as.data.table() %>% mutate(predict = round(predict,3))  %>% rename(`Auto ML` = predict)
             table_results <- cbind(data_results,table_auto_ml)%>% as.data.table()
           }
           
@@ -524,7 +524,7 @@ dash_h20 <- function(data = data,x,y,date_column, share_app = FALSE,port = NULL)
         table_training_time <- rbind(time_gbm,time_random_forest,time_glm,time_neural_network,time_auto_ml)
         table_importance <- rbind(importance_gbm,importance_random_forest,importance_neural_network) %>% as.data.table()
         
-        list(traning_time = table_training_time, table_importance = table_importance, results = table_results)
+        list(traning_time = table_training_time, table_importance = table_importance, results = table_results,auto_ml_model = dl_auto_ml)
         
         
       })
@@ -576,18 +576,6 @@ dash_h20 <- function(data = data,x,y,date_column, share_app = FALSE,port = NULL)
                "Please run at least one model to see results"))
         
         
-        validate(
-          need(is.na(v_glm$type_model),
-               
-               "Feature importance not available for generalized linear regression model"))
-        
-        
-        validate(
-          need(is.na(v_auto_ml$type_model),
-               
-               "Feature importance not available here"))
-        
-        
         
         if (nrow(table_forecast()[['table_importance']]) != 0){
           
@@ -622,26 +610,63 @@ dash_h20 <- function(data = data,x,y,date_column, share_app = FALSE,port = NULL)
       
       
       
-      observeEvent(input$train_all,{
+      # observeEvent(input$train_all,{
+      #   
+      #   
+      #   
+      #   sendSweetAlert(
+      #     session = session,
+      #     title = "The four machine learning algorithms are currently running !",
+      #     text = "Click ok to see results",
+      #     type = "success"
+      #   )
+      # })
+      
+      
+      observe({
         
-        sendSweetAlert(
-          session = session,
-          title = "The four machine learning algorithms are currently running !",
-          text = "Click ok to see results",
-          type = "success"
-        )
+        if ("Generalized linear regression" %in% colnames(table_forecast()[['results']]) & 
+            "Random forest" %in% colnames(table_forecast()[['results']]) & 
+            "Neural network" %in% colnames(table_forecast()[['results']]) & 
+            "Gradient boosted trees" %in% colnames(table_forecast()[['results']]) 
+        ){
+          sendSweetAlert(
+            session = session,
+            title = "The four machine learning models have been trained !",
+            text = "Click ok to see results",
+            type = "success"
+            
+            
+          )
+        }
       })
       
       
-      observeEvent(input$run_auto_ml,{
+      observe({
         
-        sendSweetAlert(
-          session = session,
-          title = "Auto ML algorithm is currently running !",
-          text = "Click ok to close this window",
-          type = "success"
-        )
+        
+        if("Auto ML" %in% colnames(table_forecast()[['results']])){
+          
+          list <- c(HTML(paste0("<b>Selected model:</b> ",table_forecast()[['auto_ml_model']]@leader@algorithm)))
+          
+          for (i in 1:ncol(table_forecast()[['auto_ml_model']]@leader@model$model_summary)){
+            list <- rbind(list,HTML(paste0("<b>",colnames(table_forecast()[['auto_ml_model']]@leader@model$model_summary[i]),":</b> ",
+                                           table_forecast()[['auto_ml_model']]@leader@model$model_summary[i])))
+          }
+          
+          sendSweetAlert(
+            session = session,
+            title = "Auto ML algorithm succeed!",
+            text = HTML(paste0(
+              #table_forecast()[['auto_ml_model']]@leader@algorithm,
+              "<br>",
+              list)),
+            type = "success",
+            html = TRUE
+          )
+        }
       })
+      
       
     }
   )
