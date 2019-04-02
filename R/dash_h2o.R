@@ -63,10 +63,10 @@ dash_h20 <- function(data = data,x,y,date_column, share_app = FALSE,port = NULL)
                            column(width = 12,
                                   column(width = 8,
                                          fluidRow(
-                                           column(width = 12,box(dygraphOutput("input_curve", height = 120, width = 930),width = 12)),
+                                           column(width = 12,box(dygraphOutput("input_curve", height = 120, width = 1100),width = 12)),
                                            column(width = 12,
                                                   tabBox(id = "results_models",
-                                                         tabPanel("Result charts on test period",withSpinner(dygraphOutput("output_curve", height = 200, width = 930))),
+                                                         tabPanel("Result charts on test period",withSpinner(dygraphOutput("output_curve", height = 200, width = 1100))),
                                                          tabPanel("Compare models performances",withSpinner(DTOutput("date_essai"))),
                                                          tabPanel("Feature importance",withSpinner(plotlyOutput("feature_importance"))),
                                                          tabPanel("Table of results",withSpinner(DTOutput("table_of_results"))), width = 12
@@ -79,8 +79,7 @@ dash_h20 <- function(data = data,x,y,date_column, share_app = FALSE,port = NULL)
                                   column(width = 4,align="center",
                                          fluidRow(
                                            box(width = 12,
-                                               #title = "Controls",
-                                               tabBox(id = "yfd",width = 12,
+                                               tabBox(id = "global_tabbox",width = 12,
                                                       tabPanel("Global parameters",
                                                                selectInput( inputId  = "input_variables",label = "Input variables: ",choices = x,multiple = TRUE,selected = x),
                                                                sliderInput("train_selector", "Choose train period:",
@@ -96,7 +95,6 @@ dash_h20 <- function(data = data,x,y,date_column, share_app = FALSE,port = NULL)
                                                                width = 12,height = 425),
                                                       tabPanel("Auto ML",
                                                                br(),
-                                                               #column(width = 6,
                                                                knobInput(
                                                                  inputId = "run_time_auto_ml",
                                                                  label = "Max running time (in seconds)",
@@ -156,6 +154,7 @@ dash_h20 <- function(data = data,x,y,date_column, share_app = FALSE,port = NULL)
                                       sliderInput(label = "Number of trees",min = 1,max = 100, inputId = "num_tree_random_forest",value = 50),
                                       sliderInput(label = "Subsampling rate",min = 0.1,max = 1, inputId = "subsampling_rate_random_forest",value = 0.6),
                                       sliderInput(label = "Max depth",min = 1,max = 50, inputId = "max_depth_random_forest",value = 20),
+                                      sliderInput(label = "Number of bins",min = 2,max = 100, inputId = "n_bins_random_forest",value = 20),
                                       actionButton("run_random_forest","Run random forest model",style = 'color:white; background-color:red; padding:4px; font-size:150%',
                                                    icon = icon("users",lib = "font-awesome"))
                                       
@@ -271,6 +270,7 @@ dash_h20 <- function(data = data,x,y,date_column, share_app = FALSE,port = NULL)
         t$num_tree_random_forest <- input$num_tree_random_forest
         v$subsampling_rate_random_forest <- input$subsampling_rate_random_forest
         x$max_depth_random_forest <-  input$max_depth_random_forest
+        x$n_bins_random_forest <- input$n_bins_random_forest
         
         v$subsampling_rate_gbm <- input$subsampling_rate_gbm
         x$n_trees_gbm <- input$n_trees_gbm
@@ -282,6 +282,8 @@ dash_h20 <- function(data = data,x,y,date_column, share_app = FALSE,port = NULL)
         f$activation_neural_net <- input$activation_neural_net
         f$loss_neural_net <- input$loss_neural_net
         x$rate_neural_net <- input$rate_neural_net
+        
+        showTab(inputId = "results_models", target = "Feature importance")
       })
       
       
@@ -304,6 +306,8 @@ dash_h20 <- function(data = data,x,y,date_column, share_app = FALSE,port = NULL)
         f$activation_neural_net <- input$activation_neural_net
         f$loss_neural_net <- input$loss_neural_net
         x$rate_neural_net <- input$rate_neural_net
+        
+        showTab(inputId = "results_models", target = "Feature importance")
       })
       
       
@@ -323,6 +327,8 @@ dash_h20 <- function(data = data,x,y,date_column, share_app = FALSE,port = NULL)
         x$n_trees_gbm <- input$n_trees_gbm
         x$max_depth_gbm <- input$max_depth_gbm
         x$learn_rate_gbm <- input$learn_rate_gbm
+        
+        showTab(inputId = "results_models", target = "Feature importance")
       })
       
       
@@ -343,6 +349,8 @@ dash_h20 <- function(data = data,x,y,date_column, share_app = FALSE,port = NULL)
         x$reg_param_glm <- input$reg_param_glm
         x$alpha_param_glm <- input$alpha_param_glm
         x$max_iter_glm <- input$max_iter_glm
+        
+        hideTab(inputId = "results_models", target = "Feature importance")
       })
       
       
@@ -363,6 +371,9 @@ dash_h20 <- function(data = data,x,y,date_column, share_app = FALSE,port = NULL)
         t$num_tree_random_forest <- input$num_tree_random_forest
         v$subsampling_rate_random_forest <- input$subsampling_rate_random_forest
         x$max_depth_random_forest <-  input$max_depth_random_forest
+        x$n_bins_random_forest <- input$n_bins_random_forest
+        
+        showTab(inputId = "results_models", target = "Feature importance")
         
       })
       
@@ -383,6 +394,8 @@ dash_h20 <- function(data = data,x,y,date_column, share_app = FALSE,port = NULL)
         test_2$date <- input$test_selector[2]
         model$train_variables <- input$input_variables
         
+        hideTab(inputId = "results_models", target = "Feature importance")
+        
       })
       
       
@@ -401,7 +414,7 @@ dash_h20 <- function(data = data,x,y,date_column, share_app = FALSE,port = NULL)
           dyEvent(x = input$test_selector[2]) %>%
           dySeries(y,fillGraph = TRUE) %>% 
           dyAxis("y",valueRange = c(0,1.5 * max(eval(parse(text =paste0("data$",y)))))) %>% 
-          dyOptions(animatedZooms = TRUE)
+          dyOptions(colors = "darkblue",animatedZooms = TRUE)
         
         
         
@@ -525,6 +538,7 @@ dash_h20 <- function(data = data,x,y,date_column, share_app = FALSE,port = NULL)
                                         ntrees = t$num_tree_random_forest,
                                         sample_rate = v$subsampling_rate_random_forest,
                                         max_depth = x$max_depth_random_forest,
+                                        nbins = x$n_bins_random_forest,
                                         training_frame = data_h2o_train,
                                         model_id = "dl_fit1")
             t2 <- Sys.time()
@@ -541,13 +555,13 @@ dash_h20 <- function(data = data,x,y,date_column, share_app = FALSE,port = NULL)
             
             dl_auto_ml <- h2o.automl(x = as.character(var_input_list),
                                      y = y,
-                                     training_frame = data_h2o_train,max_runtime_secs = x$run_time_auto_ml,
+                                     training_frame = data_h2o_train,max_runtime_secs = x$run_time_auto_ml
                                      #exclude_algos = list_auto_ml[!(list_auto_ml %in% f$auto_ml_models)]
             )
             
             
             
-            time_auto_ml <- data.frame(`Training time` =  "10 seconds", Model = "Auto ML")
+            time_auto_ml <- data.frame(`Training time` =  paste0(x$run_time_auto_ml," seconds"), Model = "Auto ML")
             table_auto_ml<- h2o.predict(dl_auto_ml,data_h2o_test) %>% as.data.table() %>% mutate(predict = round(predict,3))  %>% rename(`Auto ML` = predict)
             table_results <- cbind(data_results,table_auto_ml)%>% as.data.table()
           }

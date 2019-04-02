@@ -60,11 +60,11 @@ dash_spark <- function(data = data,x,y,date_column, share_app = FALSE,port = NUL
                  column(width = 8,
                         fluidRow(
                           column(width = 12,box(
-                            dygraphOutput("input_curve", height = 120, width = 930),width = 12
+                            dygraphOutput("input_curve", height = 120, width = 1100),width = 12
                           )
                           ),
                           column(width = 12,tabBox(id = "results_models",
-                                                   tabPanel("Result charts on test period",withSpinner(dygraphOutput("output_curve",height = 200,width = 930))),
+                                                   tabPanel("Result charts on test period",withSpinner(dygraphOutput("output_curve",height = 200,width = 1100))),
                                                    tabPanel("Compare models performances",withSpinner(DTOutput("date_essai"))),
                                                    tabPanel("Feature importance",withSpinner(plotlyOutput("feature_importance"))),
                                                    tabPanel("Table of results",withSpinner(DTOutput("table_of_results"))),width = 12
@@ -142,7 +142,7 @@ dash_spark <- function(data = data,x,y,date_column, share_app = FALSE,port = NUL
                      
                      sliderInput(label = "Step size",min = 0,max = 1, inputId = "step_size_gbm",value = 0.1),
                      sliderInput(label = "Subsampling rate",min = 0.1,max = 1, inputId = "subsampling_rate_gbm",value = 1),
-                     
+                     sliderInput(label = "Max depth",min = 1,max = 50, inputId = "max_depth_gbm",value = 20),
                      
                      actionButton("run_gradient_boosting","Run gradient boosting model",style = 'color:white; background-color:darkgreen; padding:4px; font-size:150%',
                                   icon = icon("users",lib = "font-awesome"))
@@ -207,6 +207,7 @@ dash_spark <- function(data = data,x,y,date_column, share_app = FALSE,port = NUL
         
         t$step_size_gbm <- input$step_size_gbm
         v$subsampling_rate_gbm <- input$subsampling_rate_gbm
+        x$max_depth_gbm <- input$max_depth_gbm
         
         t$num_tree_random_forest <- input$num_tree_random_forest
         v$subsampling_rate_random_forest <- input$subsampling_rate_random_forest
@@ -223,6 +224,8 @@ dash_spark <- function(data = data,x,y,date_column, share_app = FALSE,port = NUL
         x$max_bins_decision_tree <- input$max_bins_decision_tree
         x$min_instance_decision_tree <- input$min_instance_decision_tree
         
+        showTab(inputId = "results_models", target = "Feature importance")
+        
         
       })
       
@@ -231,13 +234,18 @@ dash_spark <- function(data = data,x,y,date_column, share_app = FALSE,port = NUL
         
         test_1$date <- input$test_selector[1]
         test_2$date <- input$test_selector[2]
+        
         model$train_variables <- input$input_variables
         t$step_size_gbm <- input$step_size_gbm
         v$subsampling_rate_gbm <- input$subsampling_rate_gbm
+        x$max_depth_gbm <- input$max_depth_gbm
+        
         v_grad$type_model <- "ml_gradient_boosted_trees"
         v_random$type_model <- NA
         v_glm$type_model <- NA
         v_decision_tree$type_model <- NA
+        
+        showTab(inputId = "results_models", target = "Feature importance")
         
       })
       
@@ -254,6 +262,8 @@ dash_spark <- function(data = data,x,y,date_column, share_app = FALSE,port = NUL
         v_grad$type_model <- NA
         v_glm$type_model <- NA
         v_decision_tree$type_model <- NA
+        
+        showTab(inputId = "results_models", target = "Feature importance")
         
       })
       
@@ -275,6 +285,7 @@ dash_spark <- function(data = data,x,y,date_column, share_app = FALSE,port = NUL
         v_random$type_model <- NA
         v_decision_tree$type_model <- NA
         
+        hideTab(inputId = "results_models", target = "Feature importance")
       })
       
       observeEvent(input$run_decision_tree,{
@@ -291,6 +302,8 @@ dash_spark <- function(data = data,x,y,date_column, share_app = FALSE,port = NUL
         v_glm$type_model <- NA
         v_grad$type_model <- NA
         v_random$type_model <- NA
+        
+        showTab(inputId = "results_models", target = "Feature importance")
         
       })
       
@@ -352,6 +365,7 @@ dash_spark <- function(data = data,x,y,date_column, share_app = FALSE,port = NUL
             eval(parse(text = paste0("fit <- data_spark_train %>% ml_gradient_boosted_trees(", y ," ~ " ,var_input_list ,
                                      ",step_size =",t$step_size_gbm,
                                      ",subsampling_rate =",v$subsampling_rate_gbm,
+                                     ",max_depth =",x$max_depth_gbm,
                                      " )")))
             t2 <- Sys.time()
             
@@ -460,7 +474,7 @@ dash_spark <- function(data = data,x,y,date_column, share_app = FALSE,port = NUL
       })
       
       
-  
+      
       
       
       output$output_curve <- renderDygraph({
@@ -499,12 +513,6 @@ dash_spark <- function(data = data,x,y,date_column, share_app = FALSE,port = NUL
                "Please run at least one model to see results"))
         
         
-        validate(
-          need(is.na(v_glm$type_model),
-               
-               "Feature importance not available for generalized linear regression model"))
-        
-
         
         if (nrow(table_forecast()[['table_importance']]) != 0){
           ggplotly(
@@ -543,7 +551,7 @@ dash_spark <- function(data = data,x,y,date_column, share_app = FALSE,port = NUL
         )
       })
       
-
+      
       
     }
   )
