@@ -18,13 +18,13 @@
 #'
 #' @examples
 #'\dontrun{
-#' library(dashR)
+#' library(shinyML)
 #' library(dplyr)
 #' Sys.setenv(http_proxy="") 
 #' Sys.setenv(http_proxy_user="") 
 #' Sys.setenv(https_proxy_user="")
 #' longley2 <- longley %>% mutate(Year = as.Date(as.character(Year),format = "%Y"))
-#' dash_spark(data =longley2,x = c("GNP_deflator","Unemployed" ,"Armed_Forces","Employed"),
+#' shiny_spark(data =longley2,x = c("GNP_deflator","Unemployed" ,"Armed_Forces","Employed"),
 #'   y = "GNP",date_column = "Year",share_app = TRUE,port = 3952)
 #'}
 #' @import shiny shinydashboard dygraphs data.table ggplot2 sparklyr shinycssloaders
@@ -36,7 +36,7 @@
 #' @importFrom stats predict reorder
 #' @export
 
-dash_spark <- function(data = data,x,y,date_column, share_app = FALSE,port = NULL ){
+shiny_spark <- function(data = data,x,y,date_column, share_app = FALSE,port = NULL ){
   
   
   data <- data.table(data)

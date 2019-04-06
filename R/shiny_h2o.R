@@ -18,12 +18,12 @@
 #'
 #' @examples
 #'\dontrun{
-#' library(dashR)
+#' library(shinyML)
 #' Sys.setenv(http_proxy="") 
 #' Sys.setenv(http_proxy_user="") 
 #' Sys.setenv(https_proxy_user="")
 #' longley2 <- longley %>% mutate(Year = as.Date(as.character(Year),format = "%Y"))
-#' dash_h20(data =longley2,x = c("GNP_deflator","Unemployed" ,"Armed_Forces","Employed"),
+#' shiny_h20(data =longley2,x = c("GNP_deflator","Unemployed" ,"Armed_Forces","Employed"),
 #'   y = "GNP",date_column = "Year",share_app = TRUE,port = 3951)
 #'}
 #' @import shiny shinydashboard dygraphs data.table ggplot2 shinycssloaders
@@ -32,13 +32,13 @@
 #' @importFrom DT renderDT DTOutput datatable
 #' @importFrom h2o h2o.init as.h2o h2o.deeplearning h2o.varimp h2o.predict h2o.gbm h2o.glm h2o.randomForest h2o.automl 
 #' @importFrom plotly plotlyOutput renderPlotly ggplotly
-#' @importFrom shinyWidgets materialSwitch sendSweetAlert
+#' @importFrom shinyWidgets materialSwitch sendSweetAlert knobInput
 #' @importFrom stats predict reorder
 #' 
 #' 
 #' @export
 
-dash_h20 <- function(data = data,x,y,date_column, share_app = FALSE,port = NULL){
+shiny_h2o <- function(data = data,x,y,date_column, share_app = FALSE,port = NULL){
   
   data <- data.table(data)
   #list_auto_ml <- c("DRF","GLM", "XGBoost", "GBM", "DeepLearning" , "StackedEnsemble")

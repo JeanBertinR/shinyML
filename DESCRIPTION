@@ -1,4 +1,4 @@
-Package: dashR
+Package: shinyML
 Type: Package
 Title: Create a shiny app to implement and compare supervised regression models on time series 
 Version: 0.1.0
