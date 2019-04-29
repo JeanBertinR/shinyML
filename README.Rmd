@@ -9,7 +9,7 @@ knitr::opts_chunk$set(echo = TRUE)
 library(manipulateWidget)
 ```
 
-[![Travis-CI Build Status](https://travis-ci.org/JeanBertinR/shinyML?branch=master)](https://travis-ci.org/JeanBertinR/shinyML)
+[![Travis-CI Build Status](https://travis-ci.org/JeanBertinR/shinyML.svg?branch=master)](https://travis-ci.org/JeanBertinR/shinyML)
 
 # dashR
 
