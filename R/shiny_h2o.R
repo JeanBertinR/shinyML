@@ -19,9 +19,6 @@
 #' @examples
 #'\dontrun{
 #' library(shinyML)
-#' Sys.setenv(http_proxy="") 
-#' Sys.setenv(http_proxy_user="") 
-#' Sys.setenv(https_proxy_user="")
 #' longley2 <- longley %>% mutate(Year = as.Date(as.character(Year),format = "%Y"))
 #' shiny_h20(data =longley2,x = c("GNP_deflator","Unemployed" ,"Armed_Forces","Employed"),
 #'   y = "GNP",date_column = "Year",share_app = TRUE,port = 3951)
@@ -40,21 +37,28 @@
 
 shiny_h2o <- function(data = data,x,y,date_column, share_app = FALSE,port = NULL){
   
+  
+  # Convert input data must be a data table object 
   data <- data.table(data)
-  #list_auto_ml <- c("DRF","GLM", "XGBoost", "GBM", "DeepLearning" , "StackedEnsemble")
-  #list_auto_ml <- c("DRF","GLM","GBM", "DeepLearning")
   
   
+  # Run h2o instance 
+  Sys.setenv(http_proxy="")
+  Sys.setenv(http_proxy_user="")
+  Sys.setenv(https_proxy_user="")
   h2o.init()
   h2o::h2o.no_progress()
+  
+  
   app <- shinyApp(
     
+    # Define ui side of shiny app
     ui = dashboardPage(skin = "black",
                        dashboardHeader(title = "H2O"),
                        dashboardSidebar(
                          sidebarMenu(
-                           menuItem("Dashboard", tabName = "dashboard", icon = icon("dashboard"),
-                                    materialSwitch(inputId = "bar_chart_mode",label = "Bar chart mode",status = "primary",value = TRUE)
+                           menuItem(
+                             materialSwitch(inputId = "bar_chart_mode",label = "Bar chart mode",status = "primary",value = TRUE)
                            )
                          )),
                        
@@ -67,7 +71,7 @@ shiny_h2o <- function(data = data,x,y,date_column, share_app = FALSE,port = NULL
                                            column(width = 12,
                                                   tabBox(id = "results_models",
                                                          tabPanel("Result charts on test period",withSpinner(dygraphOutput("output_curve", height = 200, width = 1100))),
-                                                         tabPanel("Compare models performances",withSpinner(DTOutput("date_essai"))),
+                                                         tabPanel("Compare models performances",withSpinner(DTOutput("score_table"))),
                                                          tabPanel("Feature importance",withSpinner(plotlyOutput("feature_importance"))),
                                                          tabPanel("Table of results",withSpinner(DTOutput("table_of_results"))), width = 12
                                                   )
@@ -95,30 +99,10 @@ shiny_h2o <- function(data = data,x,y,date_column, share_app = FALSE,port = NULL
                                                                width = 12,height = 425),
                                                       tabPanel("Auto ML",
                                                                br(),
-                                                               knobInput(
-                                                                 inputId = "run_time_auto_ml",
-                                                                 label = "Max running time (in seconds)",
-                                                                 value = 15,
-                                                                 min = 10,max = 60,
-                                                                 displayPrevious = TRUE, 
-                                                                 lineCap = "round",
-                                                                 fgColor = "#428BCA",
-                                                                 inputColor = "#428BCA"
-                                                                 
+                                                               knobInput(inputId = "run_time_auto_ml",label = "Max running time (in seconds)",value = 15,min = 10,max = 60,
+                                                                         displayPrevious = TRUE, lineCap = "round",fgColor = "#428BCA",inputColor = "#428BCA"
+                                                                         
                                                                ),
-                                                               # column(width = 6,
-                                                               # pickerInput(
-                                                               #   inputId = "auto_ml_models", 
-                                                               #   label = "Authorized models", 
-                                                               #   choices = list_auto_ml, 
-                                                               #   selected = list_auto_ml,
-                                                               #   options = list(
-                                                               #     `actions-box` = TRUE,
-                                                               #     size = 10,
-                                                               #     `selected-text-format` = "count > 3"
-                                                               #   ), 
-                                                               #   multiple = TRUE
-                                                               # )),
                                                                
                                                                br(),
                                                                actionButton("run_auto_ml","Run auto ML",style = 'color:white; background-color:red; padding:4px; font-size:150%',
@@ -146,7 +130,9 @@ shiny_h2o <- function(data = data,x,y,date_column, share_app = FALSE,port = NULL
                                         sliderInput(label = "Maximum iteraions",inputId = "max_iter_glm",min = 50,max = 300,value = 100),
                                         actionButton("run_glm","Run generalized linear regression",style = 'color:white; background-color:orange; padding:4px; font-size:150%',
                                                      icon = icon("cogs",lib = "font-awesome"))
-                                        ,width = 3 ),
+                                        ,width = 3 
+                                        
+                                    ),
                                     
                                     box(
                                       title = "Random Forest",status = "danger",
@@ -158,7 +144,9 @@ shiny_h2o <- function(data = data,x,y,date_column, share_app = FALSE,port = NULL
                                       actionButton("run_random_forest","Run random forest model",style = 'color:white; background-color:red; padding:4px; font-size:150%',
                                                    icon = icon("users",lib = "font-awesome"))
                                       
-                                      ,width = 3),
+                                      ,width = 3
+                                      
+                                    ),
                                     
                                     
                                     box(
@@ -168,6 +156,7 @@ shiny_h2o <- function(data = data,x,y,date_column, share_app = FALSE,port = NULL
                                         radioButtons(label = "Activation function",inputId = "activation_neural_net",
                                                      choices = c( "Rectifier", "Maxout","Tanh", "RectifierWithDropout", "MaxoutWithDropout","TanhWithDropout"),selected = "Rectifier"),
                                         width = 6),
+                                      
                                       column(
                                         radioButtons(label = "Loss function",inputId = "loss_neural_net",
                                                      choices = c("Automatic", "Quadratic", "Huber", "Absolute", "Quantile"),selected = "Automatic"),
@@ -176,13 +165,11 @@ shiny_h2o <- function(data = data,x,y,date_column, share_app = FALSE,port = NULL
                                       textInput(label = "Hidden layers",inputId = "hidden_neural_net",value = "c(200,200)"),
                                       sliderInput(label = "Epochs",min = 10,max = 100, inputId = "epochs_neural_net",value = 10),
                                       sliderInput(label = "Learning rate",min = 0.001,max = 0.1, inputId = "rate_neural_net",value = 0.005),
-                                      
                                       actionButton("run_neural_network","Run neural network regression",style = 'color:white; background-color:darkblue; padding:4px; font-size:150%',
                                                    icon = icon("cogs",lib = "font-awesome"))
-                                      ,width = 3 ),
-                                    
-                                    
-                                    
+                                      ,width = 3 
+                                      
+                                    ),
                                     
                                     box(
                                       title = "Gradient boosting trees",status = "success",
@@ -190,15 +177,14 @@ shiny_h2o <- function(data = data,x,y,date_column, share_app = FALSE,port = NULL
                                       
                                       sliderInput(label = "Max depth",min = 1,max = 20, inputId = "max_depth_gbm",value = 5),
                                       sliderInput(label = "Number of trees",min = 1,max = 100, inputId = "n_trees_gbm",value = 50),
-                                      
                                       sliderInput(label = "Subsampling rate",min = 0.1,max = 1, inputId = "subsampling_rate_gbm",value = 1),
                                       sliderInput(label = "Learn rate",min = 0.1,max = 1, inputId = "learn_rate_gbm",value = 0.1),
-                                      
                                       actionButton("run_gradient_boosting","Run gradient boosting model",style = 'color:white; background-color:darkgreen; padding:4px; font-size:150%',
                                                    icon = icon("users",lib = "font-awesome"))
                                       
-                                      ,width = 3)
-                                    
+                                      ,width = 3
+                                      
+                                    )
                                     
                                   )
                                   
@@ -207,12 +193,8 @@ shiny_h2o <- function(data = data,x,y,date_column, share_app = FALSE,port = NULL
                        )
     ),
     
-    
-    
-    
-    
+    # Define server side of shiny app
     server = function(session, input, output) {
-      set.seed(122)
       
       model <- reactiveValues()
       train_1 <- reactiveValues()
@@ -225,12 +207,8 @@ shiny_h2o <- function(data = data,x,y,date_column, share_app = FALSE,port = NULL
       v_random <- reactiveValues(type_model = NA)
       v_auto_ml <- reactiveValues(type_model = NA)
       
+      parameter <- reactiveValues()
       
-      t <- reactiveValues()
-      v <- reactiveValues()
-      f <- reactiveValues()
-      x <- reactiveValues()
-      k <- reactiveValues()
       
       time_gbm <- data.table()
       time_random_forest <- data.table()
@@ -254,36 +232,40 @@ shiny_h2o <- function(data = data,x,y,date_column, share_app = FALSE,port = NULL
         train_1$date <- input$train_selector[1]
         test_1$date <- input$test_selector[1]
         test_2$date <- input$test_selector[2]
+        
         model$train_variables <- input$input_variables
+        
         v_neural$type_model <- "ml_neural_network"
         v_grad$type_model <- "ml_gradient_boosted_trees"
         v_glm$type_model <- "ml_generalized_linear_regression"
         v_random$type_model <- "ml_random_forest"
         v_auto_ml$type_model <- NA
         
-        f$family_glm <- input$glm_family
-        x$reg_param_glm <- input$reg_param_glm
-        x$alpha_param_glm <- input$alpha_param_glm
-        x$max_iter_glm <- input$max_iter_glm
+        parameter$family_glm <- input$glm_family
+        parameter$reg_param_glm <- input$reg_param_glm
+        parameter$alpha_param_glm <- input$alpha_param_glm
+        parameter$max_iter_glm <- input$max_iter_glm
         
         
-        t$num_tree_random_forest <- input$num_tree_random_forest
-        v$subsampling_rate_random_forest <- input$subsampling_rate_random_forest
-        x$max_depth_random_forest <-  input$max_depth_random_forest
-        x$n_bins_random_forest <- input$n_bins_random_forest
+        parameter$num_tree_random_forest <- input$num_tree_random_forest
+        parameter$subsampling_rate_random_forest <- input$subsampling_rate_random_forest
+        parameter$max_depth_random_forest <-  input$max_depth_random_forest
+        parameter$n_bins_random_forest <- input$n_bins_random_forest
         
-        v$subsampling_rate_gbm <- input$subsampling_rate_gbm
-        x$n_trees_gbm <- input$n_trees_gbm
-        x$max_depth_gbm <- input$max_depth_gbm
-        x$learn_rate_gbm <- input$learn_rate_gbm
+        parameter$subsampling_rate_gbm <- input$subsampling_rate_gbm
+        parameter$n_trees_gbm <- input$n_trees_gbm
+        parameter$max_depth_gbm <- input$max_depth_gbm
+        parameter$learn_rate_gbm <- input$learn_rate_gbm
         
-        k$hidden_neural_net <- input$hidden_neural_net
-        x$epochs_neural_net <- input$epochs_neural_net
-        f$activation_neural_net <- input$activation_neural_net
-        f$loss_neural_net <- input$loss_neural_net
-        x$rate_neural_net <- input$rate_neural_net
+        parameter$hidden_neural_net <- input$hidden_neural_net
+        parameter$epochs_neural_net <- input$epochs_neural_net
+        parameter$activation_neural_net <- input$activation_neural_net
+        parameter$loss_neural_net <- input$loss_neural_net
+        parameter$rate_neural_net <- input$rate_neural_net
         
         showTab(inputId = "results_models", target = "Feature importance")
+        
+        
       })
       
       
@@ -295,17 +277,18 @@ shiny_h2o <- function(data = data,x,y,date_column, share_app = FALSE,port = NULL
         test_1$date <- input$test_selector[1]
         test_2$date <- input$test_selector[2]
         model$train_variables <- input$input_variables
+        
         v_neural$type_model <- "ml_neural_network"
         v_grad$type_model <- NA
         v_glm$type_model <- NA
         v_random$type_model <- NA
         v_auto_ml$type_model <- NA
         
-        k$hidden_neural_net <- input$hidden_neural_net
-        x$epochs_neural_net <- input$epochs_neural_net
-        f$activation_neural_net <- input$activation_neural_net
-        f$loss_neural_net <- input$loss_neural_net
-        x$rate_neural_net <- input$rate_neural_net
+        parameter$hidden_neural_net <- input$hidden_neural_net
+        parameter$epochs_neural_net <- input$epochs_neural_net
+        parameter$activation_neural_net <- input$activation_neural_net
+        parameter$loss_neural_net <- input$loss_neural_net
+        parameter$rate_neural_net <- input$rate_neural_net
         
         showTab(inputId = "results_models", target = "Feature importance")
       })
@@ -323,10 +306,10 @@ shiny_h2o <- function(data = data,x,y,date_column, share_app = FALSE,port = NULL
         v_random$type_model <- NA
         v_auto_ml$type_model <- NA
         
-        v$subsampling_rate_gbm <- input$subsampling_rate_gbm
-        x$n_trees_gbm <- input$n_trees_gbm
-        x$max_depth_gbm <- input$max_depth_gbm
-        x$learn_rate_gbm <- input$learn_rate_gbm
+        parameter$subsampling_rate_gbm <- input$subsampling_rate_gbm
+        parameter$n_trees_gbm <- input$n_trees_gbm
+        parameter$max_depth_gbm <- input$max_depth_gbm
+        parameter$learn_rate_gbm <- input$learn_rate_gbm
         
         showTab(inputId = "results_models", target = "Feature importance")
       })
@@ -345,10 +328,10 @@ shiny_h2o <- function(data = data,x,y,date_column, share_app = FALSE,port = NULL
         
         v_glm$type_model <- "ml_generalized_linear_regression"
         
-        f$family_glm <- input$glm_family
-        x$reg_param_glm <- input$reg_param_glm
-        x$alpha_param_glm <- input$alpha_param_glm
-        x$max_iter_glm <- input$max_iter_glm
+        parameter$family_glm <- input$glm_family
+        parameter$reg_param_glm <- input$reg_param_glm
+        parameter$alpha_param_glm <- input$alpha_param_glm
+        parameter$max_iter_glm <- input$max_iter_glm
         
         hideTab(inputId = "results_models", target = "Feature importance")
       })
@@ -368,10 +351,10 @@ shiny_h2o <- function(data = data,x,y,date_column, share_app = FALSE,port = NULL
         v_random$type_model <- "ml_random_forest"
         
         
-        t$num_tree_random_forest <- input$num_tree_random_forest
-        v$subsampling_rate_random_forest <- input$subsampling_rate_random_forest
-        x$max_depth_random_forest <-  input$max_depth_random_forest
-        x$n_bins_random_forest <- input$n_bins_random_forest
+        parameter$num_tree_random_forest <- input$num_tree_random_forest
+        parameter$subsampling_rate_random_forest <- input$subsampling_rate_random_forest
+        parameter$max_depth_random_forest <-  input$max_depth_random_forest
+        parameter$n_bins_random_forest <- input$n_bins_random_forest
         
         showTab(inputId = "results_models", target = "Feature importance")
         
@@ -386,8 +369,9 @@ shiny_h2o <- function(data = data,x,y,date_column, share_app = FALSE,port = NULL
         v_glm$type_model <- NA
         v_random$type_model <- NA
         v_auto_ml$type_model <- "ml_auto"
-        x$run_time_auto_ml <-  input$run_time_auto_ml
-        f$auto_ml_models   <- input$auto_ml_models
+        
+        parameter$run_time_auto_ml <-  input$run_time_auto_ml
+        parameter$auto_ml_models   <- input$auto_ml_models
         
         train_1$date <- input$train_selector[1]
         test_1$date <- input$test_selector[1]
@@ -468,18 +452,43 @@ shiny_h2o <- function(data = data,x,y,date_column, share_app = FALSE,port = NULL
           data_h2o_train <- as.h2o(data_train)
           data_h2o_test <- as.h2o(data_test)
           
+          
+          
+          if (!is.na(v_glm$type_model) & v_glm$type_model == "ml_generalized_linear_regression"){
+            
+            t1 <- Sys.time()
+            dl_fit1 <- h2o.glm(x = as.character(var_input_list),
+                               y = y,
+                               training_frame = data_h2o_train,
+                               family = parameter$family_glm,
+                               intercept = input$intercept_term_glm,
+                               lambda = parameter$reg_param_glm,
+                               alpha = parameter$alpha_param_glm,
+                               max_iterations = parameter$max_iter_glm,
+                               seed = 1
+            )
+            t2 <- Sys.time()
+            time_glm <- data.frame(`Training time` =  paste0(round(t2 - t1,1)," seconds"), Model = "Generalized linear regression")
+            table_glm <- h2o.predict(dl_fit1,data_h2o_test) %>% as.data.table() %>% mutate(predict = round(predict,3)) %>% rename(`Generalized linear regression` = predict)
+            table_results <- cbind(data_results,table_glm)%>% as.data.table()
+            
+          }
+          
+          
           if (!is.na(v_neural$type_model) & v_neural$type_model == "ml_neural_network"){
             
             t1 <- Sys.time()
             dl_fit1 <- h2o.deeplearning(x = as.character(var_input_list),
                                         y = y,
                                         training_frame = data_h2o_train,
-                                        model_id = "dl_fit1",
-                                        activation = f$activation_neural_net,
-                                        loss = f$loss_neural_net,
-                                        hidden = eval(parse(text = k$hidden_neural_net)) ,
-                                        epochs = x$epochs_neural_net,
-                                        rate = x$rate_neural_net)
+                                        activation = parameter$activation_neural_net,
+                                        loss = parameter$loss_neural_net,
+                                        hidden = eval(parse(text = parameter$hidden_neural_net)) ,
+                                        epochs = parameter$epochs_neural_net,
+                                        rate = parameter$rate_neural_net,
+                                        reproducible = T,
+                                        seed = 1
+            )
             t2 <- Sys.time()
             
             time_neural_network <- data.frame(`Training time` =  paste0(round(t2 - t1,1)," seconds"), Model = "Neural network")
@@ -495,12 +504,14 @@ shiny_h2o <- function(data = data,x,y,date_column, share_app = FALSE,port = NULL
             t1 <- Sys.time()
             dl_fit1 <- h2o.gbm(x = as.character(var_input_list),
                                y = y,
-                               sample_rate = v$subsampling_rate_gbm,
-                               ntrees = x$n_trees_gbm,
-                               max_depth = x$max_depth_gbm,
-                               learn_rate = x$learn_rate_gbm,
-                               training_frame = data_h2o_train,min_rows = 4,
-                               model_id = "dl_fit1")
+                               training_frame = data_h2o_train,
+                               sample_rate = parameter$subsampling_rate_gbm,
+                               ntrees = parameter$n_trees_gbm,
+                               max_depth = parameter$max_depth_gbm,
+                               learn_rate = parameter$learn_rate_gbm,
+                               min_rows = 2,
+                               seed = 1
+            )
             t2 <- Sys.time()
             time_gbm <- data.frame(`Training time` =  paste0(round(t2 - t1,1)," seconds"), Model = "Gradient boosted trees") 
             importance_gbm <- h2o.varimp(dl_fit1) %>% as.data.table() %>% select(`variable`,scaled_importance) %>% mutate(model = "Gradient boosted trees")
@@ -510,24 +521,7 @@ shiny_h2o <- function(data = data,x,y,date_column, share_app = FALSE,port = NULL
           }
           
           
-          if (!is.na(v_glm$type_model) & v_glm$type_model == "ml_generalized_linear_regression"){
-            
-            t1 <- Sys.time()
-            dl_fit1 <- h2o.glm(x = as.character(var_input_list),
-                               y = y,
-                               family = f$family_glm,
-                               intercept = input$intercept_term_glm,
-                               lambda = x$reg_param_glm,
-                               alpha = x$alpha_param_glm,
-                               max_iterations = x$max_iter_glm,
-                               training_frame = data_h2o_train,
-                               model_id = "dl_fit1")
-            t2 <- Sys.time()
-            time_glm <- data.frame(`Training time` =  paste0(round(t2 - t1,1)," seconds"), Model = "Generalized linear regression")
-            table_glm <- h2o.predict(dl_fit1,data_h2o_test) %>% as.data.table() %>% mutate(predict = round(predict,3)) %>% rename(`Generalized linear regression` = predict)
-            table_results <- cbind(data_results,table_glm)%>% as.data.table()
-            
-          }
+          
           
           
           if (!is.na(v_random$type_model) & v_random$type_model == "ml_random_forest"){
@@ -535,12 +529,13 @@ shiny_h2o <- function(data = data,x,y,date_column, share_app = FALSE,port = NULL
             t1 <- Sys.time()
             dl_fit1 <- h2o.randomForest(x = as.character(var_input_list),
                                         y = y,
-                                        ntrees = t$num_tree_random_forest,
-                                        sample_rate = v$subsampling_rate_random_forest,
-                                        max_depth = x$max_depth_random_forest,
-                                        nbins = x$n_bins_random_forest,
                                         training_frame = data_h2o_train,
-                                        model_id = "dl_fit1")
+                                        ntrees = parameter$num_tree_random_forest,
+                                        sample_rate = parameter$subsampling_rate_random_forest,
+                                        max_depth = parameter$max_depth_random_forest,
+                                        nbins = parameter$n_bins_random_forest,
+                                        seed = 1
+            )
             t2 <- Sys.time()
             time_random_forest <- data.frame(`Training time` =  paste0(round(t2 - t1,1)," seconds"), Model = "Random forest")
             importance_random_forest <- h2o.varimp(dl_fit1) %>% as.data.table() %>% select(`variable`,scaled_importance) %>% mutate(model = "Random forest")
@@ -556,12 +551,12 @@ shiny_h2o <- function(data = data,x,y,date_column, share_app = FALSE,port = NULL
             dl_auto_ml <- h2o.automl(x = as.character(var_input_list),
                                      y = y,
                                      training_frame = data_h2o_train,max_runtime_secs = x$run_time_auto_ml
-                                     #exclude_algos = list_auto_ml[!(list_auto_ml %in% f$auto_ml_models)]
+                                     
             )
             
             
             
-            time_auto_ml <- data.frame(`Training time` =  paste0(x$run_time_auto_ml," seconds"), Model = "Auto ML")
+            time_auto_ml <- data.frame(`Training time` =  paste0(parameter$run_time_auto_ml," seconds"), Model = "Auto ML")
             table_auto_ml<- h2o.predict(dl_auto_ml,data_h2o_test) %>% as.data.table() %>% mutate(predict = round(predict,3))  %>% rename(`Auto ML` = predict)
             table_results <- cbind(data_results,table_auto_ml)%>% as.data.table()
           }
@@ -583,7 +578,7 @@ shiny_h2o <- function(data = data,x,y,date_column, share_app = FALSE,port = NULL
       })
       
       
-      output$date_essai <- renderDT({
+      output$score_table <- renderDT({
         
         
         performance_table <-  table_forecast()[['results']] %>% 
@@ -629,7 +624,6 @@ shiny_h2o <- function(data = data,x,y,date_column, share_app = FALSE,port = NULL
                "Please run at least one model to see results"))
         
         
-        
         if (nrow(table_forecast()[['table_importance']]) != 0){
           
           
@@ -661,19 +655,6 @@ shiny_h2o <- function(data = data,x,y,date_column, share_app = FALSE,port = NULL
                           value= c(input$train_selector[1],input$test_selector[1]) ) 
       })
       
-      
-      
-      # observeEvent(input$train_all,{
-      #   
-      #   
-      #   
-      #   sendSweetAlert(
-      #     session = session,
-      #     title = "The four machine learning algorithms are currently running !",
-      #     text = "Click ok to see results",
-      #     type = "success"
-      #   )
-      # })
       
       
       observe({
@@ -711,7 +692,6 @@ shiny_h2o <- function(data = data,x,y,date_column, share_app = FALSE,port = NULL
             session = session,
             title = "Auto ML algorithm succeed!",
             text = HTML(paste0(
-              #table_forecast()[['auto_ml_model']]@leader@algorithm,
               "<br>",
               list)),
             type = "success",

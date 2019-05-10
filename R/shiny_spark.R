@@ -19,10 +19,6 @@
 #' @examples
 #'\dontrun{
 #' library(shinyML)
-#' library(dplyr)
-#' Sys.setenv(http_proxy="") 
-#' Sys.setenv(http_proxy_user="") 
-#' Sys.setenv(https_proxy_user="")
 #' longley2 <- longley %>% mutate(Year = as.Date(as.character(Year),format = "%Y"))
 #' shiny_spark(data =longley2,x = c("GNP_deflator","Unemployed" ,"Armed_Forces","Employed"),
 #'   y = "GNP",date_column = "Year",share_app = TRUE,port = 3952)
@@ -183,12 +179,7 @@ shiny_spark <- function(data = data,x,y,date_column, share_app = FALSE,port = NU
       model <- reactiveValues(train_variables = NA)
       
       
-      t <- reactiveValues()
-      v <- reactiveValues()
-      f <- reactiveValues()
-      l <- reactiveValues()
-      i <- reactiveValues() 
-      x <- reactiveValues()
+      parameter <- reactiveValues()
       
       v_grad <- reactiveValues(type_model = NA)
       v_random <- reactiveValues(type_model = NA)
@@ -205,24 +196,24 @@ shiny_spark <- function(data = data,x,y,date_column, share_app = FALSE,port = NU
         v_grad$type_model <- "ml_gradient_boosted_trees"
         v_random$type_model <- "ml_random_forest"
         
-        t$step_size_gbm <- input$step_size_gbm
-        v$subsampling_rate_gbm <- input$subsampling_rate_gbm
-        x$max_depth_gbm <- input$max_depth_gbm
+        parameter$step_size_gbm <- input$step_size_gbm
+        parameter$subsampling_rate_gbm <- input$subsampling_rate_gbm
+        parameter$max_depth_gbm <- input$max_depth_gbm
         
-        t$num_tree_random_forest <- input$num_tree_random_forest
-        v$subsampling_rate_random_forest <- input$subsampling_rate_random_forest
-        x$max_depth_random_forest <-  input$max_depth_random_forest
+        parameter$num_tree_random_forest <- input$num_tree_random_forest
+        parameter$subsampling_rate_random_forest <- input$subsampling_rate_random_forest
+        parameter$max_depth_random_forest <-  input$max_depth_random_forest
         
         
-        f$family_glm <- input$glm_family
-        l$link_glm <- input$glm_link
-        i$intercept_glm <- input$intercept_term_glm
-        x$reg_param_glm <- input$reg_param_glm
-        x$max_iter_glm <- input$max_iter_glm
+        parameter$family_glm <- input$glm_family
+        parameter$link_glm <- input$glm_link
+        parameter$intercept_glm <- input$intercept_term_glm
+        parameter$reg_param_glm <- input$reg_param_glm
+        parameter$max_iter_glm <- input$max_iter_glm
         
-        x$max_depth_decision_tree <- input$max_depth_decision_tree
-        x$max_bins_decision_tree <- input$max_bins_decision_tree
-        x$min_instance_decision_tree <- input$min_instance_decision_tree
+        parameter$max_depth_decision_tree <- input$max_depth_decision_tree
+        parameter$max_bins_decision_tree <- input$max_bins_decision_tree
+        parameter$min_instance_decision_tree <- input$min_instance_decision_tree
         
         showTab(inputId = "results_models", target = "Feature importance")
         
@@ -236,9 +227,9 @@ shiny_spark <- function(data = data,x,y,date_column, share_app = FALSE,port = NU
         test_2$date <- input$test_selector[2]
         
         model$train_variables <- input$input_variables
-        t$step_size_gbm <- input$step_size_gbm
-        v$subsampling_rate_gbm <- input$subsampling_rate_gbm
-        x$max_depth_gbm <- input$max_depth_gbm
+        parameter$step_size_gbm <- input$step_size_gbm
+        parameter$subsampling_rate_gbm <- input$subsampling_rate_gbm
+        parameter$max_depth_gbm <- input$max_depth_gbm
         
         v_grad$type_model <- "ml_gradient_boosted_trees"
         v_random$type_model <- NA
@@ -255,9 +246,9 @@ shiny_spark <- function(data = data,x,y,date_column, share_app = FALSE,port = NU
         test_1$date <- input$test_selector[1]
         test_2$date <- input$test_selector[2]
         model$train_variables <- input$input_variables
-        t$num_tree_random_forest <- input$num_tree_random_forest
-        v$subsampling_rate_random_forest <- input$subsampling_rate_random_forest
-        x$max_depth_random_forest <-  input$max_depth_random_forest
+        parameter$num_tree_random_forest <- input$num_tree_random_forest
+        parameter$subsampling_rate_random_forest <- input$subsampling_rate_random_forest
+        parameter$max_depth_random_forest <-  input$max_depth_random_forest
         v_random$type_model <- "ml_random_forest"
         v_grad$type_model <- NA
         v_glm$type_model <- NA
@@ -272,15 +263,16 @@ shiny_spark <- function(data = data,x,y,date_column, share_app = FALSE,port = NU
         test_1$date <- input$test_selector[1]
         test_2$date <- input$test_selector[2]
         model$train_variables <- input$input_variables
-        f$family_glm <- input$glm_family
-        l$link_glm <- input$glm_link
-        i$intercept_glm <- input$intercept_term_glm
+        parameter$family_glm <- input$glm_family
+        parameter$link_glm <- input$glm_link
+        parameter$intercept_glm <- input$intercept_term_glm
+        
+        
+        
+        parameter$reg_param_glm <- input$reg_param_glm
+        parameter$max_iter_glm <- input$max_iter_glm
+        
         v_glm$type_model <- "ml_generalized_linear_regression"
-        
-        x$reg_param_glm <- input$reg_param_glm
-        x$max_iter_glm <- input$max_iter_glm
-        
-        
         v_grad$type_model <- NA
         v_random$type_model <- NA
         v_decision_tree$type_model <- NA
@@ -293,9 +285,9 @@ shiny_spark <- function(data = data,x,y,date_column, share_app = FALSE,port = NU
         test_1$date <- input$test_selector[1]
         test_2$date <- input$test_selector[2]
         model$train_variables <- input$input_variables
-        x$max_depth_decision_tree <- input$max_depth_decision_tree
-        x$max_bins_decision_tree <- input$max_bins_decision_tree
-        x$min_instance_decision_tree <- input$min_instance_decision_tree
+        parameter$max_depth_decision_tree <- input$max_depth_decision_tree
+        parameter$max_bins_decision_tree <- input$max_bins_decision_tree
+        parameter$min_instance_decision_tree <- input$min_instance_decision_tree
         
         v_decision_tree$type_model <- "ml_decision_tree"
         
@@ -363,9 +355,9 @@ shiny_spark <- function(data = data,x,y,date_column, share_app = FALSE,port = NU
             
             
             eval(parse(text = paste0("fit <- data_spark_train %>% ml_gradient_boosted_trees(", y ," ~ " ,var_input_list ,
-                                     ",step_size =",t$step_size_gbm,
-                                     ",subsampling_rate =",v$subsampling_rate_gbm,
-                                     ",max_depth =",x$max_depth_gbm,
+                                     ",step_size =",parameter$step_size_gbm,
+                                     ",subsampling_rate =",parameter$subsampling_rate_gbm,
+                                     ",max_depth =",parameter$max_depth_gbm,
                                      " )")))
             t2 <- Sys.time()
             
@@ -382,9 +374,9 @@ shiny_spark <- function(data = data,x,y,date_column, share_app = FALSE,port = NU
             
             t1 <- Sys.time()
             eval(parse(text = paste0("fit <- data_spark_train %>% ml_random_forest(", y ," ~ " ,var_input_list ,
-                                     ",num_trees  =",t$num_tree_random_forest,
-                                     ",subsampling_rate =",v$subsampling_rate_random_forest,
-                                     ",max_depth  =",x$max_depth_random_forest,
+                                     ",num_trees  =",parameter$num_tree_random_forest,
+                                     ",subsampling_rate =",parameter$subsampling_rate_random_forest,
+                                     ",max_depth  =",parameter$max_depth_random_forest,
                                      ")")))
             t2 <- Sys.time()
             time_random_forest <- data.frame(`Training time` =  paste0(round(t2 - t1,1)," seconds"), Model = "Random forest")
@@ -400,11 +392,11 @@ shiny_spark <- function(data = data,x,y,date_column, share_app = FALSE,port = NU
             
             t1 <- Sys.time()
             eval(parse(text = paste0("fit <- data_spark_train %>% ml_generalized_linear_regression(", y ," ~ " ,var_input_list ,
-                                     ",family  = ", f$family_glm,
-                                     ",link =",l$link_glm,
+                                     ",family  = ", parameter$family_glm,
+                                     ",link =",parameter$link_glm,
                                      ",fit_intercept =",input$intercept_term_glm,
-                                     ",reg_param =",x$reg_param_glm,
-                                     ",max_iter =",x$max_iter_glm,
+                                     ",reg_param =",parameter$reg_param_glm,
+                                     ",max_iter =",parameter$max_iter_glm,
                                      ")")))
             t2 <- Sys.time()
             time_glm <- data.frame(`Training time` =  paste0(round(t2 - t1,1)," seconds"), Model = "Generalized linear regression")
@@ -419,9 +411,9 @@ shiny_spark <- function(data = data,x,y,date_column, share_app = FALSE,port = NU
             
             t1 <- Sys.time()
             eval(parse(text = paste0("fit <- data_spark_train %>% ml_decision_tree(", y ," ~ " ,var_input_list ,
-                                     ",max_depth  =",x$max_depth_decision_tree,
-                                     ",max_bins  =",x$max_bins_decision_tree,
-                                     ",min_instances_per_node  =",x$min_instance_decision_tree,
+                                     ",max_depth  =",parameter$max_depth_decision_tree,
+                                     ",max_bins  =",parameter$max_bins_decision_tree,
+                                     ",min_instances_per_node  =",parameter$min_instance_decision_tree,
                                      ")")))
             t2 <- Sys.time()
             time_decision_tree <- data.frame(`Training time` =  paste0(round(t2 - t1,1)," seconds"), Model = "Decision tree")

@@ -1,0 +1,19 @@
+YEAR: 2019
+COPYRIGHT HOLDER: JeanBertinR
+
+The shinyML package includes other open source software components. The following
+is a list of these components (full copies of the license agreements used by
+these components are included below):
+
+  - H2O, https://github.com/h2oai/h2o-3
+  - shinyWidgets, https://github.com/dreamRs/shinyWidgets
+  - Bootstrap, https://github.com/twbs/bootstrap
+  - Bootstrap Select, https://github.com/snapappointments/bootstrap-select
+  - SweetAlert2, https://github.com/sweetalert2/sweetalert2
+  - multi.js, https://github.com/Fabianlindfors/multi.js
+  - animate.css, https://github.com/daneden/animate.css
+  - bttn.css, https://github.com/ganapativs/bttn.css
+  - jQuery Knob, https://github.com/aterrien/jQuery-Knob
+  - Pretty Checkbox, https://github.com/lokesh-coder/pretty-checkbox
+  - Spectrum, https://github.com/bgrins/spectrum
+  - Air-datepicker, https://github.com/t1m0n/air-datepicker
