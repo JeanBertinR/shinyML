@@ -6,7 +6,7 @@ Author: Jean Bertin
 Maintainer: Jean Bertin <jean.bertin@mines-paris.org>
 Description: This package creates in one line of code a shareable web app to compare supervised regression model performances. 
     Four main classes of regression algorithms (generalized linear regression, decision tree, random forest, gradient boosted ) might be tuned on Spark framework to forecast the outcome of given time series. 
-License: GPL-2
+License: GPL-3 | file LICENSE
 Encoding: UTF-8
 Imports:
  shiny(>= 1.0.3),
