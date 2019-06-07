@@ -49,6 +49,21 @@ shiny_h2o <- function(data = data,x,y,date_column, share_app = FALSE,port = NULL
   h2o.init()
   h2o::h2o.no_progress()
   
+  # Test if date_column class correspond to Date or POSIXct
+  if (!(eval(parse(text = paste0("class(data$",date_column,")"))) %in% c("Date","POSIXct"))){
+    stop("date_column class must be Date or POSIXct")
+  }
+  
+  # Test if y class correspond to numeric
+  if (!(eval(parse(text = paste0("class(data$",y,")"))) == "numeric")){
+    stop("y column class must be numeric")
+  }
+  
+  # Test if input data does not exceed one million rows
+  if (nrow(data) > 1000000) {
+    stop("Input dataset must not exceed one million rows")
+  }
+  
   
   app <- shinyApp(
     
@@ -161,12 +176,12 @@ shiny_h2o <- function(data = data,x,y,date_column, share_app = FALSE,port = NULL
                                         radioButtons(label = "Loss function",inputId = "loss_neural_net",
                                                      choices = c("Automatic", "Quadratic", "Huber", "Absolute", "Quantile"),selected = "Automatic"),
                                         width = 6),
-                                      
-                                      textInput(label = "Hidden layers",inputId = "hidden_neural_net",value = "c(200,200)"),
-                                      sliderInput(label = "Epochs",min = 10,max = 100, inputId = "epochs_neural_net",value = 10),
-                                      sliderInput(label = "Learning rate",min = 0.001,max = 0.1, inputId = "rate_neural_net",value = 0.005),
-                                      actionButton("run_neural_network","Run neural network regression",style = 'color:white; background-color:darkblue; padding:4px; font-size:150%',
-                                                   icon = icon("cogs",lib = "font-awesome"))
+                                      column(
+                                        textInput(label = "Hidden layers",inputId = "hidden_neural_net",value = "c(200,200)"),
+                                        sliderInput(label = "Epochs",min = 10,max = 100, inputId = "epochs_neural_net",value = 10),
+                                        sliderInput(label = "Learning rate",min = 0.001,max = 0.1, inputId = "rate_neural_net",value = 0.005),
+                                        actionButton("run_neural_network","Run neural network regression",style = 'color:white; background-color:darkblue; padding:4px; font-size:150%',
+                                                     icon = icon("cogs",lib = "font-awesome")),width = 12)
                                       ,width = 3 
                                       
                                     ),
@@ -177,7 +192,7 @@ shiny_h2o <- function(data = data,x,y,date_column, share_app = FALSE,port = NULL
                                       
                                       sliderInput(label = "Max depth",min = 1,max = 20, inputId = "max_depth_gbm",value = 5),
                                       sliderInput(label = "Number of trees",min = 1,max = 100, inputId = "n_trees_gbm",value = 50),
-                                      sliderInput(label = "Subsampling rate",min = 0.1,max = 1, inputId = "subsampling_rate_gbm",value = 1),
+                                      sliderInput(label = "Sample rate",min = 0.1,max = 1, inputId = "sample_rate_gbm",value = 1),
                                       sliderInput(label = "Learn rate",min = 0.1,max = 1, inputId = "learn_rate_gbm",value = 0.1),
                                       actionButton("run_gradient_boosting","Run gradient boosting model",style = 'color:white; background-color:darkgreen; padding:4px; font-size:150%',
                                                    icon = icon("users",lib = "font-awesome"))
@@ -252,7 +267,7 @@ shiny_h2o <- function(data = data,x,y,date_column, share_app = FALSE,port = NULL
         parameter$max_depth_random_forest <-  input$max_depth_random_forest
         parameter$n_bins_random_forest <- input$n_bins_random_forest
         
-        parameter$subsampling_rate_gbm <- input$subsampling_rate_gbm
+        parameter$sample_rate_gbm <- input$sample_rate_gbm
         parameter$n_trees_gbm <- input$n_trees_gbm
         parameter$max_depth_gbm <- input$max_depth_gbm
         parameter$learn_rate_gbm <- input$learn_rate_gbm
@@ -306,7 +321,7 @@ shiny_h2o <- function(data = data,x,y,date_column, share_app = FALSE,port = NULL
         v_random$type_model <- NA
         v_auto_ml$type_model <- NA
         
-        parameter$subsampling_rate_gbm <- input$subsampling_rate_gbm
+        parameter$sample_rate_gbm <- input$sample_rate_gbm
         parameter$n_trees_gbm <- input$n_trees_gbm
         parameter$max_depth_gbm <- input$max_depth_gbm
         parameter$learn_rate_gbm <- input$learn_rate_gbm
@@ -505,7 +520,7 @@ shiny_h2o <- function(data = data,x,y,date_column, share_app = FALSE,port = NULL
             dl_fit1 <- h2o.gbm(x = as.character(var_input_list),
                                y = y,
                                training_frame = data_h2o_train,
-                               sample_rate = parameter$subsampling_rate_gbm,
+                               sample_rate = parameter$sample_rate_gbm,
                                ntrees = parameter$n_trees_gbm,
                                max_depth = parameter$max_depth_gbm,
                                learn_rate = parameter$learn_rate_gbm,

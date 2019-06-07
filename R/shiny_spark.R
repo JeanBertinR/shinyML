@@ -34,11 +34,46 @@
 
 shiny_spark <- function(data = data,x,y,date_column, share_app = FALSE,port = NULL ){
   
-  
+  # Convert dataset to data.table format
   data <- data.table(data)
+  
+  # Replace '.' by '_' in dataset column names ( if necessary )
+  x <- gsub("\\.","_",x)
+  
+  # Remove explanatoty variables that don't have at least two distinct values 
+  for (i in 1:length(x)){
+    if (eval(parse(text = paste0("length(unique(data$",x[i],"))"))) <= 1){
+      
+      message(paste0("[",x[i],"] column has been removed because it should have at least two distinct values"))
+      x <- x[!x %in% x[i]]
+      
+    }
+  }
+  
+  # Test if date_column class correspond to Date or POSIXct
+  if (!(eval(parse(text = paste0("class(data$",date_column,")"))) %in% c("Date","POSIXct"))){
+    stop("date_column class must be Date or POSIXct")
+  }
+  
+  # Test if y class correspond to numeric
+  if (!(eval(parse(text = paste0("class(data$",y,")"))) == "numeric")){
+    stop("y column class must be numeric")
+  }
+  
+  # Test if input data does not exceed one million rows
+  if (nrow(data) > 1000000) {
+    stop("Input dataset must not exceed one million rows")
+  }
+  
+  
+  
+  # Install spark if necessary
   if (nrow(spark_installed_versions()) == 0){spark_install()}
+  
+  # Connect to local Spark cluster
   sc <- spark_connect(master = "local")
   
+  # Define shiny app 
   app <- shinyApp(
     
     ui = dashboardPage(
@@ -112,7 +147,7 @@ shiny_spark <- function(data = data,x,y,date_column, share_app = FALSE,port = NU
                    box(
                      title = "Decision tree",status = "danger",
                      
-                     sliderInput(label = "Max depth",inputId = "max_depth_decision_tree",min = 1,max = 50,value = 20),
+                     sliderInput(label = "Max depth",inputId = "max_depth_decision_tree",min = 1,max = 30,value = 20),
                      sliderInput(label = "Max bins",inputId = "max_bins_decision_tree",min = 2,max = 60,value = 32),
                      sliderInput(label = "Min instance per node",inputId = "min_instance_decision_tree",min = 1,max = 10,value = 1),
                      actionButton("run_decision_tree","Run decision tree regression",style = 'color:white; background-color:red; padding:4px; font-size:150%',
@@ -125,7 +160,7 @@ shiny_spark <- function(data = data,x,y,date_column, share_app = FALSE,port = NU
                      
                      sliderInput(label = "Number of trees",min = 1,max = 100, inputId = "num_tree_random_forest",value = 50),
                      sliderInput(label = "Subsampling rate",min = 0.1,max = 1, inputId = "subsampling_rate_random_forest",value = 1),
-                     sliderInput(label = "Max depth",min = 1,max = 50, inputId = "max_depth_random_forest",value = 20),
+                     sliderInput(label = "Max depth",min = 1,max = 30, inputId = "max_depth_random_forest",value = 20),
                      actionButton("run_random_forest","Run random forest model",style = 'color:white; background-color:darkblue; padding:4px; font-size:150%',
                                   icon = icon("users",lib = "font-awesome"))
                      
@@ -138,7 +173,7 @@ shiny_spark <- function(data = data,x,y,date_column, share_app = FALSE,port = NU
                      
                      sliderInput(label = "Step size",min = 0,max = 1, inputId = "step_size_gbm",value = 0.1),
                      sliderInput(label = "Subsampling rate",min = 0.1,max = 1, inputId = "subsampling_rate_gbm",value = 1),
-                     sliderInput(label = "Max depth",min = 1,max = 50, inputId = "max_depth_gbm",value = 20),
+                     sliderInput(label = "Max depth",min = 1,max = 30, inputId = "max_depth_gbm",value = 20),
                      
                      actionButton("run_gradient_boosting","Run gradient boosting model",style = 'color:white; background-color:darkgreen; padding:4px; font-size:150%',
                                   icon = icon("users",lib = "font-awesome"))
@@ -153,6 +188,7 @@ shiny_spark <- function(data = data,x,y,date_column, share_app = FALSE,port = NU
     ),
     
     server = function(session, input, output) {
+      
       set.seed(122)
       time_gbm <- data.table()
       time_random_forest <- data.table()
