@@ -50,8 +50,6 @@ shiny_h2o(data =longley2,x = c("GNP_deflator","Unemployed" ,"Armed_Forces","Empl
 
 ![Introduction of shinyML](vignettes/shinyML.png)
 
-
-
 First step consist in choosing separating train and test period from your dataset: this can be done in one second using slider button on the right of your shinyML app. 
 You can also remove variables from your initial selection directly from app just simply using "Input variable" textbox. 
 You are then free to select hyper-parameters configuration for your favorite machine learning model.  

@@ -67,7 +67,17 @@ configuration](vignettes/all_models.gif)
 
 You will see a validation message box once all models have been trained:
 at that point, you can have an overview of your results comparing
-variables importances and error metrics like MAPE or RMSE.
+variables importances and error metrics like MAPE or
+RMSE.
+
+## Run autoML alogrithm to find automatically configure the best machine learning regression model associated to your dataset
+
+AutoML algorithm will automatically find the best algorithm to suit your
+regression task: the user will be informed of the machine learning
+technique used and know which hyper-parameters should be configured.
+
+The only setting that must be adjusted by the user is the maximum time
+authorized for searching.
 
 ![Run autoML algorithm to compare machine learning
 techniques](vignettes/auto_ML.gif)
