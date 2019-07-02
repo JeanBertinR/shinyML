@@ -12,4 +12,3 @@ os:
 r:
   - oldrel
   - release
-  - devel
