@@ -80,6 +80,6 @@ The only setting that must be adjusted by the user is the maximum time authorize
 
 
 
-For more information take a look at the [package vignette](https://cran.r-project.org/web/packages/shinyML/vignettes/vignettes.Rmd).
+For more information take a look at the [package vignette](vignettes/vignettes.Rmd).
 
 

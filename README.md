@@ -83,4 +83,4 @@ authorized for searching.
 techniques](vignettes/auto_ML.gif)
 
 For more information take a look at the [package
-vignette](https://cran.r-project.org/web/packages/shinyML/vignettes/vignettes.Rmd).
+vignette](vignettes/vignettes.Rmd).
