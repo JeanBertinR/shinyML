@@ -27,9 +27,6 @@ This function creates in one line of code a shareable web app to compare supervi
 \examples{
 \dontrun{
 library(shinyML)
-Sys.setenv(http_proxy="") 
-Sys.setenv(http_proxy_user="") 
-Sys.setenv(https_proxy_user="")
 longley2 <- longley \%>\% mutate(Year = as.Date(as.character(Year),format = "\%Y"))
 shiny_h20(data =longley2,x = c("GNP_deflator","Unemployed" ,"Armed_Forces","Employed"),
   y = "GNP",date_column = "Year",share_app = TRUE,port = 3951)
