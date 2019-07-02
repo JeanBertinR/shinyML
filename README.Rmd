@@ -13,6 +13,8 @@ library(manipulateWidget)
 
 [![AppVeyor build status](https://ci.appveyor.com/api/projects/status/github/JeanBertinR/shinyML?branch=master&svg=true)](https://ci.appveyor.com/project/JeanBertinR/shinyML)
 
+[![Coverage status](https://codecov.io/gh/JeanBertinR/shinyML/branch/master/graph/badge.svg)](https://codecov.io/github/JeanBertinR/shinyML?branch=master)
+
 # dashR
 
 Implement in one line of code a shareable web app to compare supervised machine learning regression models! 

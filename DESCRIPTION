@@ -21,12 +21,12 @@ Imports:
  ggplot2,
  shinycssloaders
 Suggests: 
- knitr, 
- rmarkdown
+    knitr,
+    rmarkdown,
+    covr
 Depends:
  dplyr,
  data.table
 LazyData: True
 RoxygenNote: 6.1.1
 VignetteBuilder: knitr
-
