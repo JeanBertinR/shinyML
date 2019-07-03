@@ -29,4 +29,4 @@ shiny_h2o(data =longley2,x = c("GNP_deflator","Unemployed" ,"Armed_Forces","Empl
 ```
 
 
-![An example of output of manipulateWidget](auto_ML.gif)
+![An example of output of shinyML package](auto_ML.gif)

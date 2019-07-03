@@ -2,7 +2,7 @@
 % Please edit documentation in R/shiny_h2o.R
 \name{shiny_h2o}
 \alias{shiny_h2o}
-\title{Use Shiny and h2o machine learning framework to compare supervised regression models on time series}
+\title{Implement a shiny web app to compare h2o supervised regression models on time series}
 \usage{
 shiny_h2o(data = data, x, y, date_column, share_app = FALSE,
   port = NULL)

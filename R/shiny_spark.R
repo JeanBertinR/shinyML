@@ -1,4 +1,4 @@
-#' @title Use Shiny and Spark machine learning framework to compare supervised regression models on time series
+#' @title Implement a shiny web app to compare spark supervised regression models on time series
 #'
 #' @description This function creates in one line of code a shareable web app to compare supervised regression model performances.
 #'

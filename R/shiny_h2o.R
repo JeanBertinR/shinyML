@@ -1,4 +1,4 @@
-#' @title Use Shiny and h2o machine learning framework to compare supervised regression models on time series
+#' @title Implement a shiny web app to compare h2o supervised regression models on time series
 #'
 #' @description This function creates in one line of code a shareable web app to compare supervised regression model performances.
 #'
@@ -20,7 +20,7 @@
 #'\dontrun{
 #' library(shinyML)
 #' longley2 <- longley %>% mutate(Year = as.Date(as.character(Year),format = "%Y"))
-#' shiny_h20(data =longley2,x = c("GNP_deflator","Unemployed" ,"Armed_Forces","Employed"),
+#' shiny_h2o(data =longley2,x = c("GNP_deflator","Unemployed" ,"Armed_Forces","Employed"),
 #'   y = "GNP",date_column = "Year",share_app = TRUE,port = 3951)
 #'}
 #' @import shiny shinydashboard dygraphs data.table ggplot2 shinycssloaders

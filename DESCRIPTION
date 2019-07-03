@@ -23,7 +23,8 @@ Imports:
 Suggests: 
     knitr,
     rmarkdown,
-    covr
+    covr,
+    testthat
 Depends:
  dplyr,
  data.table

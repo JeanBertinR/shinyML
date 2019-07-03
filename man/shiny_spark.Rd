@@ -2,7 +2,7 @@
 % Please edit documentation in R/shiny_spark.R
 \name{shiny_spark}
 \alias{shiny_spark}
-\title{Use Shiny and Spark machine learning framework to compare supervised regression models on time series}
+\title{Implement a shiny web app to compare spark supervised regression models on time series}
 \usage{
 shiny_spark(data = data, x, y, date_column, share_app = FALSE,
   port = NULL)
