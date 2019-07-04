@@ -74,8 +74,8 @@ RMSE.
 
 ## Run autoML alogrithm to find automatically configure the best machine learning regression model associated to your dataset
 
-AutoML algorithm will automatically find the best algorithm to suit your
-regression task: the user will be informed of the machine learning
+`AutoML` algorithm will automatically find the best algorithm to suit
+your regression task: the user will be informed of the machine learning
 technique used and know which hyper-parameters should be configured.
 
 The only setting that must be adjusted by the user is the maximum time
