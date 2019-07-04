@@ -40,21 +40,11 @@ shiny_spark <- function(data = data,x,y,date_column, share_app = FALSE,port = NU
   # Replace '.' by '_' in dataset column names ( if necessary )
   x <- gsub("\\.","_",x)
   
-  # Remove explanatoty variables that don't have at least two distinct values 
-  for (i in 1:length(x)){
-    if (eval(parse(text = paste0("length(unique(data$",x[i],"))"))) <= 1){
-      
-      message(paste0("[",x[i],"] column has been removed because it should have at least two distinct values"))
-      x <- x[!x %in% x[i]]
-      
-    }
-  }
-  
   # Test if date_column class correspond to Date or POSIXct
   if (!(eval(parse(text = paste0("class(data$",date_column,")"))) %in% c("Date","POSIXct"))){
     stop("date_column class must be Date or POSIXct")
   }
-  
+
   # Test if y class correspond to numeric
   if (!(eval(parse(text = paste0("class(data$",y,")"))) == "numeric")){
     stop("y column class must be numeric")
@@ -76,6 +66,7 @@ shiny_spark <- function(data = data,x,y,date_column, share_app = FALSE,port = NU
   # Define shiny app 
   app <- shinyApp(
     
+    # Define ui side of shiny app
     ui = dashboardPage(
       dashboardHeader(title = "Spark"),
       dashboardSidebar( 
@@ -96,7 +87,7 @@ shiny_spark <- function(data = data,x,y,date_column, share_app = FALSE,port = NU
                           ),
                           column(width = 12,tabBox(id = "results_models",
                                                    tabPanel("Result charts on test period",withSpinner(dygraphOutput("output_curve",height = 200,width = 1100))),
-                                                   tabPanel("Compare models performances",withSpinner(DTOutput("date_essai"))),
+                                                   tabPanel("Compare models performances",withSpinner(DTOutput("score_table"))),
                                                    tabPanel("Feature importance",withSpinner(plotlyOutput("feature_importance"))),
                                                    tabPanel("Table of results",withSpinner(DTOutput("table_of_results"))),width = 12
                           )
@@ -129,7 +120,7 @@ shiny_spark <- function(data = data,x,y,date_column, share_app = FALSE,port = NU
           column(width = 12,align = "center",
                  fluidRow(
                    
-                   
+                   # Define UI objects for generalized linear regression box 
                    box(
                      title = "Generalized linear regresion",status = "warning",
                      column(
@@ -144,6 +135,7 @@ shiny_spark <- function(data = data,x,y,date_column, share_app = FALSE,port = NU
                                   icon = icon("cogs",lib = "font-awesome"))
                      ,width = 3 ),
                    
+                   # Define UI objects for decision tree box 
                    box(
                      title = "Decision tree",status = "danger",
                      
@@ -155,6 +147,7 @@ shiny_spark <- function(data = data,x,y,date_column, share_app = FALSE,port = NU
                      
                      ,width = 3),
                    
+                   # Define UI objects for Random Forest box 
                    box(
                      title = "Random Forest",status = "primary",
                      
@@ -166,7 +159,7 @@ shiny_spark <- function(data = data,x,y,date_column, share_app = FALSE,port = NU
                      
                      ,width = 3),
                    
-                   
+                   # Define UI objects for Gradient boosting box
                    box(
                      title = "Gradient boosting trees",status = "success",
                      
@@ -187,6 +180,7 @@ shiny_spark <- function(data = data,x,y,date_column, share_app = FALSE,port = NU
       )
     ),
     
+    # Define server side of shiny app
     server = function(session, input, output) {
       
       set.seed(122)
@@ -195,6 +189,7 @@ shiny_spark <- function(data = data,x,y,date_column, share_app = FALSE,port = NU
       time_glm <- data.table()
       time_decision_tree <- data.table()
       
+      # Intitalization of calculation time per model (not available for generalized linear regression)
       importance_gbm <- data.table()
       importance_random_forest <- data.table()
       importance_decision_tree <- data.table()
@@ -222,6 +217,7 @@ shiny_spark <- function(data = data,x,y,date_column, share_app = FALSE,port = NU
       v_glm <- reactiveValues(type_model = NA)
       v_decision_tree <- reactiveValues(type_model = NA)
       
+      # Make all parameters correspond to cursors and radiobuttons choices when user click on "Run tuned models!" button
       observeEvent(input$train_all,{
         
         test_1$date <- input$test_selector[1]
@@ -257,43 +253,7 @@ shiny_spark <- function(data = data,x,y,date_column, share_app = FALSE,port = NU
       })
       
       
-      observeEvent(input$run_gradient_boosting,{
-        
-        test_1$date <- input$test_selector[1]
-        test_2$date <- input$test_selector[2]
-        
-        model$train_variables <- input$input_variables
-        parameter$step_size_gbm <- input$step_size_gbm
-        parameter$subsampling_rate_gbm <- input$subsampling_rate_gbm
-        parameter$max_depth_gbm <- input$max_depth_gbm
-        
-        v_grad$type_model <- "ml_gradient_boosted_trees"
-        v_random$type_model <- NA
-        v_glm$type_model <- NA
-        v_decision_tree$type_model <- NA
-        
-        showTab(inputId = "results_models", target = "Feature importance")
-        
-      })
-      
-      
-      observeEvent(input$run_random_forest,{
-        
-        test_1$date <- input$test_selector[1]
-        test_2$date <- input$test_selector[2]
-        model$train_variables <- input$input_variables
-        parameter$num_tree_random_forest <- input$num_tree_random_forest
-        parameter$subsampling_rate_random_forest <- input$subsampling_rate_random_forest
-        parameter$max_depth_random_forest <-  input$max_depth_random_forest
-        v_random$type_model <- "ml_random_forest"
-        v_grad$type_model <- NA
-        v_glm$type_model <- NA
-        v_decision_tree$type_model <- NA
-        
-        showTab(inputId = "results_models", target = "Feature importance")
-        
-      })
-      
+      # Make glm parameters correspond to cursors and radiobuttons choices when user click on "Run generalized linear regression" button (and disable other models)
       observeEvent(input$run_glm,{
         
         test_1$date <- input$test_selector[1]
@@ -316,6 +276,9 @@ shiny_spark <- function(data = data,x,y,date_column, share_app = FALSE,port = NU
         hideTab(inputId = "results_models", target = "Feature importance")
       })
       
+
+      
+      # Make decision tree parameters correspond to cursors when user click on "Run decision tree" button (and disable other models)
       observeEvent(input$run_decision_tree,{
         
         test_1$date <- input$test_selector[1]
@@ -336,6 +299,47 @@ shiny_spark <- function(data = data,x,y,date_column, share_app = FALSE,port = NU
       })
       
       
+      # Make random forest parameters correspond to cursors when user click on "Run random forest model" button (and disable other models)
+      observeEvent(input$run_random_forest,{
+        
+        test_1$date <- input$test_selector[1]
+        test_2$date <- input$test_selector[2]
+        model$train_variables <- input$input_variables
+        parameter$num_tree_random_forest <- input$num_tree_random_forest
+        parameter$subsampling_rate_random_forest <- input$subsampling_rate_random_forest
+        parameter$max_depth_random_forest <-  input$max_depth_random_forest
+        v_random$type_model <- "ml_random_forest"
+        v_grad$type_model <- NA
+        v_glm$type_model <- NA
+        v_decision_tree$type_model <- NA
+        
+        showTab(inputId = "results_models", target = "Feature importance")
+        
+      })
+      
+      # Make gradient boosting parameters correspond to cursors when user click on "Run gradient boosting model" button (and disable other models)
+      observeEvent(input$run_gradient_boosting,{
+        
+        test_1$date <- input$test_selector[1]
+        test_2$date <- input$test_selector[2]
+        
+        model$train_variables <- input$input_variables
+        parameter$step_size_gbm <- input$step_size_gbm
+        parameter$subsampling_rate_gbm <- input$subsampling_rate_gbm
+        parameter$max_depth_gbm <- input$max_depth_gbm
+        
+        v_grad$type_model <- "ml_gradient_boosted_trees"
+        v_random$type_model <- NA
+        v_glm$type_model <- NA
+        v_decision_tree$type_model <- NA
+        
+        showTab(inputId = "results_models", target = "Feature importance")
+        
+      })
+      
+
+      
+      # Define input data chart and train/test periods splitting
       output$input_curve <- renderDygraph({
         
         data <- as.data.table(data)
@@ -362,7 +366,25 @@ shiny_spark <- function(data = data,x,y,date_column, share_app = FALSE,port = NU
       })
       
       
+      # Define output chart comparing predicted vs real values on test period for selected model(s)
+      output$output_curve <- renderDygraph({
+        
+        output_dygraph <- dygraph(data = table_forecast()[['results']],main = "Prediction results on test period") %>% 
+          dyAxis("y",valueRange = c(0,1.5 * max(eval(parse(text =paste0("table_forecast()[['results']]$",y)))))) %>% 
+          dyOptions(animatedZooms = TRUE)
+        
+        
+        if (input$bar_chart_mode == TRUE){
+          output_dygraph <- output_dygraph %>% dyBarChart()
+        }
+        
+        output_dygraph %>% dyLegend(width = 800)
+        
+      })
       
+      
+      # Define the table of predicted data
+      # If "Run tuned models!" button is clicked, prediction results on test period are stored in four additional columns
       table_forecast <- reactive({
         
         data_results <- eval(parse(text = paste0("data[,.(",date_column,",",y,")][",date_column,">'",test_1$date,"',][",date_column,"< '",test_2$date,"',]")))
@@ -373,6 +395,7 @@ shiny_spark <- function(data = data,x,y,date_column, share_app = FALSE,port = NU
         for (i in 1:length(model$train_variables)){var_input_list <- paste0(var_input_list,"+",model$train_variables[i])}
         var_input_list <- ifelse(startsWith(var_input_list,"+"),substr(var_input_list,2,nchar(var_input_list)),var_input_list)
         
+        # Verify that at least one explanatory variable is selected 
         if (var_input_list != "+"){  
           
           
@@ -384,46 +407,8 @@ shiny_spark <- function(data = data,x,y,date_column, share_app = FALSE,port = NU
           data_spark_test <- copy_to(sc, data_spark_test, "data_spark_test", overwrite = TRUE)
           
           
-          if (!is.na(v_grad$type_model) & v_grad$type_model == "ml_gradient_boosted_trees"){
-            
-            
-            t1 <- Sys.time()
-            
-            
-            eval(parse(text = paste0("fit <- data_spark_train %>% ml_gradient_boosted_trees(", y ," ~ " ,var_input_list ,
-                                     ",step_size =",parameter$step_size_gbm,
-                                     ",subsampling_rate =",parameter$subsampling_rate_gbm,
-                                     ",max_depth =",parameter$max_depth_gbm,
-                                     " )")))
-            t2 <- Sys.time()
-            
-            time_gbm <- data.frame(`Training time` =  paste0(round(t2 - t1,1)," seconds"), Model = "Gradient boosted trees") 
-            importance_gbm <- ml_feature_importances(fit) %>% mutate(model = "Gradient boosted trees")
-            
-            table_ml_gradient_boosted <- sdf_predict(data_spark_test, fit) %>% collect %>% as.data.frame() %>% select(prediction) %>% mutate(prediction = round(prediction,3)) %>% 
-              rename(`Gradient boosted trees` = prediction)
-            table_results <- cbind(data_results,table_ml_gradient_boosted) %>% as.data.table()
-            
-          }
           
-          if (!is.na(v_random$type_model) & v_random$type_model == "ml_random_forest"){
-            
-            t1 <- Sys.time()
-            eval(parse(text = paste0("fit <- data_spark_train %>% ml_random_forest(", y ," ~ " ,var_input_list ,
-                                     ",num_trees  =",parameter$num_tree_random_forest,
-                                     ",subsampling_rate =",parameter$subsampling_rate_random_forest,
-                                     ",max_depth  =",parameter$max_depth_random_forest,
-                                     ")")))
-            t2 <- Sys.time()
-            time_random_forest <- data.frame(`Training time` =  paste0(round(t2 - t1,1)," seconds"), Model = "Random forest")
-            importance_random_forest <- ml_feature_importances(fit) %>% mutate(model = "Random forest")
-            
-            table_ml_random_forest <- sdf_predict(data_spark_test, fit) %>% collect %>% as.data.frame() %>% select(prediction)%>% mutate(prediction = round(prediction,3)) %>% 
-              rename(`Random forest` = prediction)
-            table_results <- cbind(data_results,table_ml_random_forest) %>% as.data.table()
-            
-          }
-          
+          # Calculation of glm predictions and associated calculation time 
           if (!is.na(v_glm$type_model) & v_glm$type_model == "ml_generalized_linear_regression"){
             
             t1 <- Sys.time()
@@ -443,6 +428,49 @@ shiny_spark <- function(data = data,x,y,date_column, share_app = FALSE,port = NU
             
           }
           
+          # Calculation of gradient boosting trees predictions and associated calculation time 
+          if (!is.na(v_grad$type_model) & v_grad$type_model == "ml_gradient_boosted_trees"){
+            
+            
+            t1 <- Sys.time()
+            
+            eval(parse(text = paste0("fit <- data_spark_train %>% ml_gradient_boosted_trees(", y ," ~ " ,var_input_list ,
+                                     ",step_size =",parameter$step_size_gbm,
+                                     ",subsampling_rate =",parameter$subsampling_rate_gbm,
+                                     ",max_depth =",parameter$max_depth_gbm,
+                                     " )")))
+            t2 <- Sys.time()
+            
+            time_gbm <- data.frame(`Training time` =  paste0(round(t2 - t1,1)," seconds"), Model = "Gradient boosted trees") 
+            importance_gbm <- ml_feature_importances(fit) %>% mutate(model = "Gradient boosted trees")
+            
+            table_ml_gradient_boosted <- sdf_predict(data_spark_test, fit) %>% collect %>% as.data.frame() %>% select(prediction) %>% mutate(prediction = round(prediction,3)) %>% 
+              rename(`Gradient boosted trees` = prediction)
+            table_results <- cbind(data_results,table_ml_gradient_boosted) %>% as.data.table()
+            
+          }
+          
+          # Calculation of random forest predictions and associated calculation time 
+          if (!is.na(v_random$type_model) & v_random$type_model == "ml_random_forest"){
+            
+            t1 <- Sys.time()
+            eval(parse(text = paste0("fit <- data_spark_train %>% ml_random_forest(", y ," ~ " ,var_input_list ,
+                                     ",num_trees  =",parameter$num_tree_random_forest,
+                                     ",subsampling_rate =",parameter$subsampling_rate_random_forest,
+                                     ",max_depth  =",parameter$max_depth_random_forest,
+                                     ")")))
+            t2 <- Sys.time()
+            time_random_forest <- data.frame(`Training time` =  paste0(round(t2 - t1,1)," seconds"), Model = "Random forest")
+            importance_random_forest <- ml_feature_importances(fit) %>% mutate(model = "Random forest")
+            
+            table_ml_random_forest <- sdf_predict(data_spark_test, fit) %>% collect %>% as.data.frame() %>% select(prediction)%>% mutate(prediction = round(prediction,3)) %>% 
+              rename(`Random forest` = prediction)
+            table_results <- cbind(data_results,table_ml_random_forest) %>% as.data.table()
+            
+          }
+          
+          
+          # Calculation of decision trees predictions and associated calculation time 
           if (!is.na(v_decision_tree$type_model) & v_decision_tree$type_model == "ml_decision_tree"){
             
             t1 <- Sys.time()
@@ -461,6 +489,7 @@ shiny_spark <- function(data = data,x,y,date_column, share_app = FALSE,port = NU
             
           }
           
+          # Assembly results of all models (some column might remain empty)
           if (!is.na(v_decision_tree$type_model) & !is.na(v_grad$type_model) & !is.na(v_glm$type_model) & !is.na(v_random$type_model))
             
             table_results <- cbind(data_results,table_ml_gradient_boosted,table_ml_random_forest,table_ml_glm,table_ml_decision_tree) %>% 
@@ -469,20 +498,18 @@ shiny_spark <- function(data = data,x,y,date_column, share_app = FALSE,port = NU
         }
         
         
-        
-        
-        
         table_training_time <- rbind(time_gbm,time_random_forest,time_glm,time_decision_tree)
         table_importance <- rbind(importance_gbm,importance_random_forest,importance_decision_tree) %>% as.data.table()
         
+        # Used a list to access to different tables from only on one reactive objet 
         list(traning_time = table_training_time, table_importance = table_importance, results = table_results)
         
       })
       
       
       
-      
-      output$date_essai <- renderDT({
+      # Define performance table visible on "Compare models performances" tab
+      output$score_table <- renderDT({
         
         performance_table <-  table_forecast()[['results']] %>% 
           gather(key = Model,value = Predicted_value,-date_column,-y) %>% 
@@ -504,34 +531,10 @@ shiny_spark <- function(data = data,x,y,date_column, share_app = FALSE,port = NU
       
       
       
-      
-      output$output_curve <- renderDygraph({
-        
-        output_dygraph <- dygraph(data = table_forecast()[['results']],main = "Prediction results on test period") %>% 
-          dyAxis("y",valueRange = c(0,1.5 * max(eval(parse(text =paste0("table_forecast()[['results']]$",y)))))) %>% 
-          dyOptions(animatedZooms = TRUE)
-        
-        
-        if (input$bar_chart_mode == TRUE){
-          output_dygraph <- output_dygraph %>% dyBarChart()
-        }
-        
-        output_dygraph %>% dyLegend(width = 800)
-        
-      })
-      
-      output$table_of_results <- renderDT({
-        
-        datatable(
-          table_forecast()[['results']],
-          extensions = 'Buttons', options = list(dom = 'Bfrtip',buttons = c('csv', 'excel', 'pdf', 'print'))
-        ) 
-        
-        
-      },server = FALSE )
+
       
       
-      
+      # Define importance features table table visible on "Feature importance" tab
       output$feature_importance <- renderPlotly({
         
         
@@ -557,6 +560,20 @@ shiny_spark <- function(data = data,x,y,date_column, share_app = FALSE,port = NU
         
       })
       
+      # Define results table visible on "Table of results" tab
+      output$table_of_results <- renderDT({
+        
+        datatable(
+          table_forecast()[['results']],
+          extensions = 'Buttons', options = list(dom = 'Bfrtip',buttons = c('csv', 'excel', 'pdf', 'print'))
+        ) 
+        
+        
+      },server = FALSE )
+  
+      
+
+      # Synchronize train and test cursors
       observeEvent(input$train_selector,{
         updateSliderInput(session,'test_selector',
                           value= c(input$train_selector[2],input$test_selector[2]) ) 
@@ -568,7 +585,7 @@ shiny_spark <- function(data = data,x,y,date_column, share_app = FALSE,port = NU
       })
       
       
-      
+      # When "Run tuned models!" button is clicked, send messagebox once all models have been trained
       observeEvent(input$train_all,{
         
         sendSweetAlert(
@@ -584,7 +601,7 @@ shiny_spark <- function(data = data,x,y,date_column, share_app = FALSE,port = NU
     }
   )
   
-  
+  # Allow to share the dashboard on local LAN
   if (share_app == TRUE){
     
     if(is.null(port)){stop("Please choose a port to share dashboard")}
