@@ -4,10 +4,8 @@ web app
 
 [![Travis-CI Build
 Status](https://travis-ci.org/JeanBertinR/shinyML.svg?branch=master)](https://travis-ci.org/JeanBertinR/shinyML)
-
 [![AppVeyor build
 status](https://ci.appveyor.com/api/projects/status/github/JeanBertinR/shinyML?branch=master&svg=true)](https://ci.appveyor.com/project/JeanBertinR/shinyML)
-
 [![Coverage
 status](https://codecov.io/gh/JeanBertinR/shinyML/branch/master/graph/badge.svg)](https://codecov.io/github/JeanBertinR/shinyML?branch=master)
 
