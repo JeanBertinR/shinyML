@@ -1,5 +1,4 @@
 ^appveyor\.yml$
-^codecov\.yml$
 ^README\.Rmd$
 ^.*\.Rproj$
 ^\.Rproj\.user$
