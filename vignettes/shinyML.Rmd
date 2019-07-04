@@ -15,11 +15,15 @@ library(shinyML)
 ```
 
 
-With shinyML, you can compare your favorite regression models issued from H2O or Spark frameworks without any effort.
 
-## Getting started
+## Description
 
-This is a basic example which shows you how to run the app:
+  `shinyML` is a Shiny application that helps you to easily compare supervised machine learning regression models. The two main fuctions of this package are `shiny_h2o` and `shiny_spark` which leaves the choice for the user to train and test models on H2O or Spark framework. 
+
+![Introduction of shinyML](shinyML.png)
+
+
+  Once you get your data stored on a data.table or data.frame object, you can just use one line of code to run `shiny_h2o` and `shiny_spark` functions and deploy a the Shiny App as below. This app can be shared your colleagues if you put `share_app` argument to `TRUE` and select a port that is free on your server. 
 
 ```{r example, eval=FALSE, message=FALSE, out.width=600, out.height=400}
 
@@ -28,5 +32,34 @@ longley2 <- longley %>% mutate(Year = as.Date(as.character(Year),format = "%Y"))
 shiny_h2o(data =longley2,x = c("GNP_deflator","Unemployed" ,"Armed_Forces","Employed"),y = "GNP",date_column = "Year",share_app = TRUE,port = 3951)
 ```
 
+![View of H2O dashboard](screenshot_dashboard.png)
 
-![An example of output of shinyML package](auto_ML.gif)
+## Runing the app...
+
+  When the shiny has been launched, you can manually adjust main parameters of supervised models (such as generalized linear regression, Random forest, Neural Network, Gradient Boosting ...) by moving the coresponding cursors. 
+In addition to hyper-parameters setting for each model, you can adjust train and test period and choose which variables you want to keep during the training phase. 
+
+![An example of output of shinyML](one_model.gif)
+
+
+
+  You can then run each model separately or run all models simultaneously clicking the corresponding button to each box.  
+
+![Run all models at the same time with your custom configuration](all_models.gif)
+
+  You will see a validation message box once all models have been trained: at that point, you can have an overview of your results comparing variables importances and error metrics like MAPE  or RMSE.
+
+
+## Run autoML alogrithm to find automatically configure the best machine learning regression model associated to your dataset 
+
+
+  AutoML algorithm will automatically find the best algorithm to suit your regression task: as soon as the maximum time for searching will be reached, you get a message box indicating which machine learning model has been choosed to suit you regression task and specifying all corresponding hyper-parameter values.   
+
+  The only setting that must be adjusted by the user is the maximum time authorized for searching. 
+Please notice that this functionality is for the moment only available on `spark_h2o` function. 
+
+
+![Run autoML algorithm to compare machine learning techniques](auto_ML.gif)
+
+
+
