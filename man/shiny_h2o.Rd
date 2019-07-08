@@ -9,7 +9,7 @@ shiny_h2o(data = data, x, y, date_column, share_app = FALSE,
 }
 \arguments{
 \item{data}{Time serie containing one or more input values and one output value. 
-The time serie must be a data.frame or a data.table and must contain at least one time-based column on Date or Posixct format.}
+The time serie must be a data.frame or a data.table and must contain at least one time-based column on Date or POSIXct format.}
 
 \item{x}{Vector of numerical and categorical input variables used to train and test the model. Each element of x vector must correspond to a data column with either numerical or factor type.}
 
