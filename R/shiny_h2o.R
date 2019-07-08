@@ -41,7 +41,6 @@ shiny_h2o <- function(data = data,x,y,date_column, share_app = FALSE,port = NULL
   # Convert input data must be a data table object 
   data <- data.table(data)
   
-  
   # Run h2o instance (might require to unset proxy authentification credentials )
   Sys.setenv(http_proxy="")
   Sys.setenv(http_proxy_user="")
@@ -51,7 +50,7 @@ shiny_h2o <- function(data = data,x,y,date_column, share_app = FALSE,port = NULL
   
   # Test if date_column class correspond to Date or POSIXct
   if (!(eval(parse(text = paste0("class(data$",date_column,")"))) %in% c("Date","POSIXct"))){
-    stop("date_column class must be Date or POSIXct")
+      stop("date_column class must be Date or POSIXct")
   }
   
   # Test if y class correspond to numeric
@@ -421,6 +420,7 @@ shiny_h2o <- function(data = data,x,y,date_column, share_app = FALSE,port = NULL
           dyAxis("y",valueRange = c(0,1.5 * max(eval(parse(text =paste0("table_forecast()[['results']]$",y)))))) %>% 
           dyOptions(animatedZooms = TRUE)
         
+        # chart can be displayed with bar or line mode 
         if (input$bar_chart_mode == TRUE){
           output_dygraph <- output_dygraph %>% dyBarChart()
         }

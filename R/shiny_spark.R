@@ -357,7 +357,7 @@ shiny_spark <- function(data = data,x,y,date_column, share_app = FALSE,port = NU
           dyOptions(colors = "darkblue",animatedZooms = TRUE)
         
         
-        
+        # chart can be displayed with bar or line mode 
         if (input$bar_chart_mode == TRUE){
           curve_entries <- curve_entries %>% dyBarChart()
         }
