@@ -15,14 +15,15 @@ library(manipulateWidget)
 
 # dashR
 
-Implement in one line of code a shareable web app to compare supervised machine learning regression models! 
+  Implement in one line of code a shareable web app to compare supervised machine learning regression models!
 
-With `shinyML`, you can compare your favorite regression models issued from H2O or Spark frameworks without any effort. 
+![Introduction of shinyML](vignettes/shinyML.png)
+  
+  With `shinyML`, you can compare your favorite regression models issued from H2O or Spark frameworks without any effort. 
 
 
 
 ## Installation
-
 
   You can install the released version of dashR from [CRAN](https://CRAN.R-project.org) with:
 
@@ -49,8 +50,6 @@ shiny_h2o(data =longley2,x = c("GNP_deflator","Unemployed" ,"Armed_Forces","Empl
 
 
 ## Test different machine learning techiques and hyper-parameters configurations with just a few clicks
-
-![Introduction of shinyML](vignettes/shinyML.png)
 
   First step consist in choosing separating train and test period from your dataset: this can be done in one second using slider button on the right of your shinyML app. 
   You can also remove variables from your initial selection directly from app just simply using "Input variable" textbox. 
