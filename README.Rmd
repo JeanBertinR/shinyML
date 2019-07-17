@@ -25,13 +25,8 @@ library(manipulateWidget)
 
 ## Installation
 
-  You can install the released version of dashR from [CRAN](https://CRAN.R-project.org) with:
 
-```{r eval=FALSE}
-install.packages("shinyML")
-```
-
-  You can also install the latest development version from github:
+  You can install the latest development version from github:
 
 ```{r eval=FALSE}
 devtools::install_github("JeanBertinR/shinyML", ref="develop")

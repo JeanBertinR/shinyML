@@ -15,13 +15,7 @@ With `shinyML`, you can compare your favorite regression models issued from H2O 
 Installation
 ------------
 
-You can install the released version of dashR from [CRAN](https://CRAN.R-project.org) with:
-
-``` r
-install.packages("shinyML")
-```
-
-You can also install the latest development version from github:
+You can install the latest development version from github:
 
 ``` r
 devtools::install_github("JeanBertinR/shinyML", ref="develop")
