@@ -238,7 +238,7 @@ shiny_h2o <- function(data = data,x,y,date_column, share_app = FALSE,port = NULL
       time_neural_network <- data.table()
       time_auto_ml <- data.table()
       
-      # Intitalization of calculation time per model (not available for generalized linear regression)
+      # Intitalization of variables importances per model (not available for generalized linear regression)
       importance_gbm <- data.table()
       importance_random_forest <- data.table()
       importance_neural_network <- data.table()

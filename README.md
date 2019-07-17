@@ -58,4 +58,4 @@ The only setting that must be adjusted by the user is the maximum time authorize
 
 ![Run autoML algorithm to compare machine learning techniques](vignettes/auto_ML.gif)
 
-For more information take a look at the [package vignette](vignettes/shinyML.Rmd).
+For more information take a look at the [package vignette](vignettes/vignettes.Rmd).

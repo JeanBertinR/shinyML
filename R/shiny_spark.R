@@ -184,12 +184,14 @@ shiny_spark <- function(data = data,x,y,date_column, share_app = FALSE,port = NU
     server = function(session, input, output) {
       
       set.seed(122)
+      
+      # Intitalization of calculation time per model (not available for generalized linear regression)
       time_gbm <- data.table()
       time_random_forest <- data.table()
       time_glm <- data.table()
       time_decision_tree <- data.table()
       
-      # Intitalization of calculation time per model (not available for generalized linear regression)
+      # Intitalization of variables importances per model (not available for generalized linear regression)
       importance_gbm <- data.table()
       importance_random_forest <- data.table()
       importance_decision_tree <- data.table()

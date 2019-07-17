@@ -32,8 +32,6 @@ longley2 <- longley %>% mutate(Year = as.Date(as.character(Year),format = "%Y"))
 shiny_h2o(data =longley2,x = c("GNP_deflator","Unemployed" ,"Armed_Forces","Employed"),y = "GNP",date_column = "Year",share_app = TRUE,port = 3951)
 ```
 
-![View of H2O dashboard](screenshot_dashboard.png)
-
 ## Runing the app...
 
   When the shiny has been launched, you can manually adjust main parameters of supervised models (such as generalized linear regression, Random forest, Neural Network, Gradient Boosting ...) by moving the coresponding cursors. 
