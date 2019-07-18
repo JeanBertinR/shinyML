@@ -15,14 +15,14 @@ The time serie must be a data.frame or a data.table and must contain at least on
 
 \item{y}{the numerical output variable to forecast (must correpond to one data column)}
 
-\item{date_column}{the name of time-based column ( must correspond to one data column)}
+\item{date_column}{the name of time-based column ( must correspond to one data column). Must correspond to Date or POSIXct format.}
 
 \item{share_app}{a logical value indicating whether the app must be shared on local LAN}
 
 \item{port}{a four-digit number corresponding to the port the application should listen to. This parameter is necessary only  if share_app option is set to TRUE}
 }
 \description{
-This function creates in one line of code a shareable web app to compare supervised regression model performances.
+This function creates in one line of code a shareable web app to compare supervised regression model performances (framework: Spark).
 }
 \examples{
 \dontrun{

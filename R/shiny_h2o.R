@@ -1,6 +1,6 @@
 #' @title Implement a shiny web app to compare h2o supervised regression models on time series
 #'
-#' @description This function creates in one line of code a shareable web app to compare supervised regression model performances.
+#' @description This function creates in one line of code a shareable web app to compare supervised regression model performance (framework: H2O).
 #'
 #' @param data Time serie containing one or more input values and one output value. 
 #'    The time serie must be a data.frame or a data.table and must contain at least one time-based column on Date or POSIXct format.
@@ -8,7 +8,7 @@
 #' 
 #' @param y the numerical output variable to forecast (must correpond to one data column)
 #' 
-#' @param date_column the name of time-based column ( must correspond to one data column)
+#' @param date_column the name of time-based column ( must correspond to one data column). Must correspond to Date or POSIXct format. 
 #' 
 #' @param share_app a logical value indicating whether the app must be shared on local LAN 
 #' 
