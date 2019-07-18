@@ -4,8 +4,8 @@ Title: Create a shiny app to implement and compare supervised regression models 
 Version: 0.1.0
 Author: Jean Bertin
 Maintainer: Jean Bertin <jean.bertin@mines-paris.org>
-Description: This package creates in one line of code a shareable web app to compare supervised regression model performances. 
-    Four main classes of regression algorithms (generalized linear regression, decision tree, random forest, gradient boosted ) might be tuned on Spark framework to forecast the outcome of given time series. 
+Description: This package allows to create in one line of code a shareable web app to compare supervised regression model performances. 
+    Four main classes of regression algorithms might be either implemented on Spark or H2O frameworks to test differents models on a given time serie. 
 License: GPL-3 | file LICENSE
 Encoding: UTF-8
 Imports:
