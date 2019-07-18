@@ -19,8 +19,11 @@ library(shinyML)
 ## Description
 
   `shinyML` is a Shiny application that helps you to easily compare supervised machine learning regression models. The two main fuctions of this package are `shiny_h2o` and `shiny_spark` which leaves the choice for the user to train and test models on H2O or Spark framework. 
-
+  
+  
+<center>
 ![Introduction of shinyML](shinyML.png)
+</center>
 
 
   Once you get your data stored on a data.table or data.frame object, you can just use one line of code to run `shiny_h2o` and `shiny_spark` functions and deploy a the Shiny App as below. This app can be shared your colleagues if you put `share_app` argument to `TRUE` and select a port that is free on your server. 
@@ -37,13 +40,19 @@ shiny_h2o(data =longley2,x = c("GNP_deflator","Unemployed" ,"Armed_Forces","Empl
   When the shiny has been launched, you can manually adjust main parameters of supervised models (such as generalized linear regression, Random forest, Neural Network, Gradient Boosting ...) by moving the coresponding cursors. 
 In addition to hyper-parameters setting for each model, you can adjust train and test period and choose which variables you want to keep during the training phase. 
 
+
+<center>
 ![An example of output of shinyML](one_model.gif)
+</center>
 
 
 
   You can then run each model separately or run all models simultaneously clicking the corresponding button to each box.  
-
+  
+  
+<center>
 ![Run all models at the same time with your custom configuration](all_models.gif)
+</center>
 
   You will see a validation message box once all models have been trained: at that point, you can have an overview of your results comparing variables importances and error metrics like MAPE  or RMSE.
 
@@ -56,8 +65,9 @@ In addition to hyper-parameters setting for each model, you can adjust train and
   The only setting that must be adjusted by the user is the maximum time authorized for searching. 
 Please notice that this functionality is for the moment only available on `spark_h2o` function. 
 
-
+<center>
 ![Run autoML algorithm to compare machine learning techniques](auto_ML.gif)
+</center>
 
 
 
