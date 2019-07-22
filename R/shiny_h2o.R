@@ -48,6 +48,9 @@ shiny_h2o <- function(data = data,x,y,date_column, share_app = FALSE,port = NULL
   h2o.init()
   h2o::h2o.no_progress()
   
+  # Replace '.' by '_' in dataset column names ( if necessary )
+  x <- gsub("\\_",".",x)
+  
   # Test if date_column class correspond to Date or POSIXct
   if (!(eval(parse(text = paste0("class(data$",date_column,")"))) %in% c("Date","POSIXct"))){
       stop("date_column class must be Date or POSIXct")
