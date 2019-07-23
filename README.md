@@ -6,8 +6,10 @@ Compare H20 or Spark Supervised Regression Models Using Shiny App
 shinyML
 =======
 
-Implement in one line of code a shareable web app to compare supervised machine learning regression models! ![Introduction of shinyML](vignettes/shinyML.png)
-
+Implement in one line of code a shareable web app to compare supervised machine learning regression models!
+<p align="center">
+![Introduction of shinyML](vignettes/shinyML.png)
+</p>
 With `shinyML`, you can compare your favorite regression models issued from H2O or Spark frameworks without any effort.
 
 ### Installation
