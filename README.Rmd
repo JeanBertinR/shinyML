@@ -76,6 +76,7 @@ For that, you will just need to use shiny app buttons corresponding to your para
   <img src="vignettes/auto_ML.gif">
 </p>
 
+
   For more information take a look at the [package vignette](vignettes/vignettes.Rmd).
 
 
