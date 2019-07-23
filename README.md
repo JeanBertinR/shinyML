@@ -1,10 +1,10 @@
-Compare Spark and h2o supervised regression techniques in a shareable web app
+Compare H20 or Spark Supervised Regression Models Using Shiny App
 ================
 
 [![Travis-CI Build Status](https://travis-ci.org/JeanBertinR/shinyML.svg?branch=master)](https://travis-ci.org/JeanBertinR/shinyML) [![AppVeyor build status](https://ci.appveyor.com/api/projects/status/github/JeanBertinR/shinyML?branch=master&svg=true)](https://ci.appveyor.com/project/JeanBertinR/shinyML)
 
-dashR
-=====
+shinyML
+=======
 
 Implement in one line of code a shareable web app to compare supervised machine learning regression models!
 <center>
