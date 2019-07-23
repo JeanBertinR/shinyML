@@ -6,7 +6,7 @@ Author: Jean Bertin
 Maintainer: Jean Bertin <jean.bertin@gadz.org>
 Description: Create a shiny web app to easily compare supervised regression model performances. 
     Four main classes of regression algorithms might be either implemented on Spark or H2O frameworks to test different models on a given time series.
-    GALIT SHMUELI and KENNETH C. LICHTENDAHL JR(2015, ISBN:0991576632)
+    Implementation of these time series forecasting methods on R has been done by R GALIT SHMUELI and KENNETH C. LICHTENDAHL JR(2015, ISBN:0991576632).
 License: GPL-3
 Encoding: UTF-8
 Imports:

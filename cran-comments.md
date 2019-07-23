@@ -1,6 +1,20 @@
 ## Resubmission
 This is a resubmission. In this version I have:
 
+* Modified the title to make it describe the package more precisely
+
+* Checked the new title lenght remains less than 65 characters.
+
+* Modified the title in the Readme.Rmd file to make it correspond to the title in the DESCRIPTION file  
+
+* Written "License: GPL-3" instead of "GPL-3 | file LICENSE" in the DESCRIPTION file
+
+* Added a reference in the description field on the DESCRIPTION file in the form "authors (year, ISBN:...)" that describe the methods in the package 
+
+
+## Resubmission
+This is a resubmission. In this version I have:
+
 * Converted the DESCRIPTION title to title case.
 
 * Right spelled words in DESCRIPTION:
