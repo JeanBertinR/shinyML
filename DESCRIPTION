@@ -4,9 +4,10 @@ Title: Compare H20 or Spark Supervised Regression Models Using Shiny App
 Version: 0.1.0
 Author: Jean Bertin
 Maintainer: Jean Bertin <jean.bertin@gadz.org>
-Description: Create a shiny web app to easily compare supervised regression model performances. 
-    Four main classes of regression algorithms might be either implemented on Spark or H2O frameworks to test different models on a given time series.
-    Implementation of these time series forecasting methods on R has been done by R GALIT SHMUELI and KENNETH C. LICHTENDAHL JR(2015, ISBN:0991576632).
+Description: Implementation of a shiny app to easily compare supervised regression model performances. 
+    You provide the data and configure each model parameter directly on the shiny app.  
+    Four main supervised learning algorithms can be tested either on Spark or H2O frameworks to suit your regression problem on a given time series.
+    Implementation of these time series forecasting methods on R has been done by Shmueli and Lichtendahl (2015, ISBN:0991576632).
 License: GPL-3
 Encoding: UTF-8
 Imports:

@@ -1,6 +1,14 @@
 ## Resubmission
 This is a resubmission. In this version I have:
 
+* Capitalized only the first letter of names instead of the whole name in the DESCRIPTION file 
+
+* Rewrote all descritption field on the DESCRIPTION file to make it clearer: please notice that the package is just an implemnetation of a shiny app 
+
+
+## Resubmission
+This is a resubmission. In this version I have:
+
 * Modified the title to make it describe the package more precisely
 
 * Checked the new title lenght remains less than 65 characters.
