@@ -26,7 +26,13 @@ from H2O or Spark frameworks without any effort.
 
 ### Installation
 
-You can install the latest development version from github:
+The package can be installed from CRAN:
+
+``` r
+install.packages("shinyML")
+```
+
+You can also install the latest development version from github:
 
 ``` r
 devtools::install_github("JeanBertinR/shinyML", ref="develop")

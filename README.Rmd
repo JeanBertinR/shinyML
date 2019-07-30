@@ -30,8 +30,14 @@ knitr::opts_chunk$set(echo = TRUE)
 
 ### Installation
 
+  The package can be installed from CRAN:
 
-  You can install the latest development version from github:
+```{r eval=FALSE}
+install.packages("shinyML")
+```
+
+
+  You can also install the latest development version from github:
 
 ```{r eval=FALSE}
 devtools::install_github("JeanBertinR/shinyML", ref="develop")
