@@ -4,7 +4,7 @@ In this version I have:
 
 * Added a missing block to shiny_h2o.R to make autoML method working 
 
-* Passed default 'share_app' argument of shiny_h2o and shiny_spark functions to FALSE
+* Default 'share_app' argument of shiny_h2o and shiny_spark examples have been set to FALSE
 
 
 ## Resubmission
