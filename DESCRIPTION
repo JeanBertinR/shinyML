@@ -1,7 +1,7 @@
 Package: shinyML
 Type: Package
 Title: Compare H20 or Spark Supervised Regression Models Using Shiny App
-Version: 0.1.0
+Version: 0.1.1
 Author: Jean Bertin
 Maintainer: Jean Bertin <jean.bertin@gadz.org>
 Description: Implementation of a shiny app to easily compare supervised regression model performances. 

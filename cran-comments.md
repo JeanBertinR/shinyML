@@ -1,3 +1,12 @@
+## New patch version of shinyML package
+This is a new patch version (0.1.1) of the shinyML package (I've fixed bugs without adding any significant new features). 
+In this version I have:
+
+* Added a missing block to shiny_h2o.R to make autoML method working 
+
+* Passed default 'share_app' argument of shiny_h2o and shiny_spark functions to FALSE
+
+
 ## Resubmission
 This is a resubmission. In this version I have:
 
