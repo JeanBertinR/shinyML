@@ -1,3 +1,9 @@
+## Resubmission
+This is a resubmission. In this version I have:
+
+* Rewrote CRAN URL in canonical form (https://CRAN.R-project.org/package=shinyML) on Readme.Rmd file
+
+
 ## New patch version of shinyML package
 This is a new patch version (0.1.1) of the shinyML package (I've fixed bugs without adding any significant new features). 
 In this version I have:
