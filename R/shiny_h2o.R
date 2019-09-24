@@ -27,7 +27,7 @@
 #' @importFrom dplyr %>% select mutate group_by summarise arrange rename
 #' @importFrom tidyr gather
 #' @importFrom DT renderDT DTOutput datatable
-#' @importFrom h2o h2o.init as.h2o h2o.deeplearning h2o.varimp h2o.predict h2o.gbm h2o.glm h2o.randomForest h2o.automl 
+#' @importFrom h2o h2o.init as.h2o h2o.deeplearning h2o.varimp h2o.predict h2o.gbm h2o.glm h2o.randomForest h2o.automl h2o.clusterStatus
 #' @importFrom plotly plotlyOutput renderPlotly ggplotly
 #' @importFrom shinyWidgets materialSwitch sendSweetAlert knobInput
 #' @importFrom stats predict reorder
@@ -76,7 +76,15 @@ shiny_h2o <- function(data = data,x,y,date_column, share_app = FALSE,port = NULL
                          sidebarMenu(
                            menuItem(
                              materialSwitch(inputId = "bar_chart_mode",label = "Bar chart mode",status = "primary",value = TRUE)
-                           )
+                           ),
+                           br(),
+                           # Modify size of font awesome icons 
+                           tags$head( 
+                             tags$style(HTML(".fa { font-size: 40px; }"))
+                           ),
+                           valueBoxOutput("h2o_cluster_mem",width = 12),
+                           valueBoxOutput("h2o_cpu",width = 12)
+                           
                          )),
                        
                        dashboardBody(
@@ -161,7 +169,7 @@ shiny_h2o <- function(data = data,x,y,date_column, share_app = FALSE,port = NULL
                                       sliderInput(label = "Max depth",min = 1,max = 50, inputId = "max_depth_random_forest",value = 20),
                                       sliderInput(label = "Number of bins",min = 2,max = 100, inputId = "n_bins_random_forest",value = 20),
                                       actionButton("run_random_forest","Run random forest model",style = 'color:white; background-color:red; padding:4px; font-size:150%',
-                                                   icon = icon("users",lib = "font-awesome"))
+                                                   icon = icon("cogs",lib = "font-awesome"))
                                       
                                       ,width = 3
                                       
@@ -201,7 +209,7 @@ shiny_h2o <- function(data = data,x,y,date_column, share_app = FALSE,port = NULL
                                       sliderInput(label = "Sample rate",min = 0.1,max = 1, inputId = "sample_rate_gbm",value = 1),
                                       sliderInput(label = "Learn rate",min = 0.1,max = 1, inputId = "learn_rate_gbm",value = 0.1),
                                       actionButton("run_gradient_boosting","Run gradient boosting model",style = 'color:white; background-color:darkgreen; padding:4px; font-size:150%',
-                                                   icon = icon("users",lib = "font-awesome"))
+                                                   icon = icon("cogs",lib = "font-awesome"))
                                       
                                       ,width = 3
                                       
@@ -728,6 +736,28 @@ shiny_h2o <- function(data = data,x,y,date_column, share_app = FALSE,port = NULL
             html = TRUE
           )
         }
+      })
+      
+      # Define Value Box concerning memory used by h2o cluster  
+      output$h2o_cluster_mem <- renderValueBox({
+        cluster_status <- h2o.clusterStatus()
+        
+        valueBox(
+          paste(round(as.numeric(cluster_status$free_mem)/1024**3,2), "GB", sep = ""),
+          "H2O Cluster Total Memory", icon = icon("server"),
+          color = "maroon"
+        )
+      })
+      
+      # Define Value Box concerning number of cpu used by h2o cluster
+      output$h2o_cpu <- renderValueBox({
+        cluster_status <- h2o.clusterStatus()
+        
+        valueBox(
+          cluster_status$num_cpus,
+          "Number of CPUs in Use", icon = icon("microchip"),
+          color = "light-blue"
+        )
       })
       
       
