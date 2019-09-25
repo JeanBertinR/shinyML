@@ -24,11 +24,11 @@
 #'   y = "GNP",date_column = "Year",share_app = FALSE)
 #'}
 #' @import shiny shinydashboard dygraphs data.table ggplot2 shinycssloaders
-#' @importFrom dplyr %>% select mutate group_by summarise arrange rename
+#' @importFrom dplyr %>% select mutate group_by summarise arrange rename select_if
 #' @importFrom tidyr gather
 #' @importFrom DT renderDT DTOutput datatable
-#' @importFrom h2o h2o.init as.h2o h2o.deeplearning h2o.varimp h2o.predict h2o.gbm h2o.glm h2o.randomForest h2o.automl h2o.clusterStatus
-#' @importFrom plotly plotlyOutput renderPlotly ggplotly
+#' @importFrom h2o h2o.init as.h2o h2o.deeplearning h2o.varimp h2o.predict h2o.gbm h2o.glm h2o.randomForest h2o.automl h2o.clusterStatus cor
+#' @importFrom plotly plotlyOutput renderPlotly ggplotly plot_ly
 #' @importFrom shinyWidgets materialSwitch sendSweetAlert knobInput
 #' @importFrom stats predict reorder
 #' 
@@ -92,7 +92,12 @@ shiny_h2o <- function(data = data,x,y,date_column, share_app = FALSE,port = NULL
                            column(width = 12,
                                   column(width = 8,
                                          fluidRow(
-                                           column(width = 12,box(dygraphOutput("input_curve", height = 120, width = 1100),width = 12)),
+                                           column(width = 12,
+                                                  tabBox(id = "explore_input_data", 
+                                                         tabPanel("Input data chart",withSpinner(dygraphOutput("input_curve", height = 180, width = 1100))),
+                                                         tabPanel("Correlation matrix",withSpinner(plotlyOutput("correlation_matrix", height = 180, width = 1100))),
+                                                         width = 12)
+                                           ),
                                            column(width = 12,
                                                   tabBox(id = "results_models",
                                                          tabPanel("Result charts on test period",withSpinner(dygraphOutput("output_curve", height = 200, width = 1100))),
@@ -441,6 +446,13 @@ shiny_h2o <- function(data = data,x,y,date_column, share_app = FALSE,port = NULL
         }
         curve_entries
         
+      })
+      
+      # Define input data chart and train/test periods splitting
+      output$correlation_matrix <- renderPlotly({
+        
+        data_correlation <- as.matrix(select_if(data, is.numeric))
+        plot_ly(x = colnames(data_correlation) , y = colnames(data_correlation), z =cor(data_correlation)  ,type = "heatmap", source = "heatplot")
       })
       
       
