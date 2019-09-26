@@ -27,10 +27,10 @@
 #' @importFrom dplyr %>% select mutate group_by summarise arrange rename select_if
 #' @importFrom tidyr gather
 #' @importFrom DT renderDT DTOutput datatable
-#' @importFrom h2o h2o.init as.h2o h2o.deeplearning h2o.varimp h2o.predict h2o.gbm h2o.glm h2o.randomForest h2o.automl h2o.clusterStatus cor
+#' @importFrom h2o h2o.init as.h2o h2o.deeplearning h2o.varimp h2o.predict h2o.gbm h2o.glm h2o.randomForest h2o.automl h2o.clusterStatus
 #' @importFrom plotly plotlyOutput renderPlotly ggplotly plot_ly
 #' @importFrom shinyWidgets materialSwitch sendSweetAlert knobInput
-#' @importFrom stats predict reorder
+#' @importFrom stats predict reorder cor
 #' 
 #' 
 #' @export
@@ -47,7 +47,7 @@ shiny_h2o <- function(data = data,x,y,date_column, share_app = FALSE,port = NULL
   Sys.setenv(https_proxy_user="")
   h2o.init()
   h2o::h2o.no_progress()
-  
+  cluster_status <- h2o.clusterStatus()
   # Replace '.' by '_' in dataset column names ( if necessary )
   x <- gsub("\\_",".",x)
   
@@ -752,7 +752,6 @@ shiny_h2o <- function(data = data,x,y,date_column, share_app = FALSE,port = NULL
       
       # Define Value Box concerning memory used by h2o cluster  
       output$h2o_cluster_mem <- renderValueBox({
-        cluster_status <- h2o.clusterStatus()
         
         valueBox(
           paste(round(as.numeric(cluster_status$free_mem)/1024**3,2), "GB", sep = ""),
@@ -763,7 +762,6 @@ shiny_h2o <- function(data = data,x,y,date_column, share_app = FALSE,port = NULL
       
       # Define Value Box concerning number of cpu used by h2o cluster
       output$h2o_cpu <- renderValueBox({
-        cluster_status <- h2o.clusterStatus()
         
         valueBox(
           cluster_status$num_cpus,

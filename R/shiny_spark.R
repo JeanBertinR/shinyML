@@ -27,7 +27,7 @@
 #' @importFrom dplyr %>% select mutate group_by summarise arrange rename
 #' @importFrom tidyr gather
 #' @importFrom DT renderDT DTOutput datatable
-#' @importFrom plotly plotlyOutput renderPlotly ggplotly
+#' @importFrom plotly plotlyOutput renderPlotly ggplotly plot_ly
 #' @importFrom shinyWidgets materialSwitch sendSweetAlert
 #' @importFrom stats predict reorder
 #' @export
@@ -44,7 +44,7 @@ shiny_spark <- function(data = data,x,y,date_column, share_app = FALSE,port = NU
   if (!(eval(parse(text = paste0("class(data$",date_column,")"))) %in% c("Date","POSIXct"))){
     stop("date_column class must be Date or POSIXct")
   }
-
+  
   # Test if y class correspond to numeric
   if (!(eval(parse(text = paste0("class(data$",y,")"))) == "numeric")){
     stop("y column class must be numeric")
@@ -62,6 +62,7 @@ shiny_spark <- function(data = data,x,y,date_column, share_app = FALSE,port = NU
   
   # Connect to local Spark cluster
   sc <- spark_connect(master = "local")
+  config_spark<- spark_session_config(sc)
   
   # Define shiny app 
   app <- shinyApp(
@@ -71,9 +72,17 @@ shiny_spark <- function(data = data,x,y,date_column, share_app = FALSE,port = NU
       dashboardHeader(title = "Spark"),
       dashboardSidebar( 
         sidebarMenu(
-          menuItem("Dashboard", tabName = "dashboard", icon = icon("dashboard"),
-                   materialSwitch(inputId = "bar_chart_mode",label = "Bar chart mode",status = "primary",value = TRUE)
-          )
+          menuItem(
+            materialSwitch(inputId = "bar_chart_mode",label = "Bar chart mode",status = "primary",value = TRUE)
+          ),
+          br(),
+          # Modify size of font awesome icons 
+          tags$head( 
+            tags$style(HTML(".fa { font-size: 40px; }"))
+          ),
+          valueBoxOutput("spark_cluster_mem",width = 12),
+          valueBoxOutput("spark_cpu",width = 12)
+          
         )),
       
       dashboardBody(
@@ -81,9 +90,11 @@ shiny_spark <- function(data = data,x,y,date_column, share_app = FALSE,port = NU
           column(width = 12,
                  column(width = 8,
                         fluidRow(
-                          column(width = 12,box(
-                            dygraphOutput("input_curve", height = 120, width = 1100),width = 12
-                          )
+                          column(width = 12,
+                                 tabBox(id = "explore_input_data", 
+                                        tabPanel("Input data chart",withSpinner(dygraphOutput("input_curve", height = 180, width = 1100))),
+                                        tabPanel("Correlation matrix",withSpinner(plotlyOutput("correlation_matrix", height = 180, width = 1100))),
+                                        width = 12)
                           ),
                           column(width = 12,tabBox(id = "results_models",
                                                    tabPanel("Result charts on test period",withSpinner(dygraphOutput("output_curve",height = 200,width = 1100))),
@@ -155,7 +166,7 @@ shiny_spark <- function(data = data,x,y,date_column, share_app = FALSE,port = NU
                      sliderInput(label = "Subsampling rate",min = 0.1,max = 1, inputId = "subsampling_rate_random_forest",value = 1),
                      sliderInput(label = "Max depth",min = 1,max = 30, inputId = "max_depth_random_forest",value = 20),
                      actionButton("run_random_forest","Run random forest model",style = 'color:white; background-color:darkblue; padding:4px; font-size:150%',
-                                  icon = icon("users",lib = "font-awesome"))
+                                  icon = icon("cogs",lib = "font-awesome"))
                      
                      ,width = 3),
                    
@@ -169,7 +180,7 @@ shiny_spark <- function(data = data,x,y,date_column, share_app = FALSE,port = NU
                      sliderInput(label = "Max depth",min = 1,max = 30, inputId = "max_depth_gbm",value = 20),
                      
                      actionButton("run_gradient_boosting","Run gradient boosting model",style = 'color:white; background-color:darkgreen; padding:4px; font-size:150%',
-                                  icon = icon("users",lib = "font-awesome"))
+                                  icon = icon("cogs",lib = "font-awesome"))
                      
                      ,width = 3)
                    
@@ -278,7 +289,7 @@ shiny_spark <- function(data = data,x,y,date_column, share_app = FALSE,port = NU
         hideTab(inputId = "results_models", target = "Feature importance")
       })
       
-
+      
       
       # Make decision tree parameters correspond to cursors when user click on "Run decision tree" button (and disable other models)
       observeEvent(input$run_decision_tree,{
@@ -339,7 +350,7 @@ shiny_spark <- function(data = data,x,y,date_column, share_app = FALSE,port = NU
         
       })
       
-
+      
       
       # Define input data chart and train/test periods splitting
       output$input_curve <- renderDygraph({
@@ -365,6 +376,13 @@ shiny_spark <- function(data = data,x,y,date_column, share_app = FALSE,port = NU
         }
         curve_entries
         
+      })
+      
+      # Define input data chart and train/test periods splitting
+      output$correlation_matrix <- renderPlotly({
+        
+        data_correlation <- as.matrix(select_if(data, is.numeric))
+        plot_ly(x = colnames(data_correlation) , y = colnames(data_correlation), z =cor(data_correlation)  ,type = "heatmap", source = "heatplot")
       })
       
       
@@ -533,7 +551,7 @@ shiny_spark <- function(data = data,x,y,date_column, share_app = FALSE,port = NU
       
       
       
-
+      
       
       
       # Define importance features table table visible on "Feature importance" tab
@@ -572,9 +590,9 @@ shiny_spark <- function(data = data,x,y,date_column, share_app = FALSE,port = NU
         
         
       },server = FALSE )
-  
       
-
+      
+      
       # Synchronize train and test cursors
       observeEvent(input$train_selector,{
         updateSliderInput(session,'test_selector',
@@ -598,10 +616,31 @@ shiny_spark <- function(data = data,x,y,date_column, share_app = FALSE,port = NU
         )
       })
       
+      # Define Value Box concerning memory used by h2o cluster  
+      output$spark_cluster_mem <- renderValueBox({
+        
+        valueBox(
+          gsub("g"," GB",config_spark$spark.driver.memory),
+          "Spark Cluster Total Memory", icon = icon("server"),
+          color = "maroon"
+        )
+      })
       
+      # Define Value Box concerning number of cpu used by h2o cluster
+      output$spark_cpu <- renderValueBox({
+        
+        valueBox(
+          config_spark$spark.sql.shuffle.partitions,
+          "Number of CPUs in Use", icon = icon("microchip"),
+          color = "light-blue"
+        )
+      })
       
     }
   )
+  
+  
+  
   
   # Allow to share the dashboard on local LAN
   if (share_app == TRUE){
