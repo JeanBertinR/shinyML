@@ -48,6 +48,7 @@ shiny_h2o <- function(data = data,x,y,date_column, share_app = FALSE,port = NULL
   h2o.init()
   h2o::h2o.no_progress()
   cluster_status <- h2o.clusterStatus()
+  
   # Replace '.' by '_' in dataset column names ( if necessary )
   x <- gsub("\\_",".",x)
   
@@ -95,6 +96,14 @@ shiny_h2o <- function(data = data,x,y,date_column, share_app = FALSE,port = NULL
                                            column(width = 12,
                                                   tabBox(id = "explore_input_data", 
                                                          tabPanel("Input data chart",withSpinner(dygraphOutput("input_curve", height = 180, width = 1100))),
+                                                         tabPanel("Variables Summary",
+                                                                  fluidRow( 
+                                                                    column(width = 6,
+                                                                           withSpinner(DTOutput("variables_class_input", height = 180, width = 500))),
+                                                                    column(width = 6,
+                                                                           withSpinner(plotlyOutput("variable_boxplot", height = 180, width = 500)))
+                                                                  )
+                                                         ),
                                                          tabPanel("Correlation matrix",withSpinner(plotlyOutput("correlation_matrix", height = 180, width = 1100))),
                                                          width = 12)
                                            ),
@@ -453,6 +462,34 @@ shiny_h2o <- function(data = data,x,y,date_column, share_app = FALSE,port = NULL
         
         data_correlation <- as.matrix(select_if(data, is.numeric))
         plot_ly(x = colnames(data_correlation) , y = colnames(data_correlation), z =cor(data_correlation)  ,type = "heatmap", source = "heatplot")
+      })
+      
+      # Define input data summary with class of each variable 
+      output$variables_class_input <- renderDT({
+        table_classes <- data.table()
+        
+        for (i in 1:ncol(data)){
+          
+          table_classes <- rbind(table_classes,
+                                 data.frame(Variable = colnames(data)[i],
+                                            Class = class(eval(parse(text = paste0("data$",colnames(data)[i]))))
+                                 )
+          )
+        }
+        
+        datatable(table_classes,options = list(pageLength =3,searching = FALSE,lengthChange = FALSE),selection = list(mode = "single",selected = c(1))
+        )
+      })
+      
+      # Define boxplot corresponding to  selected variable in variables_class_input 
+      output$variable_boxplot <- renderPlotly({
+        
+        column_name <- colnames(data)[input$variables_class_input_rows_selected]
+        plot_ly(y = eval(parse(text = paste0("data[,",column_name,"]"))),
+                type = "box",
+                name = column_name
+        )
+        
       })
       
       
