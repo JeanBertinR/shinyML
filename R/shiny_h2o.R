@@ -101,6 +101,9 @@ shiny_h2o <- function(data = data,x,y,date_column, share_app = FALSE,port = NULL
                                                                     column(width = 6,
                                                                            withSpinner(DTOutput("variables_class_input", height = 180, width = 500))),
                                                                     column(width = 6,
+                                                                           div(align = "center",
+                                                                               radioButtons(inputId = "input_var_graph_type",label = "",choices = c("Boxplot","Histogram"),
+                                                                                            selected = "Boxplot",inline = T)),
                                                                            withSpinner(plotlyOutput("variable_boxplot", height = 180, width = 500)))
                                                                   )
                                                          ),
@@ -485,10 +488,15 @@ shiny_h2o <- function(data = data,x,y,date_column, share_app = FALSE,port = NULL
       output$variable_boxplot <- renderPlotly({
         
         column_name <- colnames(data)[input$variables_class_input_rows_selected]
-        plot_ly(y = eval(parse(text = paste0("data[,",column_name,"]"))),
-                type = "box",
+        
+        if (input$input_var_graph_type == "Histogram"){chart_type <- "histogram"}
+        else if (input$input_var_graph_type == "Boxplot"){chart_type <- "box"}
+        
+        plot_ly(x = eval(parse(text = paste0("data[,",column_name,"]"))),
+                type = chart_type,
                 name = column_name
         )
+        
         
       })
       
