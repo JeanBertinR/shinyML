@@ -4,14 +4,12 @@
 \alias{shiny_h2o}
 \title{Implement a shiny web app to compare h2o supervised regression models on time series}
 \usage{
-shiny_h2o(data = data, x, y, date_column, share_app = FALSE,
+shiny_h2o(data = data, y, date_column, share_app = FALSE,
   port = NULL)
 }
 \arguments{
 \item{data}{Time serie containing one or more input values and one output value. 
 The time serie must be a data.frame or a data.table and must contain at least one time-based column on Date or POSIXct format.}
-
-\item{x}{Vector of numerical and categorical input variables used to train and test the model. Each element of x vector must correspond to a data column with either numerical or factor type.}
 
 \item{y}{the numerical output variable to forecast (must correpond to one data column)}
 
@@ -28,7 +26,6 @@ This function creates in one line of code a shareable web app to compare supervi
 \dontrun{
 library(shinyML)
 longley2 <- longley \%>\% mutate(Year = as.Date(as.character(Year),format = "\%Y"))
-shiny_h2o(data =longley2,x = c("GNP_deflator","Unemployed" ,"Armed_Forces","Employed"),
-  y = "GNP",date_column = "Year",share_app = FALSE)
+shiny_h2o(data =longley2,y = "GNP",date_column = "Year",share_app = FALSE)
 }
 }

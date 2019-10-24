@@ -4,7 +4,6 @@
 #'
 #' @param data Time serie containing one or more input values and one output value. 
 #'    The time serie must be a data.frame or a data.table and must contain at least one time-based column on Date or Posixct format.
-#' @param x Vector of numerical and categorical input variables used to train and test the model. Each element of x vector must correspond to a data column with either numerical or factor type.  
 #' 
 #' @param y the numerical output variable to forecast (must correpond to one data column)
 #' 
@@ -20,34 +19,46 @@
 #'\dontrun{
 #' library(shinyML)
 #' longley2 <- longley %>% mutate(Year = as.Date(as.character(Year),format = "%Y"))
-#' shiny_spark(data =longley2,x = c("GNP_deflator","Unemployed" ,"Armed_Forces","Employed"),
-#'   y = "GNP",date_column = "Year",share_app = FALSE)
+#' shiny_spark(data =longley2,y = "GNP",date_column = "Year",share_app = FALSE)
 #'}
 #' @import shiny shinydashboard dygraphs data.table ggplot2 sparklyr shinycssloaders
 #' @importFrom dplyr %>% select mutate group_by summarise arrange rename
 #' @importFrom tidyr gather
 #' @importFrom DT renderDT DTOutput datatable
-#' @importFrom plotly plotlyOutput renderPlotly ggplotly plot_ly
-#' @importFrom shinyWidgets materialSwitch sendSweetAlert
-#' @importFrom stats predict reorder
+#' @importFrom plotly plotlyOutput renderPlotly ggplotly plot_ly layout
+#' @importFrom shinyWidgets materialSwitch switchInput sendSweetAlert
+#' @importFrom stats predict reorder cor
 #' @export
 
-shiny_spark <- function(data = data,x,y,date_column, share_app = FALSE,port = NULL ){
+shiny_spark <- function(data = data,y,date_column, share_app = FALSE,port = NULL ){
   
   # Convert dataset to data.table format
   data <- data.table(data)
   
-  # Replace '.' by '_' in dataset column names ( if necessary )
-  x <- gsub("\\.","_",x)
-  
-  # Test if date_column class correspond to Date or POSIXct
-  if (!(eval(parse(text = paste0("class(data$",date_column,")"))) %in% c("Date","POSIXct"))){
-    stop("date_column class must be Date or POSIXct")
+  # Test if y is in data colnames
+  if (!(y %in% colnames(data))){
+    stop("y must match one data input variable")
   }
   
   # Test if y class correspond to numeric
   if (!(eval(parse(text = paste0("class(data$",y,")"))) == "numeric")){
     stop("y column class must be numeric")
+  }
+  
+  # Assign x as data colnames excepted output variable name 
+  x <- setdiff(colnames(data),y)
+  
+  # Replace '.' by '_' in dataset column names ( if necessary )
+  x <- gsub("\\.","_",x)
+  
+  # Test if date_column is in data colnames
+  if (!(date_column %in% colnames(data))){
+    stop("date_column must match one data input variable")
+  }
+  
+  # Test if date_column class correspond to Date or POSIXct
+  if (!(eval(parse(text = paste0("class(data$",date_column,")"))) %in% c("Date","POSIXct"))){
+    stop("date_column class must be Date or POSIXct")
   }
   
   # Test if input data does not exceed one million rows
@@ -104,6 +115,15 @@ shiny_spark <- function(data = data,x,y,date_column, share_app = FALSE,port = NU
                                                           withSpinner(plotlyOutput("variable_boxplot", height = 180, width = 500)))
                                                  )
                                         ),
+                                        tabPanel("Explore dataset",
+                                                 div(align = "center", column(width = 6,selectInput(inputId = "x_variable_input_curve",label = "X-axis variable",choices = colnames(data),selected = date_column))),
+                                                 div(align = "center", column(width = 6,selectInput(inputId = "y_variable_input_curve",label = "Y-axis variable",choices = colnames(data),selected = y))),
+                                                 
+                                                 br(),
+                                                 br(),
+                                                 br(),
+                                                 withSpinner(plotlyOutput("explore_dataset_chart",height = 250, width = 1100))
+                                        ),
                                         tabPanel("Correlation matrix",withSpinner(plotlyOutput("correlation_matrix", height = 180, width = 1100))),
                                         width = 12)
                           ),
@@ -150,7 +170,7 @@ shiny_spark <- function(data = data,x,y,date_column, share_app = FALSE,port = NU
                      column(
                        radioButtons(label = "Link",inputId = "glm_link",choices = c("identity","log"),selected = "identity"),width = 6),
                      
-                     materialSwitch(label = "Intercept term",inputId = "intercept_term_glm",status = "primary",value = TRUE),
+                     switchInput(label = "Intercept term",inputId = "intercept_term_glm",value = TRUE,width = "auto"),
                      sliderInput(label = "Regularization parameter (lambda)",inputId = "reg_param_glm",min = 0,max = 10,value = 0),
                      sliderInput(label = "Maximum iteraions",inputId = "max_iter_glm",min = 50,max = 300,value = 100),
                      actionButton("run_glm","Run generalized linear regression",style = 'color:white; background-color:orange; padding:4px; font-size:150%',
@@ -389,12 +409,7 @@ shiny_spark <- function(data = data,x,y,date_column, share_app = FALSE,port = NU
         
       })
       
-      # Define input data chart and train/test periods splitting
-      output$correlation_matrix <- renderPlotly({
-        
-        data_correlation <- as.matrix(select_if(data, is.numeric))
-        plot_ly(x = colnames(data_correlation) , y = colnames(data_correlation), z =cor(data_correlation)  ,type = "heatmap", source = "heatplot")
-      })
+
       
       # Define input data summary with class of each variable 
       output$variables_class_input <- renderDT({
@@ -429,13 +444,31 @@ shiny_spark <- function(data = data,x,y,date_column, share_app = FALSE,port = NU
         
       })
       
+      # Define plotly chart to explore dependencies between variables 
+      output$explore_dataset_chart <- renderPlotly({
+        
+        
+        plot_ly(data = data, x = eval(parse(text = paste0("data$",input$x_variable_input_curve))), 
+                y = eval(parse(text = paste0("data$",input$y_variable_input_curve))),
+                type = "scatter",mode = "markers") %>% 
+          layout(xaxis = list(title = input$x_variable_input_curve),  yaxis = list(title = input$y_variable_input_curve))
+      })
+      
+      
+      # Define input data chart and train/test periods splitting
+      output$correlation_matrix <- renderPlotly({
+        
+        data_correlation <- as.matrix(select_if(data, is.numeric))
+        plot_ly(x = colnames(data_correlation) , y = colnames(data_correlation), z =cor(data_correlation)  ,type = "heatmap", source = "heatplot")
+      })
+      
       
       # Define output chart comparing predicted vs real values on test period for selected model(s)
       output$output_curve <- renderDygraph({
         
         output_dygraph <- dygraph(data = table_forecast()[['results']],main = "Prediction results on test period") %>% 
           dyAxis("y",valueRange = c(0,1.5 * max(eval(parse(text =paste0("table_forecast()[['results']]$",y)))))) %>% 
-          dyOptions(animatedZooms = TRUE)
+          dyOptions(animatedZooms = TRUE,fillGraph = T)
         
         
         if (input$bar_chart_mode == TRUE){
