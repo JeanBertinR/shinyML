@@ -35,6 +35,12 @@ shiny_spark <- function(data = data,y,date_column, share_app = FALSE,port = NULL
   # Convert dataset to data.table format
   data <- data.table(data)
   
+  # Replace '.' by '_' in data colnames
+  colnames(data) <- gsub("\\.","_",colnames(data))
+  
+  # Replace '.' by '_' in output variable
+  y <- gsub("\\.","_",y)
+  
   # Test if y is in data colnames
   if (!(y %in% colnames(data))){
     stop("y must match one data input variable")
@@ -47,9 +53,6 @@ shiny_spark <- function(data = data,y,date_column, share_app = FALSE,port = NULL
   
   # Assign x as data colnames excepted output variable name 
   x <- setdiff(colnames(data),y)
-  
-  # Replace '.' by '_' in dataset column names ( if necessary )
-  x <- gsub("\\.","_",x)
   
   # Test if date_column is in data colnames
   if (!(date_column %in% colnames(data))){
@@ -283,7 +286,7 @@ shiny_spark <- function(data = data,y,date_column, share_app = FALSE,port = NULL
         
         parameter$family_glm <- input$glm_family
         parameter$link_glm <- input$glm_link
-        parameter$intercept_glm <- input$intercept_term_glm
+        parameter$intercept_term_glm <- input$intercept_term_glm
         parameter$reg_param_glm <- input$reg_param_glm
         parameter$max_iter_glm <- input$max_iter_glm
         
@@ -292,6 +295,8 @@ shiny_spark <- function(data = data,y,date_column, share_app = FALSE,port = NULL
         parameter$min_instance_decision_tree <- input$min_instance_decision_tree
         
         showTab(inputId = "results_models", target = "Feature importance")
+        showTab(inputId = "results_models", target = "Compare models performances")
+        showTab(inputId = "results_models", target = "Table of results")
         
         
       })
@@ -303,12 +308,10 @@ shiny_spark <- function(data = data,y,date_column, share_app = FALSE,port = NULL
         test_1$date <- input$test_selector[1]
         test_2$date <- input$test_selector[2]
         model$train_variables <- input$input_variables
+        
         parameter$family_glm <- input$glm_family
         parameter$link_glm <- input$glm_link
-        parameter$intercept_glm <- input$intercept_term_glm
-        
-        
-        
+        parameter$intercept_term_glm <- input$intercept_term_glm
         parameter$reg_param_glm <- input$reg_param_glm
         parameter$max_iter_glm <- input$max_iter_glm
         
@@ -318,6 +321,9 @@ shiny_spark <- function(data = data,y,date_column, share_app = FALSE,port = NULL
         v_decision_tree$type_model <- NA
         
         hideTab(inputId = "results_models", target = "Feature importance")
+        showTab(inputId = "results_models", target = "Compare models performances")
+        showTab(inputId = "results_models", target = "Table of results")  
+        
       })
       
       
@@ -338,7 +344,9 @@ shiny_spark <- function(data = data,y,date_column, share_app = FALSE,port = NULL
         v_grad$type_model <- NA
         v_random$type_model <- NA
         
+        showTab(inputId = "results_models", target = "Compare models performances")
         showTab(inputId = "results_models", target = "Feature importance")
+        showTab(inputId = "results_models", target = "Table of results")  
         
       })
       
@@ -357,8 +365,9 @@ shiny_spark <- function(data = data,y,date_column, share_app = FALSE,port = NULL
         v_glm$type_model <- NA
         v_decision_tree$type_model <- NA
         
+        showTab(inputId = "results_models", target = "Compare models performances")
         showTab(inputId = "results_models", target = "Feature importance")
-        
+        showTab(inputId = "results_models", target = "Table of results")          
       })
       
       # Make gradient boosting parameters correspond to cursors when user click on "Run gradient boosting model" button (and disable other models)
@@ -377,8 +386,9 @@ shiny_spark <- function(data = data,y,date_column, share_app = FALSE,port = NULL
         v_glm$type_model <- NA
         v_decision_tree$type_model <- NA
         
+        showTab(inputId = "results_models", target = "Compare models performances")
         showTab(inputId = "results_models", target = "Feature importance")
-        
+        showTab(inputId = "results_models", target = "Table of results")          
       })
       
       
@@ -409,7 +419,7 @@ shiny_spark <- function(data = data,y,date_column, share_app = FALSE,port = NULL
         
       })
       
-
+      
       
       # Define input data summary with class of each variable 
       output$variables_class_input <- renderDT({
@@ -512,7 +522,7 @@ shiny_spark <- function(data = data,y,date_column, share_app = FALSE,port = NULL
             eval(parse(text = paste0("fit <- data_spark_train %>% ml_generalized_linear_regression(", y ," ~ " ,var_input_list ,
                                      ",family  = ", parameter$family_glm,
                                      ",link =",parameter$link_glm,
-                                     ",fit_intercept =",input$intercept_term_glm,
+                                     ",fit_intercept =",parameter$intercept_term_glm,
                                      ",reg_param =",parameter$reg_param_glm,
                                      ",max_iter =",parameter$max_iter_glm,
                                      ")")))
@@ -594,7 +604,6 @@ shiny_spark <- function(data = data,y,date_column, share_app = FALSE,port = NULL
           
         }
         
-        
         table_training_time <- rbind(time_gbm,time_random_forest,time_glm,time_decision_tree)
         table_importance <- rbind(importance_gbm,importance_random_forest,importance_decision_tree) %>% as.data.table()
         
@@ -602,8 +611,6 @@ shiny_spark <- function(data = data,y,date_column, share_app = FALSE,port = NULL
         list(traning_time = table_training_time, table_importance = table_importance, results = table_results)
         
       })
-      
-      
       
       # Define performance table visible on "Compare models performances" tab
       output$score_table <- renderDT({
@@ -625,21 +632,8 @@ shiny_spark <- function(data = data,y,date_column, share_app = FALSE,port = NULL
         
       })
       
-      
-      
-      
-      
-      
-      
       # Define importance features table table visible on "Feature importance" tab
       output$feature_importance <- renderPlotly({
-        
-        
-        validate(
-          need(!is.na(v_decision_tree$type_model)|!is.na(v_grad$type_model)|!is.na(v_glm$type_model)|!is.na(v_random$type_model),
-               
-               "Please run at least one model to see results"))
-        
         
         
         if (nrow(table_forecast()[['table_importance']]) != 0){
@@ -682,15 +676,39 @@ shiny_spark <- function(data = data,y,date_column, share_app = FALSE,port = NULL
       })
       
       
-      # When "Run tuned models!" button is clicked, send messagebox once all models have been trained
-      observeEvent(input$train_all,{
+      # Hide tabs of results_models tabItem when no model has been runed
+      observe({
         
-        sendSweetAlert(
-          session = session,
-          title = "The four machine learning algorithms are currently running !",
-          text = "Click ok to see results",
-          type = "success"
-        )
+        if (is.na(v_glm$type_model) & is.na(v_decision_tree$type_model) & is.na(v_random$type_model) & is.na(v_grad$type_model)){
+          
+          hideTab(inputId = "results_models", target = "Compare models performances")
+          hideTab(inputId = "results_models", target = "Feature importance")
+          hideTab(inputId = "results_models", target = "Table of results")
+          
+          
+        }
+      })
+      
+      
+      # When "Run tuned models!" button is clicked, send messagebox once all models have been trained
+      observe({
+        
+        if ("Generalized linear regression" %in% colnames(table_forecast()[['results']]) &
+            "Decision tree" %in% colnames(table_forecast()[['results']]) &
+            "Random forest" %in% colnames(table_forecast()[['results']]) &
+            "Gradient boosted trees" %in% colnames(table_forecast()[['results']])
+        ){
+          
+          
+          sendSweetAlert(
+            session = session,
+            title = "The four machine learning models have been trained !",
+            text = "Click ok to see results",
+            type = "success"
+            
+            
+          )
+        }
       })
       
       # Define Value Box concerning memory used by h2o cluster  
@@ -717,15 +735,13 @@ shiny_spark <- function(data = data,y,date_column, share_app = FALSE,port = NULL
   )
   
   
-  
-  
   # Allow to share the dashboard on local LAN
   if (share_app == TRUE){
     
     if(is.null(port)){stop("Please choose a port to share dashboard")}
     else if (nchar(port) != 4) {stop("Incorrect format of port")}
     else if (nchar(port) == 4){
-      ip_adress <- gsub(".*? ([[:digit:]])", "\\1", system("ipconfig", intern=TRUE)[grep("IPv4", system("ipconfig", intern=TRUE))]) 
+      ip_adress <- gsub(".*? ([[:digit:]])", "\\1", system("ipconfig", intern=TRUE)[grep("IPv4", system("ipconfig", intern=TRUE))])[2]
       message("Forecast dashboard shared on LAN at ",ip_adress,":",port)
       runApp(app,host = "0.0.0.0",port = port,quiet = TRUE)
     }

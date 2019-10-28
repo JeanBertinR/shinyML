@@ -45,6 +45,13 @@ shiny_h2o <- function(data = data,y,date_column, share_app = FALSE,port = NULL){
   h2o::h2o.no_progress()
   cluster_status <- h2o.clusterStatus()
   
+  
+  # Replace '.' by '_' in data colnames
+  colnames(data) <- gsub("\\.","_",colnames(data))
+  
+  # Replace '.' by '_' in output variable
+  y <- gsub("\\.","_",y)
+  
   # Test if y is in data colnames
   if (!(y %in% colnames(data))){
     stop("y must match one data input variable")
@@ -57,9 +64,6 @@ shiny_h2o <- function(data = data,y,date_column, share_app = FALSE,port = NULL){
   
   # Assign x as data colnames excepted output variable name 
   x <- setdiff(colnames(data),y)
-  
-  # Replace '.' by '_' in dataset column names ( if necessary )
-  x <- gsub("\\_",".",x)
   
   # Test if date_column is in data colnames
   if (!(date_column %in% colnames(data))){
@@ -134,9 +138,9 @@ shiny_h2o <- function(data = data,y,date_column, share_app = FALSE,port = NULL){
                                            column(width = 12,
                                                   tabBox(id = "results_models",
                                                          tabPanel("Result charts on test period",withSpinner(dygraphOutput("output_curve", height = 200, width = 1100))),
-                                                         tabPanel("Compare models performances",withSpinner(DTOutput("score_table"))),
+                                                         tabPanel("Compare models performances", withSpinner(DTOutput("score_table"))),
                                                          tabPanel("Feature importance",withSpinner(plotlyOutput("feature_importance"))),
-                                                         tabPanel("Table of results",withSpinner(DTOutput("table_of_results"))), width = 12
+                                                         tabPanel("Table of results", withSpinner(DTOutput("table_of_results"))), width = 12
                                                   )
                                            )
                                          )
@@ -316,6 +320,8 @@ shiny_h2o <- function(data = data,y,date_column, share_app = FALSE,port = NULL){
         v_auto_ml$type_model <- NA
         
         parameter$family_glm <- input$glm_family
+        parameter$glm_link <- input$glm_link
+        parameter$intercept_term_glm <- input$intercept_term_glm
         parameter$reg_param_glm <- input$reg_param_glm
         parameter$alpha_param_glm <- input$alpha_param_glm
         parameter$max_iter_glm <- input$max_iter_glm
@@ -337,8 +343,9 @@ shiny_h2o <- function(data = data,y,date_column, share_app = FALSE,port = NULL){
         parameter$loss_neural_net <- input$loss_neural_net
         parameter$rate_neural_net <- input$rate_neural_net
         
+        showTab(inputId = "results_models", target = "Compare models performances")
         showTab(inputId = "results_models", target = "Feature importance")
-        
+        showTab(inputId = "results_models", target = "Table of results")        
         
       })
       
@@ -357,11 +364,16 @@ shiny_h2o <- function(data = data,y,date_column, share_app = FALSE,port = NULL){
         v_glm$type_model <- "ml_generalized_linear_regression"
         
         parameter$family_glm <- input$glm_family
+        parameter$glm_link <- input$glm_link
+        parameter$intercept_term_glm <- input$intercept_term_glm
         parameter$reg_param_glm <- input$reg_param_glm
         parameter$alpha_param_glm <- input$alpha_param_glm
         parameter$max_iter_glm <- input$max_iter_glm
         
         hideTab(inputId = "results_models", target = "Feature importance")
+        showTab(inputId = "results_models", target = "Compare models performances")
+        showTab(inputId = "results_models", target = "Table of results")
+        
       })
       
       
@@ -385,7 +397,10 @@ shiny_h2o <- function(data = data,y,date_column, share_app = FALSE,port = NULL){
         parameter$max_depth_random_forest <-  input$max_depth_random_forest
         parameter$n_bins_random_forest <- input$n_bins_random_forest
         
+        showTab(inputId = "results_models", target = "Compare models performances")
         showTab(inputId = "results_models", target = "Feature importance")
+        showTab(inputId = "results_models", target = "Table of results")
+        
         
       })
       
@@ -410,7 +425,10 @@ shiny_h2o <- function(data = data,y,date_column, share_app = FALSE,port = NULL){
         parameter$loss_neural_net <- input$loss_neural_net
         parameter$rate_neural_net <- input$rate_neural_net
         
+        showTab(inputId = "results_models", target = "Compare models performances")
         showTab(inputId = "results_models", target = "Feature importance")
+        showTab(inputId = "results_models", target = "Table of results")
+        
       })
       
       # Make gradient boosting parameters correspond to cursors when user click on "Run gradient boosting model" button (and disable other models)
@@ -431,7 +449,10 @@ shiny_h2o <- function(data = data,y,date_column, share_app = FALSE,port = NULL){
         parameter$max_depth_gbm <- input$max_depth_gbm
         parameter$learn_rate_gbm <- input$learn_rate_gbm
         
+        showTab(inputId = "results_models", target = "Compare models performances")
         showTab(inputId = "results_models", target = "Feature importance")
+        showTab(inputId = "results_models", target = "Table of results")
+        
       })
       
       
@@ -451,6 +472,8 @@ shiny_h2o <- function(data = data,y,date_column, share_app = FALSE,port = NULL){
         
         parameter$run_time_auto_ml <-  input$run_time_auto_ml
         hideTab(inputId = "results_models", target = "Feature importance")
+        showTab(inputId = "results_models", target = "Compare models performances")
+        showTab(inputId = "results_models", target = "Table of results")
         
         
       })
@@ -550,8 +573,6 @@ shiny_h2o <- function(data = data,y,date_column, share_app = FALSE,port = NULL){
         
         output_dygraph %>% dyLegend(width = 800)
         
-        
-        
       })
       
       
@@ -589,7 +610,8 @@ shiny_h2o <- function(data = data,y,date_column, share_app = FALSE,port = NULL){
                                y = y,
                                training_frame = data_h2o_train,
                                family = parameter$family_glm,
-                               intercept = input$intercept_term_glm,
+                               link = parameter$glm_link,
+                               intercept = parameter$intercept_term_glm,
                                lambda = parameter$reg_param_glm,
                                alpha = parameter$alpha_param_glm,
                                max_iterations = parameter$max_iter_glm,
@@ -712,7 +734,6 @@ shiny_h2o <- function(data = data,y,date_column, share_app = FALSE,port = NULL){
       # Define performance table visible on "Compare models performances" tab
       output$score_table <- renderDT({
         
-        
         performance_table <-  table_forecast()[['results']] %>%
           gather(key = Model,value = Predicted_value,-date_column,-y) %>%
           group_by(Model) %>%
@@ -732,12 +753,6 @@ shiny_h2o <- function(data = data,y,date_column, share_app = FALSE,port = NULL){
       # Define importance features table table visible on "Feature importance" tab
       output$feature_importance <- renderPlotly({
         
-        validate(
-          need(!is.na(v_neural$type_model)|!is.na(v_grad$type_model)|!is.na(v_glm$type_model)|!is.na(v_random$type_model)|!is.na(v_auto_ml$type_model),
-               
-               "Please run at least one model to see results"))
-        
-        
         if (nrow(table_forecast()[['table_importance']]) != 0){
           
           
@@ -754,7 +769,6 @@ shiny_h2o <- function(data = data,y,date_column, share_app = FALSE,port = NULL){
         }
         
       })
-      
       
       
       # Define results table visible on "Table of results" tab
@@ -781,6 +795,19 @@ shiny_h2o <- function(data = data,y,date_column, share_app = FALSE,port = NULL){
                           value= c(input$train_selector[1],input$test_selector[1]) )
       })
       
+      
+      # Hide tabs of results_models tabItem when no model has been runed 
+      observe({
+        
+        if (is.na(v_glm$type_model) & is.na(v_random$type_model) & is.na(v_neural$type_model) & is.na(v_grad$type_model) & is.na(v_auto_ml$type_model)){
+          
+          hideTab(inputId = "results_models", target = "Compare models performances")
+          hideTab(inputId = "results_models", target = "Feature importance")
+          hideTab(inputId = "results_models", target = "Table of results")
+          
+          
+        }
+      })
       
       # When "Run tuned models!" button is clicked, send messagebox once all models have been trained
       observe({
