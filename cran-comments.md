@@ -1,3 +1,17 @@
+## New minor version of shinyML package
+This is a new minor version (0.2.0) of the shinyML package. 
+In this new version I have:
+
+* Added three new tabs **Compare models performances**, **Feature importance** and **Table of results** at the top of dashboards to explore input dataset before running the models 
+
+* Added two valueboxes on the left of the dashboard to indicate memory cluster size and number of used CPU(s). 
+
+* Fixed an issue on "Link" parameter of **Generalized linear regression** model: this parameter was not taken into account by the model
+
+* Fixed an issue on user interface on **Generalized linear regression** box: the cursor was not at the right position when selected
+
+* Removed x parameter on `shiny_h2o` and `shiny_spark` functions to make it run even more easily. 
+
 ## Resubmission
 This is a resubmission. In this version I have:
 
@@ -10,7 +24,7 @@ In this version I have:
 
 * Added a missing block to shiny_h2o.R to make autoML method working 
 
-* Default 'share_app' argument of shiny_h2o and shiny_spark examples have been set to FALSE
+* Default 'share_app' argument of `shiny_h2o` and `shiny_spark` examples have been set to FALSE
 
 
 ## Resubmission

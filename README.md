@@ -49,17 +49,37 @@ This is a basic example which shows you how to run the app:
 ``` r
 library(shinyML)
 longley2 <- longley %>% mutate(Year = as.Date(as.character(Year),format = "%Y"))
-shiny_h2o(data =longley2,x = c("GNP_deflator","Unemployed" ,"Armed_Forces","Employed"),y = "GNP",date_column = "Year",share_app = TRUE,port = 3951)
+shiny_h2o(data =longley2,y = "GNP",date_column = "Year",share_app = FALSE)
 ```
+
+### Explore input dataset before running the models…
+
+Before running machine learning models, it can be useful to inspect the
+distribution of each variable and to have an insight of dependencies
+between explicative variables. Both`shiny_h2o` and `shiny_spark`
+functions allows to check classes of explicative variables, plot
+histograms of each distribution and show correlation matrix between all
+variables. This tabs can be used to determine if some variable are
+strongly correlated to another and eventually removed from the training
+phase.You can also plot variation of every variable as a function of
+another using the “Explore dataset”
+tab.
+
+<p align="center">
+
+<img src="vignettes/explore_data.gif">
+
+</p>
 
 ### Test different machine learning techiques and hyper-parameters configurations with just a few clicks
 
-First step consist in choosing separating train and test period from
-your dataset: this can be done in one second using slider button on the
-right of your shinyML app. You can also remove variables from your
-initial selection directly from app just simply using “Input variable”
-textbox. You are then free to select hyper-parameters configuration for
-your favorite machine learning model.  
+To test machine learning models on `shinyML` package, the first step
+consist in choosing separating train and test period from your dataset:
+this can be done in one second using slider button on the right of your
+shinyML app. You can also remove variables from your initial selection
+directly from app just simply using “Input variable” textbox. You are
+then free to select hyper-parameters configuration for your favorite
+machine learning model.  
 Note that hidden layers of deep learning technique can be set inside the
 corresponding text box: the default c(200,200) configuration corresponds
 to a two hiden-layers neural network, with neurons for each
