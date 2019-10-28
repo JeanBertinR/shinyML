@@ -35,6 +35,15 @@ longley2 <- longley %>% mutate(Year = as.Date(as.character(Year),format = "%Y"))
 shiny_h2o(data =longley2,x = c("GNP_deflator","Unemployed" ,"Armed_Forces","Employed"),y = "GNP",date_column = "Year",share_app = TRUE,port = 3951)
 ```
 
+### Explore input dataset before running the models...
+  Before running machine learning models, it can be useful to inspect the distribution of each variable and to have an insight of dependencies between explicative variables. Both`shiny_h2o` and `shiny_spark` functions allows to check classes of explicative variables, plot histograms of each distribution and show correlation matrix between all variables. This tabs can be used to determine if some variable are strongly correlated to another and eventually removed from the training phase.You can also plot variation of every variable as a function of another using the "Explore dataset" tab. 
+
+<center>
+![An example of output of shinyML](explore_data.gif)
+</center>
+
+
+
 ## Runing the app...
 
   When the shiny has been launched, you can manually adjust main parameters of supervised models (such as generalized linear regression, Random forest, Neural Network, Gradient Boosting ...) by moving the coresponding cursors. 
