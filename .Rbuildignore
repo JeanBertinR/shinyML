@@ -4,4 +4,4 @@
 ^\.Rproj\.user$
 ^cran-comments.md
 ^\.travis\.yml$
-^CRAN-RELEASE$
+vignettes
