@@ -62,8 +62,7 @@ histograms of each distribution and show correlation matrix between all
 variables. This tabs can be used to determine if some variable are
 strongly correlated to another and eventually removed from the training
 phase.You can also plot variation of every variable as a function of
-another using the “Explore dataset”
-tab.
+another using the “Explore dataset” tab.
 
 <p align="center">
 
@@ -82,8 +81,7 @@ then free to select hyper-parameters configuration for your favorite
 machine learning model.  
 Note that hidden layers of deep learning technique can be set inside the
 corresponding text box: the default c(200,200) configuration corresponds
-to a two hiden-layers neural network, with neurons for each
-layers.
+to a two hiden-layers neural network, with neurons for each layers.
 
 <p align="center">
 
@@ -106,8 +104,7 @@ parameters and click then to “Run tuned models \!”
 
 You will see a validation message box once all models have been trained:
 at that point, you can have an overview of your results comparing
-variables importances and error metrics like MAPE or
-RMSE.
+variables importances and error metrics like MAPE or RMSE.
 
 ### Run autoML alogrithm to find automatically configure the best machine learning regression model associated to your dataset
 
