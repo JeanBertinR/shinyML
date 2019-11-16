@@ -64,8 +64,8 @@ shiny_h2o <- function(data = data,y,date_column, share_app = FALSE,port = NULL){
   app <- shinyApp(
     
     # Define ui side of shiny app
-    ui = dashboardPage(skin = uiOutput("color_app"),
-                       dashboardHeader(title = uiOutput("title_app")), 
+    ui = dashboardPage(skin = textOutput("color_app"),
+                       dashboardHeader(title = textOutput("title_app")), 
                        dashboardSidebar(
                          sidebarMenu(
                         
@@ -250,10 +250,13 @@ shiny_h2o <- function(data = data,y,date_column, share_app = FALSE,port = NULL){
     server = function(session, input, output) {
       
       # Define reactive app color depending on selected framework
-      output$color_app  <- renderUI({ifelse(input$framework == "H2O","black","yellow")})
-      
+      output$color_app  <- renderText({
+        if(input$framework == "H2O"){as.character("black")} else {as.character("yellow")}
+        
+      })
+
       # Define reactive title depending on selected framework
-      output$title_app <- renderUI({input$framework})
+      output$title_app <- renderText({input$framework})
       
       # Initialize all variables
       model <- reactiveValues()
