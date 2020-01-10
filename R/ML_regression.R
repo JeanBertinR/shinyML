@@ -11,7 +11,7 @@ library(tidyr)
 library(dplyr)
 library(sparklyr)
 
-shiny_h2o <- function(data = data,y,date_column, share_app = FALSE,port = NULL){
+shinyML_regression <- function(data = data,y,date_column, share_app = FALSE,port = NULL){
   
   
   # Convert input data must be a data table object
