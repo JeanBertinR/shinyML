@@ -41,7 +41,7 @@ shiny_h2o <- function(data = data,y,date_column, share_app = FALSE,port = NULL){
   Sys.setenv(http_proxy="")
   Sys.setenv(http_proxy_user="")
   Sys.setenv(https_proxy_user="")
-  h2o.init()
+  h2o.init(strict_version_check = FALSE,startH2O = FALSE)
   h2o::h2o.no_progress()
   cluster_status <- h2o.clusterStatus()
   
