@@ -28,6 +28,8 @@ library(shinyWidgets)
 library(shinycssloaders)
 library(DT)
 library(sparklyr)
+library(argonR)
+library(argonDash)
 longley2 <- longley %>% mutate(Year = as.Date(as.character(Year),format = "%Y"))
 
 
@@ -120,11 +122,10 @@ shinyML_regression <- function(data = data,y, share_app = FALSE,port = NULL){
   
   
   argonSidebar <- argonDashSidebar(
-    vertical = T,
+    vertical = T,side = "left",
     skin = "light",
     background = "darkblue",
     size = "md",
-    side = "right",
     id = "my_sidebar",
     brand_url = "https://jeanbertinr.github.io/shinyMLpackage/",
     brand_logo = "https://demos.creative-tim.com/argon-design-system/assets/img/brand/blue.png",
@@ -655,3 +656,5 @@ shinyML_regression <- function(data = data,y, share_app = FALSE,port = NULL){
 
 
 shinyML_regression(data = longley2,y = "Population",share_app = F)
+install.packages("argonDash")
+library(argonDash)
