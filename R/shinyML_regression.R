@@ -122,13 +122,13 @@ shinyML_regression <- function(data = data,y, share_app = FALSE,port = NULL){
   
   
   argonSidebar <- argonDashSidebar(
-    vertical = T,side = "left",
+    vertical = T,side = "right",
     skin = "light",
     background = "darkblue",
     size = "md",
     id = "my_sidebar",
     brand_url = "https://jeanbertinr.github.io/shinyMLpackage/",
-    brand_logo = "https://demos.creative-tim.com/argon-design-system/assets/img/brand/blue.png",
+    brand_logo = "https://www.zupimages.net/up/20/09/djw2.png",
     dropdownMenus = argonDropNav(
       title = "Dropdown Mdsfenu", 
       src = "https://demos.creative-tim.com/argonhgf-dashboard/assets/img/theme/team-4-800x800.jpg", 
@@ -278,8 +278,8 @@ shinyML_regression <- function(data = data,y, share_app = FALSE,port = NULL){
             sliderInput(label = "Lambda",inputId = "reg_param_glm",min = 0,max = 10,value = 0),
             sliderInput(label = "Alpha (0:Ridge <-> 1:Lasso)",inputId = "alpha_param_glm",min = 0,max = 1,value = 0.5),
             sliderInput(label = "Maximum iteraions",inputId = "max_iter_glm",min = 50,max = 300,value = 100),
-            
-            actionButton("run_glm","Run glm",style = 'color:white; background-color:orange; padding:4px; font-size:150%',
+            #argonButton(name = "Run glm",src = "run_glm",status = "warning",icon = icon("cogs",lib = "font-awesome"),size = "sm")
+            actionButton("run_glm","Run glm",style = 'color:white; background-color:green; padding:4px; font-size:120%',
                          icon = icon("cogs",lib = "font-awesome"))
         )
         
@@ -302,7 +302,7 @@ shinyML_regression <- function(data = data,y, share_app = FALSE,port = NULL){
             sliderInput(label = "Subsampling rate",min = 0.1,max = 1, inputId = "subsampling_rate_random_forest",value = 0.6),
             sliderInput(label = "Max depth",min = 1,max = 50, inputId = "max_depth_random_forest",value = 20),
             sliderInput(label = "Number of bins",min = 2,max = 100, inputId = "n_bins_random_forest",value = 20),
-            actionButton("run_random_forest","Run random forest",style = 'color:white; background-color:red; padding:4px; font-size:150%',
+            actionButton("run_random_forest","Run random forest",style = 'color:white; background-color:red; padding:4px; font-size:120%',
                          icon = icon("cogs",lib = "font-awesome"))
         )
         
@@ -333,7 +333,7 @@ shinyML_regression <- function(data = data,y, share_app = FALSE,port = NULL){
             textInput(label = "Hidden layers",inputId = "hidden_neural_net",value = "c(200,200)"),
             sliderInput(label = "Epochs",min = 10,max = 100, inputId = "epochs_neural_net",value = 10),
             sliderInput(label = "Learning rate",min = 0.001,max = 0.1, inputId = "rate_neural_net",value = 0.005),
-            actionButton("run_neural_network","Run neural network",style = 'color:white; background-color:darkblue; padding:4px; font-size:150%',
+            actionButton("run_neural_network","Run neural network",style = 'color:white; background-color:darkblue; padding:4px; font-size:120%',
                          icon = icon("cogs",lib = "font-awesome"))
         )
         
@@ -354,7 +354,7 @@ shinyML_regression <- function(data = data,y, share_app = FALSE,port = NULL){
             sliderInput(label = "Number of trees",min = 1,max = 100, inputId = "n_trees_gbm",value = 50),
             sliderInput(label = "Sample rate",min = 0.1,max = 1, inputId = "sample_rate_gbm",value = 1),
             sliderInput(label = "Learn rate",min = 0.1,max = 1, inputId = "learn_rate_gbm",value = 0.1),
-            actionButton("run_gradient_boosting","Run gradient boosting",style = 'color:white; background-color:darkgreen; padding:4px; font-size:150%',
+            actionButton("run_gradient_boosting","Run gradient boosting",style = 'color:white; background-color:orange; padding:4px; font-size:120%',
                          icon = icon("cogs",lib = "font-awesome"))
         )
         
