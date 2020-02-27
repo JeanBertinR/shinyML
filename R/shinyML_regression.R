@@ -131,25 +131,9 @@ shinyML_regression <- function(data = data,y, share_app = FALSE,port = NULL){
     brand_logo = "https://www.zupimages.net/up/20/09/djw2.png",
     dropdownMenus = argonDropNav(
       title = "Dropdown Mdsfenu", 
-      src = "https://demos.creative-tim.com/argonhgf-dashboard/assets/img/theme/team-4-800x800.jpg", 
-      orientation = "right",
-      argonDropNavTitle(title = "Welcome!"),
-      argonDropNavItem(
-        title = "Item 1", 
-        src = "https://www.google.com", 
-        icon = argonIcon("single-02")
-      ),
-      argonDropNavItem(
-        title = "Item 2", 
-        src = NULL, 
-        icon = argonIcon("settings-gear-65")
-      ),
-      argonDropNavDivider(),
-      argonDropNavItem(
-        title = "Item 3", 
-        src = "#", 
-        icon = argonIcon("calendar-grid-58")
-      )
+      src = "https://www.zupimages.net/up/20/09/djw2.png", 
+      orientation = "right"
+
     ),
     argonSidebarHeader(title = "Framework"),
     argonSidebarMenu(
@@ -160,7 +144,7 @@ shinyML_regression <- function(data = data,y, share_app = FALSE,port = NULL){
       ),
       argonSidebarItem(
         tabName = "tab_spark",
-        icon = argonIcon(name = "tv-1", color = "green"),
+        icon = argonIcon(name = "tv-2", color = "warning"),
         "Spark"
       )
       
@@ -175,9 +159,11 @@ shinyML_regression <- function(data = data,y, share_app = FALSE,port = NULL){
   
   argonNav <- argonDashNavbar(
     argonDropNav(
-      title = "Dropdown Menu", 
-      src = "https://demos.creative-tim.com/argon-dashboard/assets/img/theme/team-4-800x800.jpg", 
-      orientation = "right",
+      title = HTML("<font color='black'>shiny</font><font color='orange'>ML</font>"), 
+      #src = "https://www.zupimages.net/up/20/09/djw2.png", 
+      src = "vignettes/logo_shinyML.png", 
+      
+      orientation = "left",
       argonDropNavTitle(title = "Welcome!"),
       argonDropNavItem(
         title = "Item 1", 
