@@ -117,42 +117,6 @@ shinyML_regression <- function(data = data,y,date_column, share_app = FALSE,port
   `MAPE(%)` <- NULL
   
   
-  
-  ## ---------------------------------------------------------------------------- SIDEBAR -----------------------------------
-  
-  
-  argonSidebar <- argonDashSidebar(
-    vertical = T,side = "right",
-    skin = "light",
-    background = "darkblue",
-    size = "md",
-    id = "my_sidebar",
-    # brand_url = "https://jeanbertinr.github.io/shinyMLpackage/",
-    # brand_logo = "https://www.zupimages.net/up/20/09/djw2.png",
-    # dropdownMenus = argonDropNav(
-    #   title = "Dropdown Mdsfenu", 
-    #   src = "https://www.zupimages.net/up/20/09/djw2.png", 
-    #   orientation = "right"
-    # 
-    # ),
-    argonSidebarHeader(title = "Framework"),
-    argonSidebarMenu(
-      argonSidebarItem(
-        tabName = "tab_h2o",
-        icon = argonIcon(name = "tv-2", color = "info"),
-        "H2O"
-      ),
-      argonSidebarItem(
-        tabName = "tab_spark",
-        icon = argonIcon(name = "tv-2", color = "warning"),
-        "Spark"
-      )
-      
-    ),
-    argonSidebarDivider(),
-    argonSidebarHeader(title = "Other Items")
-  )
-  
   ## ---------------------------------------------------------------------------- NAVBAR -----------------------------------
   
   
@@ -166,35 +130,14 @@ shinyML_regression <- function(data = data,y,date_column, share_app = FALSE,port
   )
   
   
-  
-  
-  
-  
-  
-  
   ## ---------------------------------------------------------------------------- HEADER -----------------------------------
-  
   
   argonHeader <- argonDashHeader(
     gradient = TRUE,
-    color = "primary",
+    color = "default",
     separator = TRUE,
-    separator_color = "secondary",bottom_padding = 4,top_padding = 6,
-    # argonCard(
-    #   title = "Argon Card",
-    #   src = "http://www.google.com",
-    #   hover_lift = TRUE,
-    #   shadow = TRUE,
-    #   shadow_size = NULL,
-    #   hover_shadow = FALSE,
-    #   border_level = 0,
-    #   icon = argonIcon("atom"),
-    #   status = "primary",
-    #   background_color = NULL,
-    #   gradient = FALSE, 
-    #   floating = FALSE,
-    #   "This is the content"
-    # )
+    separator_color = "secondary",bottom_padding = 6,top_padding = 6,
+
   )
   
   
@@ -215,113 +158,116 @@ shinyML_regression <- function(data = data,y,date_column, share_app = FALSE,port
   ## ---------------------------------------------------------------------------- ONGLET H20 -----------------------------------
   
   
-  h2o_tab <- argonTabItem(
-    tabName = "tab_h2o",
-    argonDashHeader(gradient = TRUE,
-                    color = "primary",
-                    separator = T,
-                    separator_color = "warning",
-                    bottom_padding = 0,
-                    argonCard(width = 6,
+  argonBody <- argonDashBody(
+    
+    argonDashHeader(
+      gradient = FALSE,
+      color = "primary",
+      separator = TRUE,
+      separator_color = "warning",
+      top_padding = 3,
+      bottom_padding = 7,
+      
+      div(align = "center",
+          argonH1(HTML("<font color='white'> Explore input data</font>"),display = 4)
+      ),
+      br(),
+      argonRow(
+        argonColumn(width = 9,
+                    argonCard(width = 12,
                               src = NULL,
                               hover_lift = TRUE,
                               icon = argonIcon(name = "world-2", color = "info"),
                               shadow = TRUE,
-                             
-                              argonH1("Explore input data",display = 4),
                               argonTabSet(
-                                    width = 12,
-                                    id = "tab-2",
-                                    card_wrapper = TRUE,
-                                    horizontal = FALSE,
-                                    circle = FALSE,
-                                    size = "sm",
-                                    argonTab(
-                                      tabName = "Input data chart",
-                                      active = FALSE,
-                                      withSpinner(dygraphOutput("input_curve", height = 180, width = 1100))
-                                              
-                                      ),
-                                      argonTab(
-                                            tabName = "Variables Summary",
-                                            active = TRUE,
-                                            fluidRow( 
-                                              column(width = 6,
-                                                     withSpinner(DTOutput("variables_class_input", height = 180, width = 500))),
-                                              column(width = 6,
-                                                     div(align = "center",
-                                                         radioButtons(inputId = "input_var_graph_type",label = "",choices = c("Boxplot","Histogram"),
-                                                                      selected = "Boxplot",inline = T)),
-                                                     withSpinner(plotlyOutput("variable_boxplot", height = 180, width = 500)))
-                                            )
-                                              
-                                            ),
-                                        argonTab(
-                                            tabName = "Explore dataset",
-                                            active = FALSE,
-                                            div(align = "center", column(width = 6,selectInput(inputId = "x_variable_input_curve",label = "X-axis variable",choices = colnames(data),selected = date_column))),
-                                            div(align = "center", column(width = 6,selectInput(inputId = "y_variable_input_curve",label = "Y-axis variable",choices = colnames(data),selected = y))),
-                                            
-                                            br(),
-                                            br(),
-                                            br(),
-                                            withSpinner(plotlyOutput("explore_dataset_chart",height = 250, width = 1100))
-                                              
-                                            ),
-                                          argonTab(
-                                              tabName = "Correlation matrix",
-                                              active = FALSE,
-                                              withSpinner(plotlyOutput("correlation_matrix", height = 180, width = 1100))
-                                              
-                                            )
-                                          )
-                                                       
-                                            
-                                          
+                                width = 12,
+                                id = "tab_input_data",
+                                card_wrapper = TRUE,
+                                horizontal = TRUE,
+                                circle = FALSE,
+                                size = "sm",
+                                argonTab(
+                                  tabName = "Input data chart",
+                                  active = TRUE,
+                                  materialSwitch(inputId = "bar_chart_mode",label = "Bar chart mode",status = "primary",value = TRUE),
+                                  withSpinner(dygraphOutput("input_curve", height = 180, width = 1100))
                                   
                                 ),
-                    
-                    
-                    argonCard(width = 6,src = NULL,hover_lift = T,shadow = T, 
-                              
-                              tabBox(id = "global_tabbox",width = 12,
-                                     tabPanel("Global parameters",
-                                              selectInput( inputId  = "input_variables",label = "Input variables: ",choices = x,multiple = TRUE,selected = x),
-                                              sliderInput("train_selector", "Choose train period:",
-                                                          min = eval(parse(text = paste0("min(data$",date_column,")"))),
-                                                          max = eval(parse(text = paste0("max(data$",date_column,")"))),
-                                                          value =  eval(parse(text = paste0("c(min(data$",date_column,"),mean(data$",date_column,"))")))),
-                                              sliderInput("test_selector", "Choose test period:",
-                                                          min = eval(parse(text = paste0("min(data$",date_column,")"))),
-                                                          max = eval(parse(text = paste0("max(data$",date_column,")"))),
-                                                          value = eval(parse(text = paste0("c(mean(data$",date_column,"),max(data$",date_column,"))")))),
-                                              actionButton("train_all","Run tuned models !",style = 'color:white; background-color:red; padding:4px; font-size:150%',
-                                                           icon = icon("cogs",lib = "font-awesome")),
-                                              width = 12,height = 425),
-                                     tabPanel("Auto ML",
-                                              br(),
-                                              knobInput(inputId = "run_time_auto_ml",label = "Max running time (in seconds)",value = 15,min = 10,max = 60,
-                                                        displayPrevious = TRUE, lineCap = "round",fgColor = "#428BCA",inputColor = "#428BCA"
-                                                        
-                                              ),
-                                              
-                                              br(),
-                                              actionButton("run_auto_ml","Run auto ML",style = 'color:white; background-color:red; padding:4px; font-size:150%',
-                                                           icon = icon("cogs",lib = "font-awesome")))
+                                argonTab(
+                                  tabName = "Variables Summary",
+                                  active = FALSE,
+                                  fluidRow( 
+                                    column(width = 6,
+                                           withSpinner(DTOutput("variables_class_input", height = 180, width = 500))),
+                                    column(width = 6,
+                                           div(align = "center",
+                                               radioButtons(inputId = "input_var_graph_type",label = "",choices = c("Boxplot","Histogram"),
+                                                            selected = "Boxplot",inline = T)),
+                                           withSpinner(plotlyOutput("variable_boxplot", height = 180, width = 500)))
+                                  )
+                                  
+                                ),
+                                argonTab(
+                                  tabName = "Explore dataset",
+                                  active = FALSE,
+                                  div(align = "center", column(width = 6,selectInput(inputId = "x_variable_input_curve",label = "X-axis variable",choices = colnames(data),selected = date_column))),
+                                  div(align = "center", column(width = 6,selectInput(inputId = "y_variable_input_curve",label = "Y-axis variable",choices = colnames(data),selected = y))),
+                                  
+                                  br(),
+                                  br(),
+                                  br(),
+                                  withSpinner(plotlyOutput("explore_dataset_chart",height = 250, width = 1100))
+                                  
+                                ),
+                                argonTab(
+                                  tabName = "Correlation matrix",
+                                  active = FALSE,
+                                  withSpinner(plotlyOutput("correlation_matrix", height = 180, width = 1100))
+                                  
                                 )
-                              
                               )
                               
-                    ),
+                              
+                              
+                              
+                    )
+                    
+                    
+        ),
+        
+        argonColumn(width = 3,
+                    argonCard(width = 12,src = NULL,hover_lift = T,shadow = T, 
+                              div(align = "center",
+                                  selectInput( inputId  = "input_variables",label = "Input variables: ",choices = x,multiple = TRUE,selected = x),
+                                  sliderInput("train_selector", "Choose train period:",
+                                              min = eval(parse(text = paste0("min(data$",date_column,")"))),
+                                              max = eval(parse(text = paste0("max(data$",date_column,")"))),
+                                              value =  eval(parse(text = paste0("c(min(data$",date_column,"),mean(data$",date_column,"))")))),
+                                  sliderInput("test_selector", "Choose test period:",
+                                              min = eval(parse(text = paste0("min(data$",date_column,")"))),
+                                              max = eval(parse(text = paste0("max(data$",date_column,")"))),
+                                              value = eval(parse(text = paste0("c(mean(data$",date_column,"),max(data$",date_column,"))"))))
+                                  
+                                  
+                              )
+                              
+                    )
+                    
+        )
+      )
+    ),
     
-    # classic cards
     argonDashHeader(
       gradient = FALSE,
       color = "warning",
-      separator = FALSE,
-      #separator_color = "warning",
-      top_padding = 0,
-      bottom_padding = 2,
+      separator = TRUE,
+      separator_color = "danger",
+      top_padding = 3,
+      bottom_padding = 7,
+      div(align = "center",
+          argonH1(HTML("<font color='white'> Select models parameters</font>"),display = 4)
+      ),
+      br(),
       argonRow(
         argonCard(
           width = 3,
@@ -347,7 +293,6 @@ shinyML_regression <- function(data = data,y,date_column, share_app = FALSE,port
               sliderInput(label = "Lambda",inputId = "reg_param_glm",min = 0,max = 10,value = 0),
               sliderInput(label = "Alpha (0:Ridge <-> 1:Lasso)",inputId = "alpha_param_glm",min = 0,max = 1,value = 0.5),
               sliderInput(label = "Maximum iteraions",inputId = "max_iter_glm",min = 50,max = 300,value = 100),
-              #argonButton(name = "Run glm",src = "run_glm",status = "warning",icon = icon("cogs",lib = "font-awesome"),size = "sm")
               actionButton("run_glm","Run glm",style = 'color:white; background-color:green; padding:4px; font-size:120%',
                            icon = icon("cogs",lib = "font-awesome"))
           )
@@ -428,160 +373,109 @@ shinyML_regression <- function(data = data,y,date_column, share_app = FALSE,port
           )
           
         )
-  
-  
-
+        
       )
-
+      
     ),
-
+    
+    argonDashHeader(
+      gradient = FALSE,
+      color = "danger",
+      top_padding = 3,
+      bottom_padding = 3,
+      div(align = "center",
+          argonH1(HTML("<font color='white'> Explore results </font>"),display = 4)
+      ),
+      br(),
+      argonRow(
+        argonCard(width = 9,
+                  title = "Predictions on test period",
+                  src = NULL,
+                  hover_lift = TRUE,
+                  shadow = TRUE,
+                  icon = icon("cogs"),
+                  status = "danger",
+                  argonTabSet(
+                    width = 12,
+                    id = "results_models",
+                    card_wrapper = TRUE,
+                    horizontal = TRUE,
+                    circle = FALSE,
+                    size = "sm",
+                    argonTab(
+                      tabName = "Result charts on test period",
+                      active = TRUE,
+                      withSpinner(dygraphOutput("output_curve", height = 200, width = 1100))
+                      
+                    ),
+                    argonTab(
+                      tabName = "Compare models performances",
+                      active = FALSE,
+                      withSpinner(DTOutput("score_table"))
+                    ),
+                    argonTab(tabName = "Feature importance",
+                             active = FALSE,
+                             withSpinner(plotlyOutput("feature_importance"))
+                             
+                    ),
+                    argonTab(tabName = "Table of results",
+                             active = FALSE,
+                             withSpinner(DTOutput("table_of_results")))
+                  ),
+                  br(),
+                  br(),
+                  div(align = "center",
+                      actionButton("train_all","Run all models !",style = 'color:white; background-color:red; padding:4px; font-size:120%',
+                                   icon = icon("cogs",lib = "font-awesome"))
+                  )
+                  #    tabBox(id = "results_models",
+                  #       tabPanel("Result charts on test period",withSpinner(dygraphOutput("output_curve", height = 200, width = 1100))),
+                  #       tabPanel("Compare models performances", withSpinner(DTOutput("score_table"))),
+                  #       tabPanel("Feature importance",withSpinner(plotlyOutput("feature_importance"))),
+                  #       tabPanel("Table of results", withSpinner(DTOutput("table_of_results"))), width = 12
+                  # )
+                  
+        ),
+        
+        
+        argonCard(
+          width = 3,
+          src = NULL,
+          hover_lift = T,
+          icon = icon("cogs"),
+          status = "warning",
+          shadow = TRUE,
+          #border_level = 2,
+          hover_shadow = TRUE,
+          title = "Auto Machine Learning",
+          div(align = "center",
+              knobInput(inputId = "run_time_auto_ml",label = "Max running time (in seconds)",value = 15,min = 10,max = 60,
+                        displayPrevious = TRUE, lineCap = "round",fgColor = "#428BCA",inputColor = "#428BCA"
+                        
+              ),
+              
+              br(),
+              actionButton("run_auto_ml","Run auto ML",style = 'color:white; background-color:red; padding:4px; font-size:120%',
+                           icon = icon("cogs",lib = "font-awesome"))
+          )
+          
+        )
+        
+      )
+    ),
     br(),
-    
-    # info cards
-    argonH1("Info Cards", display = 4),
+    br(),
+    br(),
     argonRow(
-      argonInfoCard(
-        value = "350,897", 
-        title = "TRAFFIC", 
-        stat = 3.48, 
-        stat_icon = icon("arrow-up"),
-        description = "Since last month", 
-        icon = argonIcon("planet"), 
-        icon_background = "danger",
-        hover_lift = TRUE
-      ),
-      argonInfoCard(
-        value = "2,356", 
-        title = "NEW USERS", 
-        stat = -3.48, 
-        stat_icon = icon("arrow-down"),
-        description = "Since last week", 
-        icon = icon("chart-pie"), 
-        icon_background = "warning",
-        shadow = TRUE
-      ),
-      argonInfoCard(
-        value = "924", 
-        title = "SALES", 
-        stat = -1.10, 
-        stat_icon = icon("arrow-down"),
-        description = "Since yesterday", 
-        icon = icon("users"), 
-        icon_background = "yellow",
-        background_color = "default"
-      ),
-      argonInfoCard(
-        value = "49,65%", 
-        title = "PERFORMANCE", 
-        stat = 12, 
-        stat_icon = icon("arrow-up"),
-        description = "Since last month", 
-        icon = icon("percent"), 
-        icon_background = "info",
-        gradient = TRUE,
-        background_color = "orange",
-        hover_lift = TRUE
+      argonColumn(width = 6,div(align = "center",uiOutput("h2o_cluster_mem"))),
+      argonColumn(width = 6,div(align = "center",uiOutput("h2o_cpu")))
       )
-    ),
     
-    # profile cards
-    argonH1("User Cards", display = 4),
-    argonRow(
-      argonColumn(
-        width = 3,
-        argonUser(
-          title = "Ryan Tompson",
-          subtitle = "Web Developer",
-          src = "https://demos.creative-tim.com/argon-design-system/assets/img/theme/team-1-800x800.jpg"
-        )
-      ),
-      argonColumn(
-        width = 3,
-        argonUser(
-          title = "Romina Hadid",
-          subtitle = "Marketing Strategist",
-          src = "https://demos.creative-tim.com/argon-design-system/assets/img/theme/team-2-800x800.jpg"
-        )
-      ),
-      argonColumn(
-        width = 3,
-        argonUser(
-          title = "Alexander Smith",
-          subtitle = "UI/UX Designer",
-          src = "https://demos.creative-tim.com/argon-design-system/assets/img/theme/team-3-800x800.jpg"
-        )
-      ),
-      argonColumn(
-        width = 3,
-        argonUser(
-          title = "John Doe",
-          subtitle = "Founder and CEO",
-          src = "https://demos.creative-tim.com/argon-design-system/assets/img/theme/team-4-800x800.jpg"
-        )
-      )
-    ),
-    br(), br(),
+
+             
     
-    argonH1("Profile Card", display = 4),
-    argonRow(
-      argonColumn(
-        width = 12,
-        argonProfile(
-          title = "John",
-          subtitle = "Japan, Kagoshima",
-          src = "https://demos.creative-tim.com/argon-design-system/assets/img/theme/team-1-800x800.jpg",
-          url = "https://www.google.com",
-          url_1 = "https://www.google.com",
-          url_2 = "https://www.google.com",
-          stats = argonProfileStats(
-            argonProfileStat(
-              value = 22,
-              description = "Friends"
-            ),
-            argonProfileStat(
-              value = 10,
-              description = "Photos"
-            ),
-            argonProfileStat(
-              value = 89,
-              description = "Comments"
-            )
-          ),
-          "An artist of considerable range, Ryan — 
-                  the name taken by Melbourne-raised, 
-                  Brooklyn-based Nick Murphy — writes, 
-                  performs and records all of his own music, 
-                  giving it a warm, intimate feel with a solid 
-                  groove structure. An artist of considerable 
-                  range."
-        )
-      )
-    )
+    
   )
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  ## ---------------------------------------------------------------------------- ONGLET SPARK -----------------------------------
-  
-  spark_tab <- argonTabItem(
-    tabName = "tab_spark",
-    radioButtons(
-      inputId = "cardWrap", 
-      inline = TRUE,
-      label = "Enable card wrap?",
-      choices = c("Enable", "Disable"), 
-      selected = "Enable"
-    ),
-    uiOutput("argonTable")
-  )
-  
-  
   
   ## ---------------------------------------------------------------------------- LANCEMENT APPLI -----------------------------------
   
@@ -589,19 +483,21 @@ shinyML_regression <- function(data = data,y,date_column, share_app = FALSE,port
   # App
   app <- shiny::shinyApp(
     ui = argonDashPage(
-      title = "Argon Dashboard Demo",
-      author = "David",
-      description = "Argon Dash Test",
-      sidebar = argonSidebar,
+      title = "shinyML_regression",
+      author = "Jean",
+      description = "Use of shinyML_regression function",
+      #sidebar = argonSidebar,
       navbar = argonNav,
       header = argonHeader,
-      body = argonDashBody(
-        argonTabItems(
-          h2o_tab,
-          spark_tab
-          
-        )
-      ),
+      body = argonBody,
+      
+      #   argonDashBody(
+      #   argonTabItems(
+      #     main_tab
+      #     #spark_tab
+      #     
+      #   )
+      # ),
       footer = argonFooter
     ),
     server = function(session,input, output) {
@@ -823,7 +719,7 @@ shinyML_regression <- function(data = data,y,date_column, share_app = FALSE,port
       # Define input data chart and train/test periods splitting
       output$input_curve <- renderDygraph({
         
-      
+        
         curve_entries <- dygraph(data = eval(parse(text = paste0("data[,.(",date_column,",",y,")]"))),
                                  main = paste("Evolution of",y,"as a function of time")) %>%
           dyShading(from = input$train_selector[1],to = input$train_selector[2],color = "snow" ) %>%
@@ -1183,9 +1079,10 @@ shinyML_regression <- function(data = data,y,date_column, share_app = FALSE,port
                                            table_forecast()[['auto_ml_model']]@leader@model$model_summary[i])))
           }
           
+          
           # The message box indicates best model family and all associated hyper-parameter values
           sendSweetAlert(
-            session = session,
+            session = session,width = "800px",
             title = "Auto ML algorithm succeed!",
             text = HTML(paste0(
               "<br>",
@@ -1197,23 +1094,35 @@ shinyML_regression <- function(data = data,y,date_column, share_app = FALSE,port
       })
       
       # Define Value Box concerning memory used by h2o cluster  
-      output$h2o_cluster_mem <- renderValueBox({
+      output$h2o_cluster_mem <- renderUI({
         
-        valueBox(
-          paste(round(as.numeric(cluster_status$free_mem)/1024**3,2), "GB", sep = ""),
-          "H2O Cluster Total Memory", icon = icon("server"),
-          color = "maroon"
+        argonInfoCard(
+          value = paste(round(as.numeric(cluster_status$free_mem)/1024**3,2), "GB", sep = ""),
+          title = "H2O Cluster Total Memory",gradient = TRUE,width = 7,
+          # stat = -1.10, 
+          # stat_icon = icon("arrow-down"),
+          # description = "Since yesterday", 
+          icon = icon("server"), 
+          icon_background = "yellow",
+          background_color = "red"
         )
+        
       })
       
       # Define Value Box concerning number of cpu used by h2o cluster
-      output$h2o_cpu <- renderValueBox({
+      output$h2o_cpu <- renderUI({
         
-        valueBox(
-          cluster_status$num_cpus,
-          "Number of CPUs in Use", icon = icon("microchip"),
-          color = "light-blue"
+        argonInfoCard(
+          value = cluster_status$num_cpus,gradient = TRUE,width = 7,
+          title = "Number of CPUs in Use",
+          # stat = -1.10, 
+          # stat_icon = icon("arrow-down"),
+          # description = "Since yesterday", 
+          icon = icon("microchip"), 
+          icon_background = "yellow",
+          background_color = "green"
         )
+        
       })
       
       
@@ -1307,5 +1216,7 @@ shinyML_regression <- function(data = data,y,date_column, share_app = FALSE,port
 
 
 shinyML_regression(data = longley2,date_column = "Year",y = "Population",share_app = F)
+
+
 install.packages("argonDash")
 library(argonDash)
