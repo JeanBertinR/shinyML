@@ -165,7 +165,6 @@ shinyML_regression <- function(data = data,y,date_column, share_app = FALSE,port
       separator = TRUE,
       separator_color = "warning",
       top_padding = 3,
-      background_img = "vignettes/neural_network.jpg",
       bottom_padding = 7,
       br(),
       br(),
@@ -188,6 +187,12 @@ shinyML_regression <- function(data = data,y,date_column, share_app = FALSE,port
                                 horizontal = TRUE,
                                 circle = FALSE,
                                 size = "sm",
+                                iconList = list(
+                                  argonIcon("cloud-upload-96"), 
+                                  argonIcon("bell-55"), 
+                                  argonIcon("calendar-grid-58"),
+                                  argonIcon("calendar-grid-58")
+                                ),
                                 argonTab(
                                   tabName = "Input data chart",
                                   active = TRUE,
@@ -286,6 +291,12 @@ shinyML_regression <- function(data = data,y,date_column, share_app = FALSE,port
                     horizontal = TRUE,
                     circle = FALSE,
                     size = "sm",
+                    iconList = list(
+                      argonIcon("cloud-upload-96"), 
+                      argonIcon("bell-55"), 
+                      argonIcon("calendar-grid-58"),
+                      argonIcon("calendar-grid-58")
+                    ),
                     argonTab(
                       tabName = "Result charts on test period",
                       active = TRUE,
