@@ -133,7 +133,7 @@ shinyML_regression <- function(data = data,y,date_column, share_app = FALSE,port
   
   argonHeader <- argonDashHeader(
     gradient = TRUE,
-    color = "default",
+    color = "primary",
     separator = TRUE,
     separator_color = "secondary",bottom_padding = 6,top_padding = 6,
 
@@ -166,6 +166,8 @@ shinyML_regression <- function(data = data,y,date_column, share_app = FALSE,port
       separator_color = "warning",
       top_padding = 3,
       bottom_padding = 7,
+      br(),
+      br(),
       
       div(align = "center",
           argonH1(HTML("<font color='white'> Explore input data</font>"),display = 4)
@@ -256,126 +258,8 @@ shinyML_regression <- function(data = data,y,date_column, share_app = FALSE,port
       )
     ),
     
-    argonDashHeader(
-      gradient = FALSE,
-      color = "warning",
-      separator = TRUE,
-      separator_color = "danger",
-      top_padding = 3,
-      bottom_padding = 7,
-      div(align = "center",
-          argonH1(HTML("<font color='white'> Select models parameters</font>"),display = 4)
-      ),
-      br(),
-      argonRow(
-        argonCard(
-          width = 3,
-          src = NULL,
-          hover_lift = T,
-          icon = icon("cogs"),
-          status = "success",
-          shadow = TRUE,
-          #border_level = 2,
-          hover_shadow = TRUE,
-          title = "Generalized linear regression",
-          div(align = "center",
-              argonRow(
-                argonColumn(
-                  radioButtons(label = "Family",inputId = "glm_family",choices = c("gaussian","poisson", "gamma","tweedie"),
-                               selected = "gaussian"),width = 6),
-                
-                argonColumn(
-                  radioButtons(label = "Link",inputId = "glm_link",choices = c("identity","log"),selected = "identity"),
-                  switchInput(label = "Intercept term",inputId = "intercept_term_glm",value = TRUE,width = "auto"),width = 6)
-              ),
-              
-              sliderInput(label = "Lambda",inputId = "reg_param_glm",min = 0,max = 10,value = 0),
-              sliderInput(label = "Alpha (0:Ridge <-> 1:Lasso)",inputId = "alpha_param_glm",min = 0,max = 1,value = 0.5),
-              sliderInput(label = "Maximum iteraions",inputId = "max_iter_glm",min = 50,max = 300,value = 100),
-              actionButton("run_glm","Run glm",style = 'color:white; background-color:green; padding:4px; font-size:120%',
-                           icon = icon("cogs",lib = "font-awesome"))
-          )
-          
-          
-          
-        ),
-        
-        argonCard(
-          width = 3,
-          src = NULL,
-          hover_lift = T,
-          icon = icon("cogs"),
-          status = "danger",
-          shadow = TRUE,
-          #border_level = 2,
-          hover_shadow = TRUE,
-          title = "Random Forest",
-          div(align = "center",
-              sliderInput(label = "Number of trees",min = 1,max = 100, inputId = "num_tree_random_forest",value = 50),
-              sliderInput(label = "Subsampling rate",min = 0.1,max = 1, inputId = "subsampling_rate_random_forest",value = 0.6),
-              sliderInput(label = "Max depth",min = 1,max = 50, inputId = "max_depth_random_forest",value = 20),
-              sliderInput(label = "Number of bins",min = 2,max = 100, inputId = "n_bins_random_forest",value = 20),
-              actionButton("run_random_forest","Run random forest",style = 'color:white; background-color:red; padding:4px; font-size:120%',
-                           icon = icon("cogs",lib = "font-awesome"))
-          )
-          
-        ),
-        
-        
-        argonCard(
-          width = 3,
-          src = NULL,
-          hover_lift = T,
-          icon = icon("cogs"),
-          status = "primary",
-          shadow = TRUE,
-          #border_level = 2,
-          hover_shadow = TRUE,
-          title = "Neural network",
-          div(align = "center",
-              argonRow(
-                argonColumn(
-                  radioButtons(label = "Activation function",inputId = "activation_neural_net",
-                               choices = c( "Rectifier", "Maxout","Tanh", "RectifierWithDropout", "MaxoutWithDropout","TanhWithDropout"),selected = "Rectifier"),width = 6),
-                
-                argonColumn(
-                  radioButtons(label = "Loss function",inputId = "loss_neural_net",
-                               choices = c("Automatic", "Quadratic", "Huber", "Absolute", "Quantile"),selected = "Automatic"),width = 6)
-              ),
-              
-              textInput(label = "Hidden layers",inputId = "hidden_neural_net",value = "c(200,200)"),
-              sliderInput(label = "Epochs",min = 10,max = 100, inputId = "epochs_neural_net",value = 10),
-              sliderInput(label = "Learning rate",min = 0.001,max = 0.1, inputId = "rate_neural_net",value = 0.005),
-              actionButton("run_neural_network","Run neural network",style = 'color:white; background-color:darkblue; padding:4px; font-size:120%',
-                           icon = icon("cogs",lib = "font-awesome"))
-          )
-          
-        ),
-        
-        argonCard(
-          width = 3,
-          src = NULL,
-          hover_lift = T,
-          icon = icon("cogs"),
-          status = "warning",
-          shadow = TRUE,
-          #border_level = 2,
-          hover_shadow = TRUE,
-          title = "Gradient boosting",
-          div(align = "center",
-              sliderInput(label = "Max depth",min = 1,max = 20, inputId = "max_depth_gbm",value = 5),
-              sliderInput(label = "Number of trees",min = 1,max = 100, inputId = "n_trees_gbm",value = 50),
-              sliderInput(label = "Sample rate",min = 0.1,max = 1, inputId = "sample_rate_gbm",value = 1),
-              sliderInput(label = "Learn rate",min = 0.1,max = 1, inputId = "learn_rate_gbm",value = 0.1),
-              actionButton("run_gradient_boosting","Run gradient boosting",style = 'color:white; background-color:orange; padding:4px; font-size:120%',
-                           icon = icon("cogs",lib = "font-awesome"))
-          )
-          
-        )
-        
-      )
-      
-    ),
+    uiOutput("DashHeader_framework"),
+    
     
     argonDashHeader(
       gradient = FALSE,
@@ -815,7 +699,7 @@ shinyML_regression <- function(data = data,y,date_column, share_app = FALSE,port
       # If "Run tuned models!" button is clicked, prediction results on test period are stored in four additional columns
       table_forecast <- reactive({
         
-        
+
         data_results <- eval(parse(text = paste0("data[,.(",date_column,",",y,")][",date_column,">'",test_1$date,"',][",date_column,"< '",test_2$date,"',]")))
         table_results <- data_results
         dl_auto_ml <- NA
@@ -1125,10 +1009,271 @@ shinyML_regression <- function(data = data,y,date_column, share_app = FALSE,port
       })
       
       
+      output$DashHeader_framework <- renderUI({
+        
+        
+        argonDashHeader(
+          gradient = FALSE,
+          color = "warning",
+          #color = ifelse(input$tab_framework == "tab_h2o","warning","success"),
+          separator = TRUE,
+          separator_color = "danger",
+          top_padding = 3,
+          bottom_padding = 7,
+          div(align = "center",
+              argonH1(HTML("<font color='white'> Select models parameters</font>"),display = 4)
+          ),
+          br(),
+          
+          argonTabSet(
+            width = 12,
+            id = "tab_framework",
+            card_wrapper = TRUE,
+            horizontal = TRUE,
+            circle = FALSE,
+            size = "sm",
+            argonTab(
+              tabName = "h2o",
+              active = TRUE,
+              argonRow(
+                argonCard(
+                  width = 3,
+                  src = NULL,
+                  hover_lift = T,
+                  icon = icon("cogs"),
+                  status = "success",
+                  shadow = TRUE,
+                  #border_level = 2,
+                  hover_shadow = TRUE,
+                  title = "Generalized linear regression",
+                  div(align = "center",
+                      argonRow(
+                        argonColumn(
+                          radioButtons(label = "Family",inputId = "glm_family",choices = c("gaussian","poisson", "gamma","tweedie"),
+                                       selected = "gaussian"),width = 6),
+                        
+                        argonColumn(
+                          radioButtons(label = "Link",inputId = "glm_link",choices = c("identity","log"),selected = "identity"),
+                          switchInput(label = "Intercept term",inputId = "intercept_term_glm",value = TRUE,width = "auto"),width = 6)
+                      ),
+                      
+                      sliderInput(label = "Lambda",inputId = "reg_param_glm",min = 0,max = 10,value = 0),
+                      sliderInput(label = "Alpha (0:Ridge <-> 1:Lasso)",inputId = "alpha_param_glm",min = 0,max = 1,value = 0.5),
+                      sliderInput(label = "Maximum iteraions",inputId = "max_iter_glm",min = 50,max = 300,value = 100),
+                      actionButton("run_glm","Run glm",style = 'color:white; background-color:green; padding:4px; font-size:120%',
+                                   icon = icon("cogs",lib = "font-awesome"))
+                  )
+                  
+                  
+                  
+                ),
+                
+                argonCard(
+                  width = 3,
+                  src = NULL,
+                  hover_lift = T,
+                  icon = icon("cogs"),
+                  status = "danger",
+                  shadow = TRUE,
+                  #border_level = 2,
+                  hover_shadow = TRUE,
+                  title = "Random Forest",
+                  div(align = "center",
+                      sliderInput(label = "Number of trees",min = 1,max = 100, inputId = "num_tree_random_forest",value = 50),
+                      sliderInput(label = "Subsampling rate",min = 0.1,max = 1, inputId = "subsampling_rate_random_forest",value = 0.6),
+                      sliderInput(label = "Max depth",min = 1,max = 50, inputId = "max_depth_random_forest",value = 20),
+                      sliderInput(label = "Number of bins",min = 2,max = 100, inputId = "n_bins_random_forest",value = 20),
+                      actionButton("run_random_forest","Run random forest",style = 'color:white; background-color:red; padding:4px; font-size:120%',
+                                   icon = icon("cogs",lib = "font-awesome"))
+                  )
+                  
+                ),
+                
+                
+                argonCard(
+                  width = 3,
+                  src = NULL,
+                  hover_lift = T,
+                  icon = icon("cogs"),
+                  status = "primary",
+                  shadow = TRUE,
+                  #border_level = 2,
+                  hover_shadow = TRUE,
+                  title = "Neural network",
+                  div(align = "center",
+                      argonRow(
+                        argonColumn(
+                          radioButtons(label = "Activation function",inputId = "activation_neural_net",
+                                       choices = c( "Rectifier", "Maxout","Tanh", "RectifierWithDropout", "MaxoutWithDropout","TanhWithDropout"),selected = "Rectifier"),width = 6),
+                        
+                        argonColumn(
+                          radioButtons(label = "Loss function",inputId = "loss_neural_net",
+                                       choices = c("Automatic", "Quadratic", "Huber", "Absolute", "Quantile"),selected = "Automatic"),width = 6)
+                      ),
+                      
+                      textInput(label = "Hidden layers",inputId = "hidden_neural_net",value = "c(200,200)"),
+                      sliderInput(label = "Epochs",min = 10,max = 100, inputId = "epochs_neural_net",value = 10),
+                      sliderInput(label = "Learning rate",min = 0.001,max = 0.1, inputId = "rate_neural_net",value = 0.005),
+                      actionButton("run_neural_network","Run neural network",style = 'color:white; background-color:darkblue; padding:4px; font-size:120%',
+                                   icon = icon("cogs",lib = "font-awesome"))
+                  )
+                  
+                ),
+                
+                argonCard(
+                  width = 3,
+                  src = NULL,
+                  hover_lift = T,
+                  icon = icon("cogs"),
+                  status = "warning",
+                  shadow = TRUE,
+                  #border_level = 2,
+                  hover_shadow = TRUE,
+                  title = "Gradient boosting",
+                  div(align = "center",
+                      sliderInput(label = "Max depth",min = 1,max = 20, inputId = "max_depth_gbm",value = 5),
+                      sliderInput(label = "Number of trees",min = 1,max = 100, inputId = "n_trees_gbm",value = 50),
+                      sliderInput(label = "Sample rate",min = 0.1,max = 1, inputId = "sample_rate_gbm",value = 1),
+                      sliderInput(label = "Learn rate",min = 0.1,max = 1, inputId = "learn_rate_gbm",value = 0.1),
+                      actionButton("run_gradient_boosting","Run gradient boosting",style = 'color:white; background-color:orange; padding:4px; font-size:120%',
+                                   icon = icon("cogs",lib = "font-awesome"))
+                  )
+                  
+                )
+                
+              )
+              
+              
+              
+            ),
+            
+            argonTab(
+              tabName = "Spark",
+              active = FALSE,
+              
+              
+              argonRow(
+                argonCard(
+                  width = 3,
+                  src = NULL,
+                  hover_lift = T,
+                  icon = icon("cogs"),
+                  status = "success",
+                  shadow = TRUE,
+                  #border_level = 2,
+                  hover_shadow = TRUE,
+                  title = "Generalized linear regression",
+                  div(align = "center",
+                      argonRow(
+                        argonColumn(
+                          radioButtons(label = "Family",inputId = "glm_family",choices = c("gaussian","Gamma","poisson"),
+                                       selected = "gaussian"),width = 6),
+                        
+                        argonColumn(
+                          radioButtons(label = "Link",inputId = "glm_link",choices = c("identity","log"),selected = "identity"),
+                          switchInput(label = "Intercept term",inputId = "intercept_term_glm",value = TRUE,width = "auto"),width = 6)
+                      ),
+                      
+                      sliderInput(label = "Lambda",inputId = "reg_param_glm",min = 0,max = 10,value = 0),
+                      sliderInput(label = "Alpha (0:Ridge <-> 1:Lasso)",inputId = "alpha_param_glm",min = 0,max = 1,value = 0.5),
+                      sliderInput(label = "Maximum iteraions",inputId = "max_iter_glm",min = 50,max = 300,value = 100),
+                      actionButton("run_glm","Run glm",style = 'color:white; background-color:green; padding:4px; font-size:120%',
+                                   icon = icon("cogs",lib = "font-awesome"))
+                  )
+                  
+                  
+                  
+                ),
+                
+                argonCard(
+                  width = 3,
+                  src = NULL,
+                  hover_lift = T,
+                  icon = icon("cogs"),
+                  status = "danger",
+                  shadow = TRUE,
+                  #border_level = 2,
+                  hover_shadow = TRUE,
+                  title = "Random Forest",
+                  div(align = "center",
+                      sliderInput(label = "Number of trees",min = 1,max = 100, inputId = "num_tree_random_forest",value = 50),
+                      sliderInput(label = "Subsampling rate",min = 0.1,max = 1, inputId = "subsampling_rate_random_forest",value = 1),
+                      sliderInput(label = "Max depth",min = 1,max = 50, inputId = "max_depth_random_forest",value = 20),
+                      sliderInput(label = "Number of bins",min = 2,max = 100, inputId = "n_bins_random_forest",value = 20),
+                      actionButton("run_random_forest","Run random forest",style = 'color:white; background-color:red; padding:4px; font-size:120%',
+                                   icon = icon("cogs",lib = "font-awesome"))
+                  )
+
+                ),
+
+
+                argonCard(
+                  width = 3,
+                  src = NULL,
+                  hover_lift = T,
+                  icon = icon("cogs"),
+                  status = "primary",
+                  shadow = TRUE,
+                  #border_level = 2,
+                  hover_shadow = TRUE,
+                  title = "Decision tree",
+                  div(align = "center",
+                      argonRow(
+                        argonColumn(
+                          sliderInput(label = "Max depth",inputId = "max_depth_decision_tree",min = 1,max = 30,value = 20),
+                          sliderInput(label = "Max bins",inputId = "max_bins_decision_tree",min = 2,max = 60,value = 32),
+                          sliderInput(label = "Min instance per node",inputId = "min_instance_decision_tree",min = 1,max = 10,value = 1),
+                          actionButton("run_decision_tree","Run decision tree regression",style = 'color:white; background-color:darkblue; padding:4px; font-size:120%',
+                                       icon = icon("cogs",lib = "font-awesome"))
+                              )
+
+                        )
+                      )
+                ),
+
+                argonCard(
+                  width = 3,
+                  src = NULL,
+                  hover_lift = T,
+                  icon = icon("cogs"),
+                  status = "warning",
+                  shadow = TRUE,
+                  #border_level = 2,
+                  hover_shadow = TRUE,
+                  title = "Gradient boosting",
+                  div(align = "center",
+                      sliderInput(label = "Step size",min = 0,max = 1, inputId = "step_size_gbm",value = 0.1),
+                      sliderInput(label = "Subsampling rate",min = 0.1,max = 1, inputId = "subsampling_rate_gbm",value = 1),
+                      sliderInput(label = "Max depth",min = 1,max = 30, inputId = "max_depth_gbm",value = 20),
+                      actionButton("run_gradient_boosting","Run gradient boosting",style = 'color:white; background-color:orange; padding:4px; font-size:120%',
+                                   icon = icon("cogs",lib = "font-awesome"))
+                  )
+                  
+                )
+                
+              )
+              
+             
+        
+          )
+        )
+        )
+          
+          
+          
+          
+        
+        
+      })
+      
+
+
       #############################################
       output$distPlot <- renderPlot({
         hist(rnorm(input$obs))
       })
+      
+      
       
       output$plot <- renderPlot({
         dist <- switch(
