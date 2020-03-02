@@ -165,6 +165,7 @@ shinyML_regression <- function(data = data,y,date_column, share_app = FALSE,port
       separator = TRUE,
       separator_color = "warning",
       top_padding = 3,
+      background_img = "vignettes/neural_network.jpg",
       bottom_padding = 7,
       br(),
       br(),
