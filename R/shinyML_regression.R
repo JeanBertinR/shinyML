@@ -1059,18 +1059,18 @@ shinyML_regression <- function(data = data,y,date_column, share_app = FALSE,port
       # Define the table of predicted data
       # If "Run tuned models!" button is clicked, prediction results on test period are stored in four additional columns
       table_forecast <- reactive({
-        
+        #browser()
         #if (input$checkbox_time_series == TRUE){
    
           data_results <- eval(parse(text = paste0("data[,.(",date_column,",",y,")][",date_column,">'",test_1$date,"',][",date_column,"< '",test_2$date,"',]")))
         #}
         
-        #else if(input$checkbox_time_series == FALSE){
-          #browser()
-          #data_results <- sample_n(data,as.numeric(as.character(gsub("%","",input$percentage_selector)))*nrow(data))
-          #browser()    
-          
-        #}
+        # else{
+        #   #browser()
+        #   #data_results <- sample_n(data,as.numeric(as.character(gsub("%","",input$percentage_selector)))*nrow(data))
+        #   #browser()    
+        #   
+        # }
         
         
         table_results <- data_results
@@ -1217,7 +1217,7 @@ shinyML_regression <- function(data = data,y,date_column, share_app = FALSE,port
         
         table_training_time <- rbind(time_gbm,time_random_forest,time_glm,time_neural_network,time_auto_ml)
         table_importance <- rbind(importance_gbm,importance_random_forest,importance_neural_network) %>% as.data.table()
-        
+        #browser()
         # Used a list to access to different tables from only on one reactive objet
         list(traning_time = table_training_time, table_importance = table_importance, results = table_results,auto_ml_model = dl_auto_ml)
         
