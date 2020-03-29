@@ -49,7 +49,7 @@ library(shiny)
 library(argonR)
 library(argonDash)
 library(magrittr)
-
+library(lubridate)
 library(h2o)
 library(data.table)
 library(dplyr)
@@ -170,7 +170,7 @@ shinyML_regression <- function(data = data,y,date_column, share_app = FALSE,port
     gradient = TRUE,
     color = "primary",
     separator = TRUE,
-    separator_color = "secondary",bottom_padding = 6,top_padding = 6,
+    separator_color = "secondary",bottom_padding = 6,top_padding = 6
 
   )
   
@@ -231,8 +231,9 @@ shinyML_regression <- function(data = data,y,date_column, share_app = FALSE,port
                                 argonTab(
                                   tabName = "Explore dataset",
                                   active = TRUE,
-                                  div(align = "center", column(width = 6,uiOutput("X_axis_explore_dataset"))), 
-                                  div(align = "center", column(width = 6,selectInput(inputId = "y_variable_input_curve",label = "Y-axis variable",choices = colnames(data),selected = y))),
+                                  div(align = "center", column(width = 6,uiOutput("X_axis_explore_dataset")),
+                                      column(width = 6,selectInput(inputId = "y_variable_input_curve",label = "Y-axis variable",choices = colnames(data),selected = y))), 
+                                  #div(align = "center", column(width = 6,selectInput(inputId = "y_variable_input_curve",label = "Y-axis variable",choices = colnames(data),selected = y))),
                                   
                                   br(),
                                   br(),
@@ -298,6 +299,7 @@ shinyML_regression <- function(data = data,y,date_column, share_app = FALSE,port
         )
       )
     ),
+
     
     argonDashHeader(
       gradient = FALSE,
