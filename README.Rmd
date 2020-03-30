@@ -9,6 +9,8 @@ knitr::opts_chunk$set(echo = TRUE)
 
 ```
 
+# argonDash <img src="vignettes/logo_shinyML.png" width=200 align="right" />
+
 [![CRAN Status Badge](http://www.r-pkg.org/badges/version/shinyML)](https://CRAN.R-project.org/package=shinyML)
 [![CRAN Downloads Badge](https://cranlogs.r-pkg.org/badges/shinyML)](https://CRAN.R-project.org/package=shinyML)
 [![CRAN Downloads Badge](https://cranlogs.r-pkg.org/badges/grand-total/shinyML)](https://CRAN.R-project.org/package=shinyML)
