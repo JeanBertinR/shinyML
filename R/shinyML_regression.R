@@ -102,6 +102,8 @@ shinyML_regression <- function(data = data,y,date_column, share_app = FALSE,port
   # Assign x as data colnames excepted output variable name 
   x <- setdiff(colnames(data),y)
   
+  
+  
   # # Test if date_column is in data colnames
   # if (!(date_column %in% colnames(data))){
   #   stop("date_column must match one data input variable")
@@ -166,44 +168,16 @@ shinyML_regression <- function(data = data,y,date_column, share_app = FALSE,port
   
   ## ---------------------------------------------------------------------------- HEADER -----------------------------------
   
-  argonHeader <- argonDashHeader(
-    gradient = TRUE,
-    color = "primary",
-    separator = TRUE,
-    separator_color = "secondary",bottom_padding = 6,top_padding = 6
-
-  )
-  
-  
-  
-  ## ---------------------------------------------------------------------------- FOOTER -----------------------------------
-  
-  
-  argonFooter <- argonDashFooter(
-    copyrights = "@Divad Nojnarg, 2018",
-    src = "https://github.com/DivadNojnarg",
-    argonFooterMenu(
-      argonFooterItem("RinteRface", src = "https://github.com/RinteRface"),
-      argonFooterItem("argon", src = "https://demos.creative-tim.com/argon-design-system/index.html")
-    )
-  )
-  
-  
-
-  
-  argonBody <- argonDashBody(
+  argonHeader <- argonColumn(width = "100%",
     
     argonDashHeader(
-      gradient = FALSE,
-      color = "primary",
-      separator = TRUE,
-      separator_color = "warning",
-      top_padding = 3,
-      bottom_padding = 7,
-      br(),
-      br(),
-      
-      div(align = "center",
+    
+    gradient = TRUE,
+    color = "info",
+    separator = FALSE,
+    
+
+    div(align = "center",
           argonH1(HTML("<font color='white'> Explore input data</font>"),display = 4)
       ),
       br(),
@@ -263,7 +237,7 @@ shinyML_regression <- function(data = data,y,date_column, share_app = FALSE,port
                                   )
                                   
                                 ),
-
+                                
                                 argonTab(
                                   tabName = "Correlation matrix",
                                   active = FALSE,
@@ -299,21 +273,21 @@ shinyML_regression <- function(data = data,y,date_column, share_app = FALSE,port
         )
       )
     ),
-
-    
-    argonDashHeader(
-      gradient = FALSE,
-      color = "warning",
-      #color = ifelse(input$tab_framework == "tab_h2o","warning","success"),
-      separator = TRUE,
-      separator_color = "danger",
-      top_padding = 3,
-      bottom_padding = 7,
+      
+      
+    argonDashHeader(gradient = TRUE,
+                    color = "default",
+                    separator = FALSE,
+      
       div(align = "center",
           argonH1(HTML("<font color='white'> Select models parameters</font>"),display = 4)
       ),
-      br(),
-      
+  
+    br(),
+    argonRow(
+      argonColumn(width = 6,div(align = "center",uiOutput("h2o_cluster_mem"))),
+      argonColumn(width = 6,div(align = "center",uiOutput("h2o_cpu")))
+    ),
       argonTabSet(
         width = 12,
         id = "tab_framework",
@@ -547,13 +521,11 @@ shinyML_regression <- function(data = data,y,date_column, share_app = FALSE,port
         )
       )
     ),
-    
-    argonDashHeader(
-      gradient = FALSE,
-      color = "danger",
-      top_padding = 3,
-      bottom_padding = 3,
+    argonDashHeader(gradient = TRUE,
+                    color = "primary",
+                    separator = FALSE,
       div(align = "center",
+          
           argonH1(HTML("<font color='white'> Explore results </font>"),display = 4)
       ),
       br(),
@@ -639,20 +611,27 @@ shinyML_regression <- function(data = data,y,date_column, share_app = FALSE,port
         )
         
       )
-    ),
-    br(),
-    br(),
-    br(),
-    argonRow(
-      argonColumn(width = 6,div(align = "center",uiOutput("h2o_cluster_mem"))),
-      argonColumn(width = 6,div(align = "center",uiOutput("h2o_cpu")))
-      )
+    )
+      
     
 
-             
-    
-    
   )
+  
+  
+  
+  ## ---------------------------------------------------------------------------- FOOTER -----------------------------------
+  
+  
+  argonFooter <- argonDashFooter(
+    copyrights = "@Divad Nojnarg, 2018",
+    src = "https://github.com/DivadNojnarg",
+    argonFooterMenu(
+      argonFooterItem("RinteRface", src = "https://github.com/RinteRface"),
+      argonFooterItem("argon", src = "https://demos.creative-tim.com/argon-design-system/index.html")
+    )
+  )
+  
+  
   
   ## ---------------------------------------------------------------------------- LANCEMENT APPLI -----------------------------------
   
@@ -666,15 +645,6 @@ shinyML_regression <- function(data = data,y,date_column, share_app = FALSE,port
       #sidebar = argonSidebar,
       navbar = argonNav,
       header = argonHeader,
-      body = argonBody,
-      
-      #   argonDashBody(
-      #   argonTabItems(
-      #     main_tab
-      #     #spark_tab
-      #     
-      #   )
-      # ),
       footer = argonFooter
     ),
     server = function(session,input, output) {
@@ -905,6 +875,8 @@ shinyML_regression <- function(data = data,y,date_column, share_app = FALSE,port
       
       output$Time_series_checkbox <- renderUI({
         
+        
+        
         if (length(dates_variable_list()) >= 1){value = TRUE}
         else{value = FALSE}
         
@@ -916,6 +888,8 @@ shinyML_regression <- function(data = data,y,date_column, share_app = FALSE,port
       
       output$slider_time_series_train <- renderUI({
         
+        req(!is.null(input$checkbox_time_series))
+        
         if (input$checkbox_time_series == TRUE){
           sliderInput("train_selector", "Choose train period:",
                       min = eval(parse(text = paste0("min(data$",date_column,")"))),
@@ -926,6 +900,8 @@ shinyML_regression <- function(data = data,y,date_column, share_app = FALSE,port
       
       
       output$slider_time_series_test <- renderUI({
+        
+        req(!is.null(input$checkbox_time_series))
         
         if (input$checkbox_time_series == TRUE){
           sliderInput("test_selector", "Choose test period:",
@@ -940,6 +916,8 @@ shinyML_regression <- function(data = data,y,date_column, share_app = FALSE,port
           
       output$slider_percentage <- renderUI({
         
+        req(!is.null(input$checkbox_time_series))
+        
         if (input$checkbox_time_series == FALSE){
           
           selectInput(label = "Train/ Test splitting",inputId = "percentage_selector",choices = paste0(c(50:99),"%"),selected = 70,multiple = FALSE)
@@ -953,6 +931,8 @@ shinyML_regression <- function(data = data,y,date_column, share_app = FALSE,port
       
       
       output$time_series_column <- renderUI({
+        
+        req(!is.null(input$checkbox_time_series))
 
         if (input$checkbox_time_series == TRUE){
           selectInput(inputId = "time_serie_select_column",label = "Date column",choices = dates_variable_list(),multiple = FALSE)
@@ -962,16 +942,16 @@ shinyML_regression <- function(data = data,y,date_column, share_app = FALSE,port
       
       output$Variables_input_selection<- renderUI({
         
-        if (input$checkbox_time_series == FALSE){
-          variable_input_list <- x
-        }
-        else {
-          variable_input_list <- x[!(x %in% dates_variable_list())]
-        }
+        
+        req(!is.null(input$checkbox_time_series))
+        variable_input_list <- x[!(x %in% dates_variable_list())]
+        
         selectInput( inputId  = "input_variables",label = "Input variables: ",choices = x,multiple = TRUE,selected = variable_input_list)
       })
 
       output$X_axis_explore_dataset <- renderUI({
+        
+        req(!is.null(input$checkbox_time_series))
         
         if (input$checkbox_time_series == TRUE){
           selected_column <- date_column
@@ -1024,6 +1004,7 @@ shinyML_regression <- function(data = data,y,date_column, share_app = FALSE,port
       # Define plotly chart to explore dependencies between variables 
       output$explore_dataset_chart <- renderPlotly({
         
+        req(!is.null(input$checkbox_time_series))
         
         plot_ly(data = data, x = eval(parse(text = paste0("data$",input$x_variable_input_curve))), 
                 y = eval(parse(text = paste0("data$",input$y_variable_input_curve))),
@@ -1059,40 +1040,51 @@ shinyML_regression <- function(data = data,y,date_column, share_app = FALSE,port
       
       
       # Define the table of predicted data
-      # If "Run tuned models!" button is clicked, prediction results on test period are stored in four additional columns
+      # If "Run all models!" button is clicked, prediction results on test period are stored in four additional columns
       table_forecast <- reactive({
-        #browser()
-        #if (input$checkbox_time_series == TRUE){
-   
-          data_results <- eval(parse(text = paste0("data[,.(",date_column,",",y,")][",date_column,">'",test_1$date,"',][",date_column,"< '",test_2$date,"',]")))
-        #}
         
-        # else{
-        #   #browser()
-        #   #data_results <- sample_n(data,as.numeric(as.character(gsub("%","",input$percentage_selector)))*nrow(data))
-        #   #browser()    
-        #   
-        # }
+        # Make sure a value is set to checkbox_time_series checkbox 
+        req(!is.null(input$checkbox_time_series))
+       
+        if (input$checkbox_time_series == TRUE){
+          data_results <- eval(parse(text = paste0("data[,.(",dates_variable_list(),",",y,")][",dates_variable_list(),">'",test_1$date,"',][",dates_variable_list(),"< '",test_2$date,"',]")))
+        }
+     
+        else if (input$checkbox_time_series == FALSE){
+          
+          
+          req(!is.null(input$percentage_selector))
+
+          
+          #data_results <- sample_n(data,as.numeric(as.character(gsub("%","",input$percentage_selector)))*0.01*nrow(data))
+          
+         
+        }
         
         
         table_results <- data_results
         dl_auto_ml <- NA
         var_input_list <- c()
-        
         for (i in 1:length(model$train_variables)){
           var_input_list <- c(var_input_list,model$train_variables[i])
           
         }
         
+        
         # Verify that at least one explanatory variable is selected
         if (length(var_input_list) != 0){
           
+          if (input$checkbox_time_series == TRUE){
+            data_h2o_train <- as.h2o(eval(parse(text = paste0("data[",dates_variable_list(),"<='",test_1$date,"',][",dates_variable_list(),">='",train_1$date,"',]"))))
+            data_h2o_test <- as.h2o(eval(parse(text = paste0("data[",dates_variable_list(),">'",test_1$date,"',][",dates_variable_list(),"< '",test_2$date,"',]"))))
           
-          data_train <- eval(parse(text = paste0("data[",date_column,"<='",test_1$date,"',][",date_column,">='",train_1$date,"',]")))
-          data_test <- eval(parse(text = paste0("data[",date_column,">'",test_1$date,"',][",date_column,"< '",test_2$date,"',]")))
+          }
           
-          data_h2o_train <- as.h2o(data_train)
-          data_h2o_test <- as.h2o(data_test)
+          else if(input$checkbox_time_series == FALSE){
+            data_h2o_train <- as.h2o(data %>% sample_frac(as.numeric(as.character(gsub("%","",input$percentage_selector)))*0.01))
+            data_h2o_test <- as.h2o(data %>% anti_join(data_train))
+          
+          }
           
           
           # Calculation of glm predictions and associated calculation time
@@ -1291,6 +1283,24 @@ shinyML_regression <- function(data = data,y,date_column, share_app = FALSE,port
       })
       
       
+      # Send a warning if user clicks on "Time series" option and no date or Posixct date column exists on input data frame 
+      observeEvent(input$checkbox_time_series,{
+        
+        if (input$checkbox_time_series == TRUE & length(dates_variable_list()) == 0){
+          
+          
+          sendSweetAlert(
+            session = session,
+            title = "No Date or Posixct column has been detected on input data frame !",
+            text = "Click ok to go back",
+            type = "warning"
+            
+            
+          )
+        }
+      })
+      
+      
       # Hide tabs of results_models tabItem when no model has been runed 
       observe({
         
@@ -1363,7 +1373,7 @@ shinyML_regression <- function(data = data,y,date_column, share_app = FALSE,port
           # description = "Since yesterday", 
           icon = icon("server"), 
           icon_background = "yellow",
-          background_color = "red"
+          background_color = "lightblue"
         )
         
       })
@@ -1379,7 +1389,7 @@ shinyML_regression <- function(data = data,y,date_column, share_app = FALSE,port
           # description = "Since yesterday", 
           icon = icon("microchip"), 
           icon_background = "yellow",
-          background_color = "green"
+          background_color = "lightblue"
         )
         
       })
