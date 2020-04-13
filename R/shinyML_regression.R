@@ -1020,25 +1020,6 @@ shinyML_regression <- function(data = data,y,date_column, share_app = FALSE,port
       })
       
       
-      # Define output chart comparing predicted vs real values on test period for selected model(s)
-      output$output_curve <- renderDygraph({
-        
-        
-        output_dygraph <- dygraph(data = table_forecast()[['results']],main = "Prediction results on test period") %>%
-          dyAxis("y",valueRange = c(0,1.5 * max(eval(parse(text =paste0("table_forecast()[['results']]$",y)))))) %>%
-          dyOptions(animatedZooms = TRUE,fillGraph = T)
-        
-  
-        # chart can be displayed with bar or line mode
-        if (input$bar_chart_mode == TRUE){
-          output_dygraph <- output_dygraph %>% dyBarChart()
-        }
-        
-        output_dygraph %>% dyLegend(width = 800)
-        
-      })
-      
-      
       # Define the table of predicted data
       # If "Run all models!" button is clicked, prediction results on test period are stored in four additional columns
       table_forecast <- reactive({
@@ -1055,8 +1036,14 @@ shinyML_regression <- function(data = data,y,date_column, share_app = FALSE,port
           
           req(!is.null(input$percentage_selector))
 
+          data_train <- data %>% sample_frac(as.numeric(as.character(gsub("%","",input$percentage_selector)))*0.01)
+          data_test <- data %>% anti_join(data_train)
+          data_results <- data_test
           
-          #data_results <- sample_n(data,as.numeric(as.character(gsub("%","",input$percentage_selector)))*0.01*nrow(data))
+          data_h2o_train <- as.h2o(data_train)
+          data_h2o_test <- as.h2o(data_test)
+          
+          
           
          
         }
@@ -1077,12 +1064,6 @@ shinyML_regression <- function(data = data,y,date_column, share_app = FALSE,port
           if (input$checkbox_time_series == TRUE){
             data_h2o_train <- as.h2o(eval(parse(text = paste0("data[",dates_variable_list(),"<='",test_1$date,"',][",dates_variable_list(),">='",train_1$date,"',]"))))
             data_h2o_test <- as.h2o(eval(parse(text = paste0("data[",dates_variable_list(),">'",test_1$date,"',][",dates_variable_list(),"< '",test_2$date,"',]"))))
-          
-          }
-          
-          else if(input$checkbox_time_series == FALSE){
-            data_h2o_train <- as.h2o(data %>% sample_frac(as.numeric(as.character(gsub("%","",input$percentage_selector)))*0.01))
-            data_h2o_test <- as.h2o(data %>% anti_join(data_train))
           
           }
           
@@ -1211,21 +1192,78 @@ shinyML_regression <- function(data = data,y,date_column, share_app = FALSE,port
         
         table_training_time <- rbind(time_gbm,time_random_forest,time_glm,time_neural_network,time_auto_ml)
         table_importance <- rbind(importance_gbm,importance_random_forest,importance_neural_network) %>% as.data.table()
-        #browser()
+
         # Used a list to access to different tables from only on one reactive objet
         list(traning_time = table_training_time, table_importance = table_importance, results = table_results,auto_ml_model = dl_auto_ml)
         
         
       })
       
+      # Define output chart comparing predicted vs real values on test period for selected model(s)
+      output$output_curve <- renderDygraph({
+        
+        
+        req(!is.null(input$checkbox_time_series))
+        
+        if (input$checkbox_time_series == TRUE){
+          
+          data_output_curve <- table_forecast()[['results']]
+          
+        }
+        
+        else if (input$checkbox_time_series == FALSE){
+          
+
+          data_output_curve <- table_forecast()[['results']] %>% 
+            select(-c(setdiff(colnames(data),y))) %>% 
+            mutate(Counter = row_number()) %>% 
+            select(Counter,everything())
+          
+          
+        }
+          
+        output_dygraph <- dygraph(data = data_output_curve ,main = "Prediction results on test period") %>%
+          dyAxis("x",valueRange = c(0,nrow(data))) %>% 
+          dyAxis("y",valueRange = c(0,1.5 * max(eval(parse(text =paste0("table_forecast()[['results']]$",y)))))) %>%
+          dyOptions(animatedZooms = TRUE,fillGraph = T)
+        
+        
+        
+        # chart can be displayed with bar or line mode
+        if (input$bar_chart_mode == TRUE){
+          output_dygraph <- output_dygraph %>% dyBarChart()
+        }
+        
+        output_dygraph %>% dyLegend(width = 800)
+        
+      })
+      
       # Define performance table visible on "Compare models performances" tab
       output$score_table <- renderDT({
         
-        performance_table <-  table_forecast()[['results']] %>%
-          gather(key = Model,value = Predicted_value,-date_column,-y) %>%
-          group_by(Model) %>%
-          summarise(`MAPE(%)` = round(100 * mean(abs((Predicted_value - eval(parse(text = y)))/eval(parse(text = y))),na.rm = TRUE),1),
-                    RMSE = round(sqrt(mean((Predicted_value - eval(parse(text = y)))**2)),0))
+        req(!is.null(input$checkbox_time_series))
+        
+        if (input$checkbox_time_series == TRUE){
+          
+          
+          performance_table <-  table_forecast()[['results']] %>%
+            gather(key = Model,value = Predicted_value,-date_column,-y) %>%
+            as.data.table()
+        }
+
+        else if (input$checkbox_time_series == FALSE){
+          
+          performance_table <-  table_forecast()[['results']] %>%
+            select(-c(setdiff(colnames(data),y))) %>% 
+            gather(key = Model,value = Predicted_value,-y) %>%
+            as.data.table()
+        }
+          
+          performance_table <- performance_table %>% 
+            group_by(Model) %>%
+            summarise(`MAPE(%)` = round(100 * mean(abs((Predicted_value - eval(parse(text = y)))/eval(parse(text = y))),na.rm = TRUE),1),
+                      RMSE = round(sqrt(mean((Predicted_value - eval(parse(text = y)))**2)),0))
+        
         
         if (nrow(table_forecast()[['traning_time']]) != 0){
           performance_table <- performance_table %>% merge(.,table_forecast()[['traning_time']],by = "Model")
