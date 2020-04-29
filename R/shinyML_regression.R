@@ -554,8 +554,10 @@ shinyML_regression <- function(data = data,y,date_column, share_app = FALSE,port
                       tabName = "Result charts on test period",
                       active = TRUE,
                       withSpinner(dygraphOutput("output_curve", height = 200, width = 1100)),
-                      materialSwitch(inputId = "bar_chart_mode",label = "Bar chart mode",status = "primary",value = TRUE)
-                      
+                      br(),
+                      div(align = "center",
+                      switchInput(label = "Bar chart mode",inputId = "bar_chart_mode",value = TRUE)
+                      )
                     ),
                     argonTab(
                       tabName = "Compare models performances",
@@ -1389,7 +1391,7 @@ shinyML_regression <- function(data = data,y,date_column, share_app = FALSE,port
           
           # The message box indicates best model family and all associated hyper-parameter values
           sendSweetAlert(
-            session = session,width = "800px",
+            session = session,
             title = "Auto ML algorithm succeed!",
             text = HTML(paste0(
               "<br>",
