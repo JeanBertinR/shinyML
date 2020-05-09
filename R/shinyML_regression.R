@@ -1,6 +1,7 @@
 library(data.table)
 library(shiny)
-library(shinydashboard)
+library(argonDash)
+library(argonR)
 library(plotly)
 library(dygraphs)
 library(h2o)
@@ -19,7 +20,7 @@ library(sparklyr)
 #' 
 #' @param y the numerical output variable to forecast (must correpond to one data column)
 #' 
-#' @param date_column the name of time-based column ( must correspond to one data column). Must correspond to Date or POSIXct format. 
+#' @param framework the machine learning framework choosed to train and test models (either h2o or Spark). h2o by default.
 #' 
 #' @param share_app a logical value indicating whether the app must be shared on local LAN 
 #' 
@@ -31,9 +32,9 @@ library(sparklyr)
 #'\dontrun{
 #' library(shinyML)
 #' longley2 <- longley %>% mutate(Year = as.Date(as.character(Year),format = "%Y"))
-#' shiny_h2o(data =longley2,y = "GNP",date_column = "Year",share_app = FALSE)
+#' shiny_h2o(data =longley2,y = "GNP",share_app = FALSE)
 #'}
-#' @import shiny shinydashboard dygraphs data.table ggplot2 shinycssloaders
+#' @import shiny argonDash argonR dygraphs data.table ggplot2 shinycssloaders
 #' @importFrom dplyr %>% select mutate group_by summarise arrange rename select_if
 #' @importFrom tidyr gather
 #' @importFrom DT renderDT DTOutput datatable
@@ -67,12 +68,14 @@ library(argonDash)
 longley2 <- longley %>% mutate(Year = as.Date(as.character(Year),format = "%Y"))
 
 
-shinyML_regression <- function(data = data,y,date_column, share_app = FALSE,port = NULL){
+shinyML_regression <- function(data = data,y,framework = "h2o", share_app = FALSE,port = NULL){
   
+  if(!(framework %in% c("h2o","spark"))){stop("framework must be selected between h2o or spark")}
   
+  if(framework == "h2o"){
   
   # Convert input data must be a data table object
-  data <- data.table(data)
+  data <- data.table(data) 
   
   # Run h2o instance (might require to unset proxy authentification credentials )
   Sys.setenv(http_proxy="")
@@ -102,27 +105,14 @@ shinyML_regression <- function(data = data,y,date_column, share_app = FALSE,port
   # Assign x as data colnames excepted output variable name 
   x <- setdiff(colnames(data),y)
   
-  
-  
-  # # Test if date_column is in data colnames
-  # if (!(date_column %in% colnames(data))){
-  #   stop("date_column must match one data input variable")
-  # }
-  
-  
   # Test if input data does not exceed one million rows
   if (nrow(data) > 1000000) {
     stop("Input dataset must not exceed one million rows")
   }
   
-  
   # Initialize all variables
   model <- reactiveValues()
   train_1 <- reactiveValues()
-  
-  # By default, start date and stop dates for test period correspond to mean and max of values of date_colum
-  # test_1 <- reactiveValues(date = eval(parse(text = paste0("mean(data$",date_column,")"))))
-  # test_2 <- reactiveValues(date = eval(parse(text = paste0("max(data$",date_column,")"))))
   
   # Will be used to activate all models calculation when the user click to "Run tuned model" button
   v_neural <- reactiveValues(type_model = NA)
@@ -654,12 +644,21 @@ shinyML_regression <- function(data = data,y,date_column, share_app = FALSE,port
       
       # Initialize all variables
       model <- reactiveValues()
-      train_1 <- reactiveValues()
+      # train_1 <- reactiveValues()
+      # 
+      # # By default, start date and stop dates for test period correspond to mean and max of values of the date column
+
+      test_1 <- reactiveValues() 
+      test_2 <- reactiveValues()
       
-      # By default, start date and stop dates for test period correspond to mean and max of values of date_colum
-      test_1 <- reactiveValues(date = eval(parse(text = paste0("mean(data$",date_column,")"))))
-      test_2 <- reactiveValues(date = eval(parse(text = paste0("max(data$",date_column,")"))))
+      observe({
+        req(!is.null(input$time_serie_select_column))
+        test_1$date <-  eval(parse(text = paste0("mean(as.Date(data$",input$time_serie_select_column,"))")))
+        test_2$date <-  eval(parse(text = paste0("max(as.Date(data$",input$time_serie_select_column,"))")))
+        
+        }) 
       
+    
       # Will be used to activate all models calculation when the user click to "Run tuned model" button
       v_neural <- reactiveValues(type_model = NA)
       v_grad <- reactiveValues(type_model = NA)
@@ -891,12 +890,13 @@ shinyML_regression <- function(data = data,y,date_column, share_app = FALSE,port
       output$slider_time_series_train <- renderUI({
         
         req(!is.null(input$checkbox_time_series))
+        req(!is.null(input$time_serie_select_column))
         
         if (input$checkbox_time_series == TRUE){
           sliderInput("train_selector", "Choose train period:",
-                      min = eval(parse(text = paste0("min(data$",date_column,")"))),
-                      max = eval(parse(text = paste0("max(data$",date_column,")"))),
-                      value =  eval(parse(text = paste0("c(min(data$",date_column,"),mean(data$",date_column,"))"))))
+                      min = eval(parse(text = paste0("min(data$",input$time_serie_select_column,")"))),
+                      max = eval(parse(text = paste0("max(data$",input$time_serie_select_column,")"))),
+                      value =  eval(parse(text = paste0("c(min(data$",input$time_serie_select_column,"),mean(data$",input$time_serie_select_column,"))"))))
         }
       })
       
@@ -904,12 +904,13 @@ shinyML_regression <- function(data = data,y,date_column, share_app = FALSE,port
       output$slider_time_series_test <- renderUI({
         
         req(!is.null(input$checkbox_time_series))
+        req(!is.null(input$time_serie_select_column))
         
         if (input$checkbox_time_series == TRUE){
           sliderInput("test_selector", "Choose test period:",
-                    min = eval(parse(text = paste0("min(data$",date_column,")"))),
-                    max = eval(parse(text = paste0("max(data$",date_column,")"))),
-                    value = eval(parse(text = paste0("c(mean(data$",date_column,"),max(data$",date_column,"))"))))
+                    min = eval(parse(text = paste0("min(data$",input$time_serie_select_column,")"))),
+                    max = eval(parse(text = paste0("max(data$",input$time_serie_select_column,")"))),
+                    value = eval(parse(text = paste0("c(mean(data$",input$time_serie_select_column,"),max(data$",input$time_serie_select_column,"))"))))
         }
         
       })
@@ -956,8 +957,10 @@ shinyML_regression <- function(data = data,y,date_column, share_app = FALSE,port
         req(!is.null(input$checkbox_time_series))
         
         if (input$checkbox_time_series == TRUE){
-          selected_column <- date_column
+          req(!is.null(input$time_serie_select_column))
+          selected_column <- input$time_serie_select_column        
         }
+        
         else {selected_column <- colnames(data)[1]}
         
         selectInput(inputId = "x_variable_input_curve",label = "X-axis variable",choices = colnames(data),selected = selected_column)
@@ -1028,8 +1031,8 @@ shinyML_regression <- function(data = data,y,date_column, share_app = FALSE,port
         
         # Make sure a value is set to checkbox_time_series checkbox 
         req(!is.null(input$checkbox_time_series))
-       
         if (input$checkbox_time_series == TRUE){
+          req(!is.null(test_1$date))
           data_results <- eval(parse(text = paste0("data[,.(",dates_variable_list(),",",y,")][",dates_variable_list(),">'",test_1$date,"',][",dates_variable_list(),"< '",test_2$date,"',]")))
         }
      
@@ -1247,10 +1250,11 @@ shinyML_regression <- function(data = data,y,date_column, share_app = FALSE,port
         
         if (input$checkbox_time_series == TRUE){
           
+          req(!is.null(input$time_serie_select_column))
           
-          performance_table <-  table_forecast()[['results']] %>%
-            gather(key = Model,value = Predicted_value,-date_column,-y) %>%
-            as.data.table()
+          performance_table <-  eval(parse(text = paste0("table_forecast()[['results']] %>% 
+                                                         gather(key = Model,value = Predicted_value,-",input$time_serie_select_column,",-y) %>% 
+                                                         as.data.table()")))
         }
 
         else if (input$checkbox_time_series == FALSE){
@@ -1438,6 +1442,7 @@ shinyML_regression <- function(data = data,y,date_column, share_app = FALSE,port
     }
   )
   
+  }
   
   # Allow to share the dashboard on local LAN
   if (share_app == TRUE){
@@ -1459,7 +1464,7 @@ shinyML_regression <- function(data = data,y,date_column, share_app = FALSE,port
 }
 
 
-shinyML_regression(data = longley2,date_column = "Year",y = "Population",share_app = F)
+shinyML_regression(data = longley2,y = "Population",share_app = F)
 
 
 
