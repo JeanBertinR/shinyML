@@ -351,14 +351,6 @@ shinyML_regression <- function(data = data,y,framework = "h2o", share_app = FALS
   
   server = function(session,input, output) {
     
-    if(framework == "h2o"){
-      
-    }
-    
-    
-    else if(framework == "spark"){
-    
-    
     # Initialize all variables
     model <- reactiveValues()
     
@@ -376,10 +368,11 @@ shinyML_regression <- function(data = data,y,framework = "h2o", share_app = FALS
     
     
     # Will be used to activate all models calculation when the user click to "Run tuned model" button
-    v_neural <- reactiveValues(type_model = NA)
     v_grad <- reactiveValues(type_model = NA)
     v_glm <- reactiveValues(type_model = NA)
     v_random <- reactiveValues(type_model = NA)
+    v_decision_tree <- reactiveValues(type_model = NA)
+    v_neural <- reactiveValues(type_model = NA)
     v_auto_ml <- reactiveValues(type_model = NA)
     
     parameter <- reactiveValues()
@@ -388,13 +381,11 @@ shinyML_regression <- function(data = data,y,framework = "h2o", share_app = FALS
     time_gbm <- data.table()
     time_random_forest <- data.table()
     time_glm <- data.table()
-    time_neural_network <- data.table()
-    time_auto_ml <- data.table()
+
     
     # Intitalization of variables importances per model (not available for generalized linear regression)
     importance_gbm <- data.table()
     importance_random_forest <- data.table()
-    importance_neural_network <- data.table()
     
     scaled_importance <- NULL
     variable <- NULL
@@ -404,50 +395,7 @@ shinyML_regression <- function(data = data,y,framework = "h2o", share_app = FALS
     `MAPE(%)` <- NULL
     
     
-    # Make all parameters correspond to cursors and radiobuttons choices when user click on "Run tuned models!" button
-    observeEvent(input$train_all,{
-      
-      train_1$date <- input$train_selector[1]
-      test_1$date <- input$test_selector[1]
-      test_2$date <- input$test_selector[2]
-      
-      model$train_variables <- input$input_variables
-      
-      v_neural$type_model <- "ml_neural_network"
-      v_grad$type_model <- "ml_gradient_boosted_trees"
-      v_glm$type_model <- "ml_generalized_linear_regression"
-      v_random$type_model <- "ml_random_forest"
-      v_auto_ml$type_model <- NA
-      
-      parameter$family_glm <- input$glm_family
-      parameter$glm_link <- input$glm_link
-      parameter$intercept_term_glm <- input$intercept_term_glm
-      parameter$reg_param_glm <- input$reg_param_glm
-      parameter$alpha_param_glm <- input$alpha_param_glm
-      parameter$max_iter_glm <- input$max_iter_glm
-      
-      
-      parameter$num_tree_random_forest <- input$num_tree_random_forest
-      parameter$subsampling_rate_random_forest <- input$subsampling_rate_random_forest
-      parameter$max_depth_random_forest <-  input$max_depth_random_forest
-      parameter$n_bins_random_forest <- input$n_bins_random_forest
-      
-      parameter$sample_rate_gbm <- input$sample_rate_gbm
-      parameter$n_trees_gbm <- input$n_trees_gbm
-      parameter$max_depth_gbm <- input$max_depth_gbm
-      parameter$learn_rate_gbm <- input$learn_rate_gbm
-      
-      parameter$hidden_neural_net <- input$hidden_neural_net
-      parameter$epochs_neural_net <- input$epochs_neural_net
-      parameter$activation_neural_net <- input$activation_neural_net
-      parameter$loss_neural_net <- input$loss_neural_net
-      parameter$rate_neural_net <- input$rate_neural_net
-      
-      showTab(inputId = "results_models", target = "Compare models performances")
-      showTab(inputId = "results_models", target = "Feature importance")
-      showTab(inputId = "results_models", target = "Table of results")        
-      
-    })
+
     
     # Make glm parameters correspond to cursors and radiobuttons choices when user click on "Run generalized linear regression" button (and disable other models)
     observeEvent(input$run_glm,{
@@ -459,6 +407,7 @@ shinyML_regression <- function(data = data,y,framework = "h2o", share_app = FALS
       v_grad$type_model <- NA
       v_neural$type_model <- NA
       v_random$type_model <- NA
+      v_decision_tree$type_model <- NA
       v_auto_ml$type_model <- NA
       
       v_glm$type_model <- "ml_generalized_linear_regression"
@@ -489,6 +438,8 @@ shinyML_regression <- function(data = data,y,framework = "h2o", share_app = FALS
       v_neural$type_model <- NA
       v_glm$type_model <- NA
       v_auto_ml$type_model <- NA
+      v_decision_tree$type_model <- NA
+      
       
       v_random$type_model <- "ml_random_forest"
       
@@ -502,35 +453,8 @@ shinyML_regression <- function(data = data,y,framework = "h2o", share_app = FALS
       showTab(inputId = "results_models", target = "Feature importance")
       showTab(inputId = "results_models", target = "Table of results")
       
-      
     })
     
-    
-    # Make neural network parameters correspond to cursors and radiobuttons choices when user click on "Run neural network regression" button (and disable other models)
-    observeEvent(input$run_neural_network,{
-      
-      train_1$date <- input$train_selector[1]
-      test_1$date <- input$test_selector[1]
-      test_2$date <- input$test_selector[2]
-      model$train_variables <- input$input_variables
-      
-      v_neural$type_model <- "ml_neural_network"
-      v_grad$type_model <- NA
-      v_glm$type_model <- NA
-      v_random$type_model <- NA
-      v_auto_ml$type_model <- NA
-      
-      parameter$hidden_neural_net <- input$hidden_neural_net
-      parameter$epochs_neural_net <- input$epochs_neural_net
-      parameter$activation_neural_net <- input$activation_neural_net
-      parameter$loss_neural_net <- input$loss_neural_net
-      parameter$rate_neural_net <- input$rate_neural_net
-      
-      showTab(inputId = "results_models", target = "Compare models performances")
-      showTab(inputId = "results_models", target = "Feature importance")
-      showTab(inputId = "results_models", target = "Table of results")
-      
-    })
     
     # Make gradient boosting parameters correspond to cursors when user click on "Run gradient boosting model" button (and disable other models)
     observeEvent(input$run_gradient_boosting,{
@@ -544,39 +468,22 @@ shinyML_regression <- function(data = data,y,framework = "h2o", share_app = FALS
       v_glm$type_model <- NA
       v_random$type_model <- NA
       v_auto_ml$type_model <- NA
+      v_decision_tree$type_model <- NA
+      
       
       parameter$sample_rate_gbm <- input$sample_rate_gbm
       parameter$n_trees_gbm <- input$n_trees_gbm
       parameter$max_depth_gbm <- input$max_depth_gbm
       parameter$learn_rate_gbm <- input$learn_rate_gbm
+      parameter$step_size_gbm <- input$step_size_gbm
+      parameter$subsampling_rate_gbm <- input$subsampling_rate_gbm
+      
       
       showTab(inputId = "results_models", target = "Compare models performances")
       showTab(inputId = "results_models", target = "Feature importance")
       showTab(inputId = "results_models", target = "Table of results")
       
-    })
     
-    
-    
-    observeEvent(input$run_auto_ml,{
-      
-      train_1$date <- input$train_selector[1]
-      test_1$date <- input$test_selector[1]
-      test_2$date <- input$test_selector[2]
-      model$train_variables <- input$input_variables
-      
-      v_grad$type_model <- NA
-      v_neural$type_model <- NA
-      v_glm$type_model <- NA
-      v_random$type_model <- NA
-      v_auto_ml$type_model <- "ml_auto"
-      
-      parameter$run_time_auto_ml <-  input$run_time_auto_ml
-      hideTab(inputId = "results_models", target = "Feature importance")
-      showTab(inputId = "results_models", target = "Compare models performances")
-      showTab(inputId = "results_models", target = "Table of results")
-      
-      
     })
     
     dates_variable_list <- reactive({
@@ -588,8 +495,7 @@ shinyML_regression <- function(data = data,y,framework = "h2o", share_app = FALS
       }
       dates_columns_list
     })
-    
-    
+  
     output$Time_series_checkbox <- renderUI({
       if (length(dates_variable_list()) >= 1){value = TRUE}
       else{value = FALSE}
@@ -597,8 +503,6 @@ shinyML_regression <- function(data = data,y,framework = "h2o", share_app = FALS
       awesomeCheckbox("checkbox_time_series", "Time series",status = "primary",value = value)
       
     })
-    
-    
     
     output$slider_time_series_train <- renderUI({
       
@@ -612,7 +516,6 @@ shinyML_regression <- function(data = data,y,framework = "h2o", share_app = FALS
                     value =  eval(parse(text = paste0("c(min(data$",input$time_serie_select_column,"),mean(data$",input$time_serie_select_column,"))"))))
       }
     })
-    
     
     output$slider_time_series_test <- renderUI({
       
@@ -673,8 +576,6 @@ shinyML_regression <- function(data = data,y,framework = "h2o", share_app = FALS
       selectInput(inputId = "x_variable_input_curve",label = "X-axis variable",choices = colnames(data),selected = selected_column)
     })
     
-    
-    
     # Define input data summary with class of each variable 
     output$variables_class_input <- renderDT({
       table_classes <- data.table()
@@ -708,11 +609,6 @@ shinyML_regression <- function(data = data,y,framework = "h2o", share_app = FALS
       
     })
     
-    
-    
-    
-    
-    
     # Define plotly chart to explore dependencies between variables 
     output$explore_dataset_chart <- renderPlotly({
       
@@ -729,182 +625,6 @@ shinyML_regression <- function(data = data,y,framework = "h2o", share_app = FALS
       
       data_correlation <- as.matrix(select_if(data, is.numeric))
       plot_ly(x = colnames(data_correlation) , y = colnames(data_correlation), z =cor(data_correlation)  ,type = "heatmap", source = "heatplot")
-    })
-    
-    
-    # Define the table of predicted data
-    # If "Run all models!" button is clicked, prediction results on test period are stored in four additional columns
-    table_forecast <- reactive({
-      
-      # Make sure a value is set to checkbox_time_series checkbox 
-      req(!is.null(input$checkbox_time_series))
-      if (input$checkbox_time_series == TRUE){
-        req(!is.null(test_1$date))
-        data_results <- eval(parse(text = paste0("data[,.(",dates_variable_list(),",",y,")][",dates_variable_list(),">'",test_1$date,"',][",dates_variable_list(),"< '",test_2$date,"',]")))
-      }
-      
-      else if (input$checkbox_time_series == FALSE){
-        
-        
-        req(!is.null(input$percentage_selector))
-        
-        data_train <- data %>% sample_frac(as.numeric(as.character(gsub("%","",input$percentage_selector)))*0.01)
-        data_test <- data %>% anti_join(data_train)
-        data_results <- data_test
-        
-        data_h2o_train <- as.h2o(data_train)
-        data_h2o_test <- as.h2o(data_test)
-      }
-      
-      
-      table_results <- data_results
-      dl_auto_ml <- NA
-      var_input_list <- c()
-      for (i in 1:length(model$train_variables)){
-        var_input_list <- c(var_input_list,model$train_variables[i])
-        
-      }
-      
-      
-      # Verify that at least one explanatory variable is selected
-      if (length(var_input_list) != 0){
-        
-        if (input$checkbox_time_series == TRUE){
-          data_h2o_train <- as.h2o(eval(parse(text = paste0("data[",dates_variable_list(),"<='",test_1$date,"',][",dates_variable_list(),">='",train_1$date,"',]"))))
-          data_h2o_test <- as.h2o(eval(parse(text = paste0("data[",dates_variable_list(),">'",test_1$date,"',][",dates_variable_list(),"< '",test_2$date,"',]"))))
-          
-        }
-        
-        
-        # Calculation of glm predictions and associated calculation time
-        if (!is.na(v_glm$type_model) & v_glm$type_model == "ml_generalized_linear_regression"){
-          
-          t1 <- Sys.time()
-          dl_fit1 <- h2o.glm(x = as.character(var_input_list),
-                             y = y,
-                             training_frame = data_h2o_train,
-                             family = parameter$family_glm,
-                             link = parameter$glm_link,
-                             intercept = parameter$intercept_term_glm,
-                             lambda = parameter$reg_param_glm,
-                             alpha = parameter$alpha_param_glm,
-                             max_iterations = parameter$max_iter_glm,
-                             seed = 1
-          )
-          t2 <- Sys.time()
-          time_glm <- data.frame(`Training time` =  paste0(round(t2 - t1,1)," seconds"), Model = "Generalized linear regression")
-          table_glm <- h2o.predict(dl_fit1,data_h2o_test) %>% as.data.table() %>% mutate(predict = round(predict,3)) %>% rename(`Generalized linear regression` = predict)
-          table_results <- cbind(data_results,table_glm)%>% as.data.table()
-          
-        }
-        
-        # Calculation of random forest predictions and associated calculation time
-        if (!is.na(v_random$type_model) & v_random$type_model == "ml_random_forest"){
-          
-          
-          
-          t1 <- Sys.time()
-          dl_fit1 <- h2o.randomForest(x = as.character(var_input_list),
-                                      y = y,
-                                      training_frame = data_h2o_train,
-                                      ntrees = parameter$num_tree_random_forest,
-                                      sample_rate = parameter$subsampling_rate_random_forest,
-                                      max_depth = parameter$max_depth_random_forest,
-                                      nbins = parameter$n_bins_random_forest,
-                                      seed = 1
-          )
-          t2 <- Sys.time()
-          time_random_forest <- data.frame(`Training time` =  paste0(round(t2 - t1,1)," seconds"), Model = "Random forest")
-          importance_random_forest <- h2o.varimp(dl_fit1) %>% as.data.table() %>% select(`variable`,scaled_importance) %>% mutate(model = "Random forest")
-          table_random_forest<- h2o.predict(dl_fit1,data_h2o_test) %>% as.data.table() %>% mutate(predict = round(predict,3))  %>% rename(`Random forest` = predict)
-          table_results <- cbind(data_results,table_random_forest)%>% as.data.table()
-          
-        }
-        
-        # Calculation of neural network predictions and associated calculation time
-        if (!is.na(v_neural$type_model) & v_neural$type_model == "ml_neural_network"){
-          
-          t1 <- Sys.time()
-          dl_fit1 <- h2o.deeplearning(x = as.character(var_input_list),
-                                      y = y,
-                                      training_frame = data_h2o_train,
-                                      activation = parameter$activation_neural_net,
-                                      loss = parameter$loss_neural_net,
-                                      hidden = eval(parse(text = parameter$hidden_neural_net)) ,
-                                      epochs = parameter$epochs_neural_net,
-                                      rate = parameter$rate_neural_net,
-                                      reproducible = T,
-                                      seed = 1
-          )
-          t2 <- Sys.time()
-          
-          time_neural_network <- data.frame(`Training time` =  paste0(round(t2 - t1,1)," seconds"), Model = "Neural network")
-          importance_neural_network <- h2o.varimp(dl_fit1) %>% as.data.table() %>% select(`variable`,scaled_importance) %>% mutate(model = "Neural network")
-          table_neural_network <- h2o.predict(dl_fit1,data_h2o_test) %>% as.data.table() %>% mutate(predict = round(predict,3)) %>% rename(`Neural network` = predict)
-          table_results <- cbind(data_results,table_neural_network)%>% as.data.table()
-          
-        }
-        
-        # Calculation of gradient boosted trees predictions and associated calculation time
-        if (!is.na(v_grad$type_model) & v_grad$type_model == "ml_gradient_boosted_trees"){
-          
-          t1 <- Sys.time()
-          dl_fit1 <- h2o.gbm(x = as.character(var_input_list),
-                             y = y,
-                             training_frame = data_h2o_train,
-                             sample_rate = parameter$sample_rate_gbm,
-                             ntrees = parameter$n_trees_gbm,
-                             max_depth = parameter$max_depth_gbm,
-                             learn_rate = parameter$learn_rate_gbm,
-                             min_rows = 2,
-                             seed = 1
-          )
-          t2 <- Sys.time()
-          time_gbm <- data.frame(`Training time` =  paste0(round(t2 - t1,1)," seconds"), Model = "Gradient boosted trees")
-          importance_gbm <- h2o.varimp(dl_fit1) %>% as.data.table() %>% select(`variable`,scaled_importance) %>% mutate(model = "Gradient boosted trees")
-          table_gradient_boosting <- h2o.predict(dl_fit1,data_h2o_test) %>% as.data.table() %>% mutate(predict = round(predict,3)) %>% rename(`Gradient boosted trees` = predict)
-          table_results <- cbind(data_results,table_gradient_boosting)%>% as.data.table()
-          
-        }
-        
-        
-        
-        # Calculation of autoML predictions (max calculation time has been set to 60 seconds)
-        if (!is.na(v_auto_ml$type_model) & v_auto_ml$type_model == "ml_auto"){
-          
-          
-          
-          dl_auto_ml <- h2o.automl(x = as.character(var_input_list),
-                                   y = y,
-                                   training_frame = data_h2o_train,
-                                   max_runtime_secs = parameter$run_time_auto_ml,
-                                   seed = 1
-                                   
-          )
-          
-          
-          
-          time_auto_ml <- data.frame(`Training time` =  paste0(parameter$run_time_auto_ml," seconds"), Model = "Auto ML")
-          table_auto_ml<- h2o.predict(dl_auto_ml,data_h2o_test) %>% as.data.table() %>% mutate(predict = round(predict,3))  %>% rename(`Auto ML` = predict)
-          table_results <- cbind(data_results,table_auto_ml)%>% as.data.table()
-          
-        }
-        
-        # Assembly results of all models (some column might remain empty)
-        if (!is.na(v_neural$type_model) & !is.na(v_grad$type_model) & !is.na(v_glm$type_model) & !is.na(v_random$type_model)){
-          
-          table_results <- cbind(data_results,table_glm,table_random_forest,table_neural_network,table_gradient_boosting)%>% as.data.table()
-        }
-        
-      }
-      
-      table_training_time <- rbind(time_gbm,time_random_forest,time_glm,time_neural_network,time_auto_ml)
-      table_importance <- rbind(importance_gbm,importance_random_forest,importance_neural_network) %>% as.data.table()
-      
-      # Used a list to access to different tables from only on one reactive objet
-      list(traning_time = table_training_time, table_importance = table_importance, results = table_results,auto_ml_model = dl_auto_ml)
-      
-      
     })
     
     # Define output chart comparing predicted vs real values on test period for selected model(s)
@@ -1015,9 +735,7 @@ shinyML_regression <- function(data = data,y,framework = "h2o", share_app = FALS
       
       
     },server = FALSE)
-    
-    
-    
+ 
     # Synchronize train and test cursors
     observeEvent(input$train_selector,{
       updateSliderInput(session,'test_selector',
@@ -1028,8 +746,7 @@ shinyML_regression <- function(data = data,y,framework = "h2o", share_app = FALS
       updateSliderInput(session,'train_selector',
                         value= c(input$train_selector[1],input$test_selector[1]) )
     })
-    
-    
+
     # Send a warning if user clicks on "Time series" option and no date or Posixct date column exists on input data frame 
     observeEvent(input$checkbox_time_series,{
       
@@ -1047,6 +764,564 @@ shinyML_regression <- function(data = data,y,framework = "h2o", share_app = FALS
       }
     })
     
+    
+    
+    if(framework == "h2o"){
+  
+    time_neural_network <- data.table()
+    time_auto_ml <- data.table()
+      
+    importance_neural_network <- data.table()
+  
+    # Make all parameters correspond to cursors and radiobuttons choices when user click on "Run tuned models!" button
+    observeEvent(input$train_all,{
+      
+      train_1$date <- input$train_selector[1]
+      test_1$date <- input$test_selector[1]
+      test_2$date <- input$test_selector[2]
+      
+      model$train_variables <- input$input_variables
+      
+      v_neural$type_model <- "ml_neural_network"
+      v_grad$type_model <- "ml_gradient_boosted_trees"
+      v_glm$type_model <- "ml_generalized_linear_regression"
+      v_random$type_model <- "ml_random_forest"
+      v_auto_ml$type_model <- NA
+      
+      parameter$family_glm <- input$glm_family
+      parameter$glm_link <- input$glm_link
+      parameter$intercept_term_glm <- input$intercept_term_glm
+      parameter$reg_param_glm <- input$reg_param_glm
+      parameter$alpha_param_glm <- input$alpha_param_glm
+      parameter$max_iter_glm <- input$max_iter_glm
+      
+      
+      parameter$num_tree_random_forest <- input$num_tree_random_forest
+      parameter$subsampling_rate_random_forest <- input$subsampling_rate_random_forest
+      parameter$max_depth_random_forest <-  input$max_depth_random_forest
+      parameter$n_bins_random_forest <- input$n_bins_random_forest
+      
+      parameter$sample_rate_gbm <- input$sample_rate_gbm
+      parameter$n_trees_gbm <- input$n_trees_gbm
+      parameter$max_depth_gbm <- input$max_depth_gbm
+      parameter$learn_rate_gbm <- input$learn_rate_gbm
+      
+      parameter$hidden_neural_net <- input$hidden_neural_net
+      parameter$epochs_neural_net <- input$epochs_neural_net
+      parameter$activation_neural_net <- input$activation_neural_net
+      parameter$loss_neural_net <- input$loss_neural_net
+      parameter$rate_neural_net <- input$rate_neural_net
+      
+      showTab(inputId = "results_models", target = "Compare models performances")
+      showTab(inputId = "results_models", target = "Feature importance")
+      showTab(inputId = "results_models", target = "Table of results")        
+      
+    })
+    
+    
+     # Make neural network parameters correspond to cursors and radiobuttons choices when user click on "Run neural network regression" button (and disable other models)
+    observeEvent(input$run_neural_network,{
+        
+        train_1$date <- input$train_selector[1]
+        test_1$date <- input$test_selector[1]
+        test_2$date <- input$test_selector[2]
+        model$train_variables <- input$input_variables
+        
+        v_neural$type_model <- "ml_neural_network"
+        v_grad$type_model <- NA
+        v_glm$type_model <- NA
+        v_random$type_model <- NA
+        v_auto_ml$type_model <- NA
+        
+        parameter$hidden_neural_net <- input$hidden_neural_net
+        parameter$epochs_neural_net <- input$epochs_neural_net
+        parameter$activation_neural_net <- input$activation_neural_net
+        parameter$loss_neural_net <- input$loss_neural_net
+        parameter$rate_neural_net <- input$rate_neural_net
+        
+        showTab(inputId = "results_models", target = "Compare models performances")
+        showTab(inputId = "results_models", target = "Feature importance")
+        showTab(inputId = "results_models", target = "Table of results")
+        
+      })
+ 
+    observeEvent(input$run_auto_ml,{
+        
+        train_1$date <- input$train_selector[1]
+        test_1$date <- input$test_selector[1]
+        test_2$date <- input$test_selector[2]
+        model$train_variables <- input$input_variables
+        
+        v_grad$type_model <- NA
+        v_neural$type_model <- NA
+        v_glm$type_model <- NA
+        v_random$type_model <- NA
+        v_auto_ml$type_model <- "ml_auto"
+        
+        parameter$run_time_auto_ml <-  input$run_time_auto_ml
+        hideTab(inputId = "results_models", target = "Feature importance")
+        showTab(inputId = "results_models", target = "Compare models performances")
+        showTab(inputId = "results_models", target = "Table of results")
+        
+        
+      })
+      
+      # Define the table of predicted data
+      # If "Run all models!" button is clicked, prediction results on test period are stored in four additional columns
+      table_forecast <- reactive({
+        
+        # Make sure a value is set to checkbox_time_series checkbox 
+        req(!is.null(input$checkbox_time_series))
+        if (input$checkbox_time_series == TRUE){
+          req(!is.null(test_1$date))
+          data_results <- eval(parse(text = paste0("data[,.(",dates_variable_list(),",",y,")][",dates_variable_list(),">'",test_1$date,"',][",dates_variable_list(),"< '",test_2$date,"',]")))
+        }
+        
+        else if (input$checkbox_time_series == FALSE){
+          
+          
+          req(!is.null(input$percentage_selector))
+          
+          data_train <- data %>% sample_frac(as.numeric(as.character(gsub("%","",input$percentage_selector)))*0.01)
+          data_test <- data %>% anti_join(data_train)
+          data_results <- data_test
+          
+          data_h2o_train <- as.h2o(data_train)
+          data_h2o_test <- as.h2o(data_test)
+        }
+        
+        
+        table_results <- data_results
+        dl_auto_ml <- NA
+        var_input_list <- c()
+        for (i in 1:length(model$train_variables)){
+          var_input_list <- c(var_input_list,model$train_variables[i])
+          
+        }
+        
+        
+        # Verify that at least one explanatory variable is selected
+        if (length(var_input_list) != 0){
+          
+          if (input$checkbox_time_series == TRUE){
+            data_h2o_train <- as.h2o(eval(parse(text = paste0("data[",dates_variable_list(),"<='",test_1$date,"',][",dates_variable_list(),">='",train_1$date,"',]"))))
+            data_h2o_test <- as.h2o(eval(parse(text = paste0("data[",dates_variable_list(),">'",test_1$date,"',][",dates_variable_list(),"< '",test_2$date,"',]"))))
+            
+          }
+          
+          
+          # Calculation of glm predictions and associated calculation time
+          if (!is.na(v_glm$type_model) & v_glm$type_model == "ml_generalized_linear_regression"){
+            
+            t1 <- Sys.time()
+            dl_fit1 <- h2o.glm(x = as.character(var_input_list),
+                               y = y,
+                               training_frame = data_h2o_train,
+                               family = parameter$family_glm,
+                               link = parameter$glm_link,
+                               intercept = parameter$intercept_term_glm,
+                               lambda = parameter$reg_param_glm,
+                               alpha = parameter$alpha_param_glm,
+                               max_iterations = parameter$max_iter_glm,
+                               seed = 1
+            )
+            t2 <- Sys.time()
+            time_glm <- data.frame(`Training time` =  paste0(round(t2 - t1,1)," seconds"), Model = "Generalized linear regression")
+            table_glm <- h2o.predict(dl_fit1,data_h2o_test) %>% as.data.table() %>% mutate(predict = round(predict,3)) %>% rename(`Generalized linear regression` = predict)
+            table_results <- cbind(data_results,table_glm)%>% as.data.table()
+            
+          }
+          
+          # Calculation of random forest predictions and associated calculation time
+          if (!is.na(v_random$type_model) & v_random$type_model == "ml_random_forest"){
+            
+            
+            
+            t1 <- Sys.time()
+            dl_fit1 <- h2o.randomForest(x = as.character(var_input_list),
+                                        y = y,
+                                        training_frame = data_h2o_train,
+                                        ntrees = parameter$num_tree_random_forest,
+                                        sample_rate = parameter$subsampling_rate_random_forest,
+                                        max_depth = parameter$max_depth_random_forest,
+                                        nbins = parameter$n_bins_random_forest,
+                                        seed = 1
+            )
+            t2 <- Sys.time()
+            time_random_forest <- data.frame(`Training time` =  paste0(round(t2 - t1,1)," seconds"), Model = "Random forest")
+            importance_random_forest <- h2o.varimp(dl_fit1) %>% as.data.table() %>% select(`variable`,scaled_importance) %>% mutate(model = "Random forest")
+            table_random_forest<- h2o.predict(dl_fit1,data_h2o_test) %>% as.data.table() %>% mutate(predict = round(predict,3))  %>% rename(`Random forest` = predict)
+            table_results <- cbind(data_results,table_random_forest)%>% as.data.table()
+            
+          }
+          
+          # Calculation of neural network predictions and associated calculation time
+          if (!is.na(v_neural$type_model) & v_neural$type_model == "ml_neural_network"){
+            
+            t1 <- Sys.time()
+            dl_fit1 <- h2o.deeplearning(x = as.character(var_input_list),
+                                        y = y,
+                                        training_frame = data_h2o_train,
+                                        activation = parameter$activation_neural_net,
+                                        loss = parameter$loss_neural_net,
+                                        hidden = eval(parse(text = parameter$hidden_neural_net)) ,
+                                        epochs = parameter$epochs_neural_net,
+                                        rate = parameter$rate_neural_net,
+                                        reproducible = T,
+                                        seed = 1
+            )
+            t2 <- Sys.time()
+            
+            time_neural_network <- data.frame(`Training time` =  paste0(round(t2 - t1,1)," seconds"), Model = "Neural network")
+            importance_neural_network <- h2o.varimp(dl_fit1) %>% as.data.table() %>% select(`variable`,scaled_importance) %>% mutate(model = "Neural network")
+            table_neural_network <- h2o.predict(dl_fit1,data_h2o_test) %>% as.data.table() %>% mutate(predict = round(predict,3)) %>% rename(`Neural network` = predict)
+            table_results <- cbind(data_results,table_neural_network)%>% as.data.table()
+            
+          }
+          
+          # Calculation of gradient boosted trees predictions and associated calculation time
+          if (!is.na(v_grad$type_model) & v_grad$type_model == "ml_gradient_boosted_trees"){
+            
+            t1 <- Sys.time()
+            dl_fit1 <- h2o.gbm(x = as.character(var_input_list),
+                               y = y,
+                               training_frame = data_h2o_train,
+                               sample_rate = parameter$sample_rate_gbm,
+                               ntrees = parameter$n_trees_gbm,
+                               max_depth = parameter$max_depth_gbm,
+                               learn_rate = parameter$learn_rate_gbm,
+                               min_rows = 2,
+                               seed = 1
+            )
+            t2 <- Sys.time()
+            time_gbm <- data.frame(`Training time` =  paste0(round(t2 - t1,1)," seconds"), Model = "Gradient boosted trees")
+            importance_gbm <- h2o.varimp(dl_fit1) %>% as.data.table() %>% select(`variable`,scaled_importance) %>% mutate(model = "Gradient boosted trees")
+            table_gradient_boosting <- h2o.predict(dl_fit1,data_h2o_test) %>% as.data.table() %>% mutate(predict = round(predict,3)) %>% rename(`Gradient boosted trees` = predict)
+            table_results <- cbind(data_results,table_gradient_boosting)%>% as.data.table()
+            
+          }
+          
+          
+          
+          # Calculation of autoML predictions (max calculation time has been set to 60 seconds)
+          if (!is.na(v_auto_ml$type_model) & v_auto_ml$type_model == "ml_auto"){
+            
+            
+            
+            dl_auto_ml <- h2o.automl(x = as.character(var_input_list),
+                                     y = y,
+                                     training_frame = data_h2o_train,
+                                     max_runtime_secs = parameter$run_time_auto_ml,
+                                     seed = 1
+                                     
+            )
+            
+            
+            
+            time_auto_ml <- data.frame(`Training time` =  paste0(parameter$run_time_auto_ml," seconds"), Model = "Auto ML")
+            table_auto_ml<- h2o.predict(dl_auto_ml,data_h2o_test) %>% as.data.table() %>% mutate(predict = round(predict,3))  %>% rename(`Auto ML` = predict)
+            table_results <- cbind(data_results,table_auto_ml)%>% as.data.table()
+            
+          }
+          
+          # Assembly results of all models (some column might remain empty)
+          if (!is.na(v_neural$type_model) & !is.na(v_grad$type_model) & !is.na(v_glm$type_model) & !is.na(v_random$type_model)){
+            
+            table_results <- cbind(data_results,table_glm,table_random_forest,table_neural_network,table_gradient_boosting)%>% as.data.table()
+          }
+          
+        }
+        
+        table_training_time <- rbind(time_gbm,time_random_forest,time_glm,time_neural_network,time_auto_ml)
+        table_importance <- rbind(importance_gbm,importance_random_forest,importance_neural_network) %>% as.data.table()
+        
+        # Used a list to access to different tables from only on one reactive objet
+        list(traning_time = table_training_time, table_importance = table_importance, results = table_results,auto_ml_model = dl_auto_ml)
+        
+        
+      })
+      
+
+      
+      
+      # Hide tabs of results_models tabItem when no model has been runed 
+      observe({
+        
+        if (is.na(v_glm$type_model) & is.na(v_random$type_model) & is.na(v_neural$type_model) & is.na(v_grad$type_model) & is.na(v_auto_ml$type_model)){
+          
+          hideTab(inputId = "results_models", target = "Compare models performances")
+          hideTab(inputId = "results_models", target = "Feature importance")
+          hideTab(inputId = "results_models", target = "Table of results")
+          
+          
+        }
+      })
+      
+      # When "Run tuned models!" button is clicked, send messagebox once all models have been trained
+      observe({
+        
+        if ("Generalized linear regression" %in% colnames(table_forecast()[['results']]) &
+            "Random forest" %in% colnames(table_forecast()[['results']]) &
+            "Neural network" %in% colnames(table_forecast()[['results']]) &
+            "Gradient boosted trees" %in% colnames(table_forecast()[['results']])
+        ){
+          
+          
+          sendSweetAlert(
+            session = session,
+            title = "The four machine learning models have been trained !",
+            text = "Click ok to see results",
+            type = "success"
+            
+            
+          )
+        }
+      })
+      
+      # When "Run auto ML" button is clicked, send messagebox once searching time is reached
+      observe({
+        
+        
+        if("Auto ML" %in% colnames(table_forecast()[['results']])){
+          
+          list <- c(HTML(paste0("<b>Selected model:</b> ",table_forecast()[['auto_ml_model']]@leader@algorithm)))
+          
+          for (i in 1:ncol(table_forecast()[['auto_ml_model']]@leader@model$model_summary)){
+            list <- rbind(list,HTML(paste0("<b>",colnames(table_forecast()[['auto_ml_model']]@leader@model$model_summary[i]),":</b> ",
+                                           table_forecast()[['auto_ml_model']]@leader@model$model_summary[i])))
+          }
+          
+          
+          # The message box indicates best model family and all associated hyper-parameter values
+          sendSweetAlert(
+            session = session,
+            title = "Auto ML algorithm succeed!",
+            text = HTML(paste0(
+              "<br>",
+              list)),
+            type = "success",
+            html = TRUE
+          )
+        }
+      })
+      
+      # Define Value Box concerning memory used by h2o cluster  
+      output$h2o_cluster_mem <- renderUI({
+        
+        argonInfoCard(
+          value = paste(round(as.numeric(cluster_status$free_mem)/1024**3,2), "GB", sep = ""),
+          title = "H2O Cluster Total Memory",gradient = TRUE,width = 7,
+          # stat = -1.10, 
+          # stat_icon = icon("arrow-down"),
+          # description = "Since yesterday", 
+          icon = icon("server"), 
+          icon_background = "yellow",
+          background_color = "lightblue"
+        )
+        
+      })
+      
+      # Define Value Box concerning number of cpu used by h2o cluster
+      output$h2o_cpu <- renderUI({
+        
+        argonInfoCard(
+          value = cluster_status$num_cpus,gradient = TRUE,width = 7,
+          title = "Number of CPUs in Use",
+          icon = icon("microchip"), 
+          icon_background = "yellow",
+          background_color = "lightblue"
+        )
+        
+      })
+      
+    }
+    
+    
+    else if(framework == "spark"){
+    
+    time_decision_tree <- data.table()
+    importance_decision_tree <- data.table()
+    
+    # Make all parameters correspond to cursors and radiobuttons choices when user click on "Run tuned models!" button
+    observeEvent(input$train_all,{
+      
+      test_1$date <- input$test_selector[1]
+      test_2$date <- input$test_selector[2]
+      model$train_variables <- input$input_variables
+      v_decision_tree$type_model <- "ml_decision_tree"
+      v_glm$type_model <- "ml_generalized_linear_regression"
+      v_grad$type_model <- "ml_gradient_boosted_trees"
+      v_random$type_model <- "ml_random_forest"
+      
+      parameter$step_size_gbm <- input$step_size_gbm
+      parameter$subsampling_rate_gbm <- input$subsampling_rate_gbm
+      parameter$max_depth_gbm <- input$max_depth_gbm
+      
+      parameter$num_tree_random_forest <- input$num_tree_random_forest
+      parameter$subsampling_rate_random_forest <- input$subsampling_rate_random_forest
+      parameter$max_depth_random_forest <-  input$max_depth_random_forest
+      
+      
+      parameter$family_glm <- input$glm_family
+      parameter$link_glm <- input$glm_link
+      parameter$intercept_term_glm <- input$intercept_term_glm
+      parameter$reg_param_glm <- input$reg_param_glm
+      parameter$max_iter_glm <- input$max_iter_glm
+      
+      parameter$max_depth_decision_tree <- input$max_depth_decision_tree
+      parameter$max_bins_decision_tree <- input$max_bins_decision_tree
+      parameter$min_instance_decision_tree <- input$min_instance_decision_tree
+      
+      showTab(inputId = "results_models", target = "Feature importance")
+      showTab(inputId = "results_models", target = "Compare models performances")
+      showTab(inputId = "results_models", target = "Table of results")
+      
+      
+    })
+    
+    # Make decision tree parameters correspond to cursors when user click on "Run decision tree" button (and disable other models)
+    observeEvent(input$run_decision_tree,{
+      
+      test_1$date <- input$test_selector[1]
+      test_2$date <- input$test_selector[2]
+      model$train_variables <- input$input_variables
+      parameter$max_depth_decision_tree <- input$max_depth_decision_tree
+      parameter$max_bins_decision_tree <- input$max_bins_decision_tree
+      parameter$min_instance_decision_tree <- input$min_instance_decision_tree
+      
+      v_decision_tree$type_model <- "ml_decision_tree"
+      
+      v_glm$type_model <- NA
+      v_grad$type_model <- NA
+      v_random$type_model <- NA
+      
+      showTab(inputId = "results_models", target = "Compare models performances")
+      showTab(inputId = "results_models", target = "Feature importance")
+      showTab(inputId = "results_models", target = "Table of results")  
+      
+    })
+    
+    # Define the table of predicted data
+    # If "Run tuned models!" button is clicked, prediction results on test period are stored in four additional columns
+    table_forecast <- reactive({
+      
+      data_results <- eval(parse(text = paste0("data[,.(",date_column,",",y,")][",date_column,">'",test_1$date,"',][",date_column,"< '",test_2$date,"',]")))
+      table_results <- data_results
+      var_input_list <- ""
+      
+      
+      for (i in 1:length(model$train_variables)){var_input_list <- paste0(var_input_list,"+",model$train_variables[i])}
+      var_input_list <- ifelse(startsWith(var_input_list,"+"),substr(var_input_list,2,nchar(var_input_list)),var_input_list)
+      
+      # Verify that at least one explanatory variable is selected 
+      if (var_input_list != "+"){  
+        
+        
+        
+        data_spark_train <- eval(parse(text = paste0("data[",date_column,"<='",test_1$date,"',]")))
+        data_spark_test <- eval(parse(text = paste0("data[",date_column,">'",test_1$date,"',][",date_column,"< '",test_2$date,"',]")))
+        
+        data_spark_train <- copy_to(sc, data_spark_train, "data_spark_train", overwrite = TRUE)
+        data_spark_test <- copy_to(sc, data_spark_test, "data_spark_test", overwrite = TRUE)
+        
+        
+        
+        # Calculation of glm predictions and associated calculation time 
+        if (!is.na(v_glm$type_model) & v_glm$type_model == "ml_generalized_linear_regression"){
+          
+          t1 <- Sys.time()
+          eval(parse(text = paste0("fit <- data_spark_train %>% ml_generalized_linear_regression(", y ," ~ " ,var_input_list ,
+                                   ",family  = ", parameter$family_glm,
+                                   ",link =",parameter$link_glm,
+                                   ",fit_intercept =",parameter$intercept_term_glm,
+                                   ",reg_param =",parameter$reg_param_glm,
+                                   ",max_iter =",parameter$max_iter_glm,
+                                   ")")))
+          t2 <- Sys.time()
+          time_glm <- data.frame(`Training time` =  paste0(round(t2 - t1,1)," seconds"), Model = "Generalized linear regression")
+          
+          table_ml_glm <- sdf_predict(data_spark_test, fit) %>% collect %>% as.data.frame() %>% select(prediction)%>% mutate(prediction = round(prediction,3)) %>% 
+            rename(`Generalized linear regression` = prediction)
+          table_results <- cbind(data_results,table_ml_glm) %>% as.data.table()
+          
+        }
+        
+        # Calculation of gradient boosting trees predictions and associated calculation time 
+        if (!is.na(v_grad$type_model) & v_grad$type_model == "ml_gradient_boosted_trees"){
+          
+          
+          t1 <- Sys.time()
+          
+          eval(parse(text = paste0("fit <- data_spark_train %>% ml_gradient_boosted_trees(", y ," ~ " ,var_input_list ,
+                                   ",step_size =",parameter$step_size_gbm,
+                                   ",subsampling_rate =",parameter$subsampling_rate_gbm,
+                                   ",max_depth =",parameter$max_depth_gbm,
+                                   " )")))
+          t2 <- Sys.time()
+          
+          time_gbm <- data.frame(`Training time` =  paste0(round(t2 - t1,1)," seconds"), Model = "Gradient boosted trees") 
+          importance_gbm <- ml_feature_importances(fit) %>% mutate(model = "Gradient boosted trees")
+          
+          table_ml_gradient_boosted <- sdf_predict(data_spark_test, fit) %>% collect %>% as.data.frame() %>% select(prediction) %>% mutate(prediction = round(prediction,3)) %>% 
+            rename(`Gradient boosted trees` = prediction)
+          table_results <- cbind(data_results,table_ml_gradient_boosted) %>% as.data.table()
+          
+        }
+        
+        # Calculation of random forest predictions and associated calculation time 
+        if (!is.na(v_random$type_model) & v_random$type_model == "ml_random_forest"){
+          
+          t1 <- Sys.time()
+          eval(parse(text = paste0("fit <- data_spark_train %>% ml_random_forest(", y ," ~ " ,var_input_list ,
+                                   ",num_trees  =",parameter$num_tree_random_forest,
+                                   ",subsampling_rate =",parameter$subsampling_rate_random_forest,
+                                   ",max_depth  =",parameter$max_depth_random_forest,
+                                   ")")))
+          t2 <- Sys.time()
+          time_random_forest <- data.frame(`Training time` =  paste0(round(t2 - t1,1)," seconds"), Model = "Random forest")
+          importance_random_forest <- ml_feature_importances(fit) %>% mutate(model = "Random forest")
+          
+          table_ml_random_forest <- sdf_predict(data_spark_test, fit) %>% collect %>% as.data.frame() %>% select(prediction)%>% mutate(prediction = round(prediction,3)) %>% 
+            rename(`Random forest` = prediction)
+          table_results <- cbind(data_results,table_ml_random_forest) %>% as.data.table()
+          
+        }
+        
+        
+        # Calculation of decision trees predictions and associated calculation time 
+        if (!is.na(v_decision_tree$type_model) & v_decision_tree$type_model == "ml_decision_tree"){
+          
+          t1 <- Sys.time()
+          eval(parse(text = paste0("fit <- data_spark_train %>% ml_decision_tree(", y ," ~ " ,var_input_list ,
+                                   ",max_depth  =",parameter$max_depth_decision_tree,
+                                   ",max_bins  =",parameter$max_bins_decision_tree,
+                                   ",min_instances_per_node  =",parameter$min_instance_decision_tree,
+                                   ")")))
+          t2 <- Sys.time()
+          time_decision_tree <- data.frame(`Training time` =  paste0(round(t2 - t1,1)," seconds"), Model = "Decision tree")
+          importance_decision_tree <- ml_feature_importances(fit) %>% mutate(model = "Decision tree")
+          
+          table_ml_decision_tree <- sdf_predict(data_spark_test, fit) %>% collect %>% as.data.frame() %>% select(prediction)%>% mutate(prediction = round(prediction,3)) %>% 
+            rename(`Decision tree` = prediction)
+          table_results <- cbind(data_results,table_ml_decision_tree) %>% as.data.table()
+          
+        }
+        
+        # Assembly results of all models (some column might remain empty)
+        if (!is.na(v_decision_tree$type_model) & !is.na(v_grad$type_model) & !is.na(v_glm$type_model) & !is.na(v_random$type_model))
+          
+          table_results <- cbind(data_results,table_ml_gradient_boosted,table_ml_random_forest,table_ml_glm,table_ml_decision_tree) %>% 
+          as.data.table()
+        
+      }
+      
+      table_training_time <- rbind(time_gbm,time_random_forest,time_glm,time_decision_tree)
+      table_importance <- rbind(importance_gbm,importance_random_forest,importance_decision_tree) %>% as.data.table()
+      
+      # Used a list to access to different tables from only on one reactive objet 
+      list(traning_time = table_training_time, table_importance = table_importance, results = table_results)
+      
+    })
     
     # Hide tabs of results_models tabItem when no model has been runed 
     observe({
@@ -1086,10 +1361,7 @@ shinyML_regression <- function(data = data,y,framework = "h2o", share_app = FALS
     
     
   }
-  
-  
-  
-  
+
   if(framework == "h2o"){
   
   # Run h2o instance (might require to unset proxy authentification credentials )
@@ -1257,790 +1529,7 @@ shinyML_regression <- function(data = data,y,framework = "h2o", share_app = FALS
       header = argonHeader,
       footer = argonFooter
     ),
-    server = function(session,input, output) {
-      
-      
-      # Initialize all variables
-      model <- reactiveValues()
-      
-      # # By default, start date and stop dates for test period correspond to mean and max of values of the date column
-
-      test_1 <- reactiveValues() 
-      test_2 <- reactiveValues()
-      
-      observe({
-        req(!is.null(input$time_serie_select_column))
-        test_1$date <-  eval(parse(text = paste0("mean(as.Date(data$",input$time_serie_select_column,"))")))
-        test_2$date <-  eval(parse(text = paste0("max(as.Date(data$",input$time_serie_select_column,"))")))
-        
-        }) 
-      
-    
-      # Will be used to activate all models calculation when the user click to "Run tuned model" button
-      v_neural <- reactiveValues(type_model = NA)
-      v_grad <- reactiveValues(type_model = NA)
-      v_glm <- reactiveValues(type_model = NA)
-      v_random <- reactiveValues(type_model = NA)
-      v_auto_ml <- reactiveValues(type_model = NA)
-      
-      parameter <- reactiveValues()
-      
-      # Intitalization of calculation time per model
-      time_gbm <- data.table()
-      time_random_forest <- data.table()
-      time_glm <- data.table()
-      time_neural_network <- data.table()
-      time_auto_ml <- data.table()
-      
-      # Intitalization of variables importances per model (not available for generalized linear regression)
-      importance_gbm <- data.table()
-      importance_random_forest <- data.table()
-      importance_neural_network <- data.table()
-      
-      scaled_importance <- NULL
-      variable <- NULL
-      Predicted_value <- NULL
-      Model <- NULL
-      `.` <- NULL
-      `MAPE(%)` <- NULL
-      
-      
-      # Make all parameters correspond to cursors and radiobuttons choices when user click on "Run tuned models!" button
-      observeEvent(input$train_all,{
-        
-        train_1$date <- input$train_selector[1]
-        test_1$date <- input$test_selector[1]
-        test_2$date <- input$test_selector[2]
-        
-        model$train_variables <- input$input_variables
-        
-        v_neural$type_model <- "ml_neural_network"
-        v_grad$type_model <- "ml_gradient_boosted_trees"
-        v_glm$type_model <- "ml_generalized_linear_regression"
-        v_random$type_model <- "ml_random_forest"
-        v_auto_ml$type_model <- NA
-        
-        parameter$family_glm <- input$glm_family
-        parameter$glm_link <- input$glm_link
-        parameter$intercept_term_glm <- input$intercept_term_glm
-        parameter$reg_param_glm <- input$reg_param_glm
-        parameter$alpha_param_glm <- input$alpha_param_glm
-        parameter$max_iter_glm <- input$max_iter_glm
-        
-        
-        parameter$num_tree_random_forest <- input$num_tree_random_forest
-        parameter$subsampling_rate_random_forest <- input$subsampling_rate_random_forest
-        parameter$max_depth_random_forest <-  input$max_depth_random_forest
-        parameter$n_bins_random_forest <- input$n_bins_random_forest
-        
-        parameter$sample_rate_gbm <- input$sample_rate_gbm
-        parameter$n_trees_gbm <- input$n_trees_gbm
-        parameter$max_depth_gbm <- input$max_depth_gbm
-        parameter$learn_rate_gbm <- input$learn_rate_gbm
-        
-        parameter$hidden_neural_net <- input$hidden_neural_net
-        parameter$epochs_neural_net <- input$epochs_neural_net
-        parameter$activation_neural_net <- input$activation_neural_net
-        parameter$loss_neural_net <- input$loss_neural_net
-        parameter$rate_neural_net <- input$rate_neural_net
-        
-        showTab(inputId = "results_models", target = "Compare models performances")
-        showTab(inputId = "results_models", target = "Feature importance")
-        showTab(inputId = "results_models", target = "Table of results")        
-        
-      })
-      
-      # Make glm parameters correspond to cursors and radiobuttons choices when user click on "Run generalized linear regression" button (and disable other models)
-      observeEvent(input$run_glm,{
-        
-        train_1$date <- input$train_selector[1]
-        test_1$date <- input$test_selector[1]
-        test_2$date <- input$test_selector[2]
-        model$train_variables <- input$input_variables
-        v_grad$type_model <- NA
-        v_neural$type_model <- NA
-        v_random$type_model <- NA
-        v_auto_ml$type_model <- NA
-        
-        v_glm$type_model <- "ml_generalized_linear_regression"
-        
-        parameter$family_glm <- input$glm_family
-        parameter$glm_link <- input$glm_link
-        parameter$intercept_term_glm <- input$intercept_term_glm
-        parameter$reg_param_glm <- input$reg_param_glm
-        parameter$alpha_param_glm <- input$alpha_param_glm
-        parameter$max_iter_glm <- input$max_iter_glm
-        
-        hideTab(inputId = "results_models", target = "Feature importance")
-        showTab(inputId = "results_models", target = "Compare models performances")
-        showTab(inputId = "results_models", target = "Table of results")
-        
-      })
-      
-      
-      # Make random forest parameters correspond to cursors when user click on "Run random forest model" button (and disable other models)
-      observeEvent(input$run_random_forest,{
-        
-        
-        train_1$date <- input$train_selector[1]
-        test_1$date <- input$test_selector[1]
-        test_2$date <- input$test_selector[2]
-        model$train_variables <- input$input_variables
-        v_grad$type_model <- NA
-        v_neural$type_model <- NA
-        v_glm$type_model <- NA
-        v_auto_ml$type_model <- NA
-        
-        v_random$type_model <- "ml_random_forest"
-        
-        
-        parameter$num_tree_random_forest <- input$num_tree_random_forest
-        parameter$subsampling_rate_random_forest <- input$subsampling_rate_random_forest
-        parameter$max_depth_random_forest <-  input$max_depth_random_forest
-        parameter$n_bins_random_forest <- input$n_bins_random_forest
-        
-        showTab(inputId = "results_models", target = "Compare models performances")
-        showTab(inputId = "results_models", target = "Feature importance")
-        showTab(inputId = "results_models", target = "Table of results")
-        
-        
-      })
-      
-      
-      # Make neural network parameters correspond to cursors and radiobuttons choices when user click on "Run neural network regression" button (and disable other models)
-      observeEvent(input$run_neural_network,{
-        
-        train_1$date <- input$train_selector[1]
-        test_1$date <- input$test_selector[1]
-        test_2$date <- input$test_selector[2]
-        model$train_variables <- input$input_variables
-        
-        v_neural$type_model <- "ml_neural_network"
-        v_grad$type_model <- NA
-        v_glm$type_model <- NA
-        v_random$type_model <- NA
-        v_auto_ml$type_model <- NA
-        
-        parameter$hidden_neural_net <- input$hidden_neural_net
-        parameter$epochs_neural_net <- input$epochs_neural_net
-        parameter$activation_neural_net <- input$activation_neural_net
-        parameter$loss_neural_net <- input$loss_neural_net
-        parameter$rate_neural_net <- input$rate_neural_net
-        
-        showTab(inputId = "results_models", target = "Compare models performances")
-        showTab(inputId = "results_models", target = "Feature importance")
-        showTab(inputId = "results_models", target = "Table of results")
-        
-      })
-      
-      # Make gradient boosting parameters correspond to cursors when user click on "Run gradient boosting model" button (and disable other models)
-      observeEvent(input$run_gradient_boosting,{
-        
-        train_1$date <- input$train_selector[1]
-        test_1$date <- input$test_selector[1]
-        test_2$date <- input$test_selector[2]
-        model$train_variables <- input$input_variables
-        v_grad$type_model <- "ml_gradient_boosted_trees"
-        v_neural$type_model <- NA
-        v_glm$type_model <- NA
-        v_random$type_model <- NA
-        v_auto_ml$type_model <- NA
-        
-        parameter$sample_rate_gbm <- input$sample_rate_gbm
-        parameter$n_trees_gbm <- input$n_trees_gbm
-        parameter$max_depth_gbm <- input$max_depth_gbm
-        parameter$learn_rate_gbm <- input$learn_rate_gbm
-        
-        showTab(inputId = "results_models", target = "Compare models performances")
-        showTab(inputId = "results_models", target = "Feature importance")
-        showTab(inputId = "results_models", target = "Table of results")
-        
-      })
-      
-      
-      
-      observeEvent(input$run_auto_ml,{
-        
-        train_1$date <- input$train_selector[1]
-        test_1$date <- input$test_selector[1]
-        test_2$date <- input$test_selector[2]
-        model$train_variables <- input$input_variables
-        
-        v_grad$type_model <- NA
-        v_neural$type_model <- NA
-        v_glm$type_model <- NA
-        v_random$type_model <- NA
-        v_auto_ml$type_model <- "ml_auto"
-        
-        parameter$run_time_auto_ml <-  input$run_time_auto_ml
-        hideTab(inputId = "results_models", target = "Feature importance")
-        showTab(inputId = "results_models", target = "Compare models performances")
-        showTab(inputId = "results_models", target = "Table of results")
-        
-        
-      })
-      
-      dates_variable_list <- reactive({
-        dates_columns_list <- c()
-        for (i in colnames(data)){
-          if (is.Date(eval(parse(text = paste0("data$",i)))) | is.POSIXct(eval(parse(text = paste0("data$",i))))){
-            dates_columns_list <- c(dates_columns_list,i)
-          }
-        }
-        dates_columns_list
-      })
-      
-      
-      output$Time_series_checkbox <- renderUI({
-        if (length(dates_variable_list()) >= 1){value = TRUE}
-        else{value = FALSE}
-        
-        awesomeCheckbox("checkbox_time_series", "Time series",status = "primary",value = value)
-        
-      })
-      
-      
-      
-      output$slider_time_series_train <- renderUI({
-        
-        req(!is.null(input$checkbox_time_series))
-        req(!is.null(input$time_serie_select_column))
-        
-        if (input$checkbox_time_series == TRUE){
-          sliderInput("train_selector", "Choose train period:",
-                      min = eval(parse(text = paste0("min(data$",input$time_serie_select_column,")"))),
-                      max = eval(parse(text = paste0("max(data$",input$time_serie_select_column,")"))),
-                      value =  eval(parse(text = paste0("c(min(data$",input$time_serie_select_column,"),mean(data$",input$time_serie_select_column,"))"))))
-        }
-      })
-      
-      
-      output$slider_time_series_test <- renderUI({
-        
-        req(!is.null(input$checkbox_time_series))
-        req(!is.null(input$time_serie_select_column))
-        
-        if (input$checkbox_time_series == TRUE){
-          sliderInput("test_selector", "Choose test period:",
-                    min = eval(parse(text = paste0("min(data$",input$time_serie_select_column,")"))),
-                    max = eval(parse(text = paste0("max(data$",input$time_serie_select_column,")"))),
-                    value = eval(parse(text = paste0("c(mean(data$",input$time_serie_select_column,"),max(data$",input$time_serie_select_column,"))"))))
-        }
-        
-      })
-          
-      output$slider_percentage <- renderUI({
-        
-        req(!is.null(input$checkbox_time_series))
-        
-        if (input$checkbox_time_series == FALSE){
-          
-          selectInput(label = "Train/ Test splitting",inputId = "percentage_selector",choices = paste0(c(50:99),"%"),selected = 70,multiple = FALSE)
-          #sliderInput(label = "Train/ Test splitting",inputId = "train_selector",min = 0, max = 100, post  = " %", value = 70)
-          
-        }
-      })
-      
-      output$time_series_column <- renderUI({
-        
-        req(!is.null(input$checkbox_time_series))
-
-        if (input$checkbox_time_series == TRUE){
-          selectInput(inputId = "time_serie_select_column",label = "Date column",choices = dates_variable_list(),multiple = FALSE)
-        }
-        
-      })
-      
-      output$Variables_input_selection<- renderUI({
-        
-        
-        req(!is.null(input$checkbox_time_series))
-        variable_input_list <- x[!(x %in% dates_variable_list())]
-        
-        selectInput( inputId  = "input_variables",label = "Input variables: ",choices = x,multiple = TRUE,selected = variable_input_list)
-      })
-
-      output$X_axis_explore_dataset <- renderUI({
-        
-        req(!is.null(input$checkbox_time_series))
-        
-        if (input$checkbox_time_series == TRUE){
-          req(!is.null(input$time_serie_select_column))
-          selected_column <- input$time_serie_select_column        
-        }
-        
-        else {selected_column <- colnames(data)[1]}
-        
-        selectInput(inputId = "x_variable_input_curve",label = "X-axis variable",choices = colnames(data),selected = selected_column)
-      })
-      
- 
-      
-      # Define input data summary with class of each variable 
-      output$variables_class_input <- renderDT({
-        table_classes <- data.table()
-        
-        for (i in 1:ncol(data)){
-          
-          table_classes <- rbind(table_classes,
-                                 data.frame(Variable = colnames(data)[i],
-                                            Class = class(eval(parse(text = paste0("data$",colnames(data)[i]))))
-                                 )
-          )
-        }
-        
-        datatable(table_classes,options = list(pageLength =3,searching = FALSE,lengthChange = FALSE),selection = list(mode = "single",selected = c(1))
-        )
-      })
-      
-      # Define boxplot corresponding to  selected variable in variables_class_input 
-      output$variable_boxplot <- renderPlotly({
-        
-        column_name <- colnames(data)[input$variables_class_input_rows_selected]
-        
-        if (input$input_var_graph_type == "Histogram"){chart_type <- "histogram"}
-        else if (input$input_var_graph_type == "Boxplot"){chart_type <- "box"}
-        
-        plot_ly(x = eval(parse(text = paste0("data[,",column_name,"]"))),
-                type = chart_type,
-                name = column_name
-        )
-        
-        
-      })
-      
-      
-
-      
-      
-      
-      # Define plotly chart to explore dependencies between variables 
-      output$explore_dataset_chart <- renderPlotly({
-        
-        req(!is.null(input$checkbox_time_series))
-        
-        plot_ly(data = data, x = eval(parse(text = paste0("data$",input$x_variable_input_curve))), 
-                y = eval(parse(text = paste0("data$",input$y_variable_input_curve))),
-                type = "scatter",mode = "markers") %>% 
-          layout(xaxis = list(title = input$x_variable_input_curve),  yaxis = list(title = input$y_variable_input_curve))
-      })
-      
-      # Define input data chart and train/test periods splitting
-      output$correlation_matrix <- renderPlotly({
-        
-        data_correlation <- as.matrix(select_if(data, is.numeric))
-        plot_ly(x = colnames(data_correlation) , y = colnames(data_correlation), z =cor(data_correlation)  ,type = "heatmap", source = "heatplot")
-      })
-      
-      
-      # Define the table of predicted data
-      # If "Run all models!" button is clicked, prediction results on test period are stored in four additional columns
-      table_forecast <- reactive({
-        
-        # Make sure a value is set to checkbox_time_series checkbox 
-        req(!is.null(input$checkbox_time_series))
-        if (input$checkbox_time_series == TRUE){
-          req(!is.null(test_1$date))
-          data_results <- eval(parse(text = paste0("data[,.(",dates_variable_list(),",",y,")][",dates_variable_list(),">'",test_1$date,"',][",dates_variable_list(),"< '",test_2$date,"',]")))
-        }
-     
-        else if (input$checkbox_time_series == FALSE){
-          
-          
-          req(!is.null(input$percentage_selector))
-
-          data_train <- data %>% sample_frac(as.numeric(as.character(gsub("%","",input$percentage_selector)))*0.01)
-          data_test <- data %>% anti_join(data_train)
-          data_results <- data_test
-          
-          data_h2o_train <- as.h2o(data_train)
-          data_h2o_test <- as.h2o(data_test)
-        }
-        
-        
-        table_results <- data_results
-        dl_auto_ml <- NA
-        var_input_list <- c()
-        for (i in 1:length(model$train_variables)){
-          var_input_list <- c(var_input_list,model$train_variables[i])
-          
-        }
-        
-        
-        # Verify that at least one explanatory variable is selected
-        if (length(var_input_list) != 0){
-          
-          if (input$checkbox_time_series == TRUE){
-            data_h2o_train <- as.h2o(eval(parse(text = paste0("data[",dates_variable_list(),"<='",test_1$date,"',][",dates_variable_list(),">='",train_1$date,"',]"))))
-            data_h2o_test <- as.h2o(eval(parse(text = paste0("data[",dates_variable_list(),">'",test_1$date,"',][",dates_variable_list(),"< '",test_2$date,"',]"))))
-          
-          }
-          
-          
-          # Calculation of glm predictions and associated calculation time
-          if (!is.na(v_glm$type_model) & v_glm$type_model == "ml_generalized_linear_regression"){
-            
-            t1 <- Sys.time()
-            dl_fit1 <- h2o.glm(x = as.character(var_input_list),
-                               y = y,
-                               training_frame = data_h2o_train,
-                               family = parameter$family_glm,
-                               link = parameter$glm_link,
-                               intercept = parameter$intercept_term_glm,
-                               lambda = parameter$reg_param_glm,
-                               alpha = parameter$alpha_param_glm,
-                               max_iterations = parameter$max_iter_glm,
-                               seed = 1
-            )
-            t2 <- Sys.time()
-            time_glm <- data.frame(`Training time` =  paste0(round(t2 - t1,1)," seconds"), Model = "Generalized linear regression")
-            table_glm <- h2o.predict(dl_fit1,data_h2o_test) %>% as.data.table() %>% mutate(predict = round(predict,3)) %>% rename(`Generalized linear regression` = predict)
-            table_results <- cbind(data_results,table_glm)%>% as.data.table()
-            
-          }
-          
-          # Calculation of random forest predictions and associated calculation time
-          if (!is.na(v_random$type_model) & v_random$type_model == "ml_random_forest"){
-            
-         
-            
-            t1 <- Sys.time()
-            dl_fit1 <- h2o.randomForest(x = as.character(var_input_list),
-                                        y = y,
-                                        training_frame = data_h2o_train,
-                                        ntrees = parameter$num_tree_random_forest,
-                                        sample_rate = parameter$subsampling_rate_random_forest,
-                                        max_depth = parameter$max_depth_random_forest,
-                                        nbins = parameter$n_bins_random_forest,
-                                        seed = 1
-            )
-            t2 <- Sys.time()
-            time_random_forest <- data.frame(`Training time` =  paste0(round(t2 - t1,1)," seconds"), Model = "Random forest")
-            importance_random_forest <- h2o.varimp(dl_fit1) %>% as.data.table() %>% select(`variable`,scaled_importance) %>% mutate(model = "Random forest")
-            table_random_forest<- h2o.predict(dl_fit1,data_h2o_test) %>% as.data.table() %>% mutate(predict = round(predict,3))  %>% rename(`Random forest` = predict)
-            table_results <- cbind(data_results,table_random_forest)%>% as.data.table()
-            
-          }
-          
-          # Calculation of neural network predictions and associated calculation time
-          if (!is.na(v_neural$type_model) & v_neural$type_model == "ml_neural_network"){
-            
-            t1 <- Sys.time()
-            dl_fit1 <- h2o.deeplearning(x = as.character(var_input_list),
-                                        y = y,
-                                        training_frame = data_h2o_train,
-                                        activation = parameter$activation_neural_net,
-                                        loss = parameter$loss_neural_net,
-                                        hidden = eval(parse(text = parameter$hidden_neural_net)) ,
-                                        epochs = parameter$epochs_neural_net,
-                                        rate = parameter$rate_neural_net,
-                                        reproducible = T,
-                                        seed = 1
-            )
-            t2 <- Sys.time()
-            
-            time_neural_network <- data.frame(`Training time` =  paste0(round(t2 - t1,1)," seconds"), Model = "Neural network")
-            importance_neural_network <- h2o.varimp(dl_fit1) %>% as.data.table() %>% select(`variable`,scaled_importance) %>% mutate(model = "Neural network")
-            table_neural_network <- h2o.predict(dl_fit1,data_h2o_test) %>% as.data.table() %>% mutate(predict = round(predict,3)) %>% rename(`Neural network` = predict)
-            table_results <- cbind(data_results,table_neural_network)%>% as.data.table()
-            
-          }
-          
-          # Calculation of gradient boosted trees predictions and associated calculation time
-          if (!is.na(v_grad$type_model) & v_grad$type_model == "ml_gradient_boosted_trees"){
-            
-            t1 <- Sys.time()
-            dl_fit1 <- h2o.gbm(x = as.character(var_input_list),
-                               y = y,
-                               training_frame = data_h2o_train,
-                               sample_rate = parameter$sample_rate_gbm,
-                               ntrees = parameter$n_trees_gbm,
-                               max_depth = parameter$max_depth_gbm,
-                               learn_rate = parameter$learn_rate_gbm,
-                               min_rows = 2,
-                               seed = 1
-            )
-            t2 <- Sys.time()
-            time_gbm <- data.frame(`Training time` =  paste0(round(t2 - t1,1)," seconds"), Model = "Gradient boosted trees")
-            importance_gbm <- h2o.varimp(dl_fit1) %>% as.data.table() %>% select(`variable`,scaled_importance) %>% mutate(model = "Gradient boosted trees")
-            table_gradient_boosting <- h2o.predict(dl_fit1,data_h2o_test) %>% as.data.table() %>% mutate(predict = round(predict,3)) %>% rename(`Gradient boosted trees` = predict)
-            table_results <- cbind(data_results,table_gradient_boosting)%>% as.data.table()
-            
-          }
-          
-          
-          
-          # Calculation of autoML predictions (max calculation time has been set to 60 seconds)
-          if (!is.na(v_auto_ml$type_model) & v_auto_ml$type_model == "ml_auto"){
-            
-            
-            
-            dl_auto_ml <- h2o.automl(x = as.character(var_input_list),
-                                     y = y,
-                                     training_frame = data_h2o_train,
-                                     max_runtime_secs = parameter$run_time_auto_ml,
-                                     seed = 1
-                                     
-            )
-            
-            
-            
-            time_auto_ml <- data.frame(`Training time` =  paste0(parameter$run_time_auto_ml," seconds"), Model = "Auto ML")
-            table_auto_ml<- h2o.predict(dl_auto_ml,data_h2o_test) %>% as.data.table() %>% mutate(predict = round(predict,3))  %>% rename(`Auto ML` = predict)
-            table_results <- cbind(data_results,table_auto_ml)%>% as.data.table()
-            
-          }
-          
-          # Assembly results of all models (some column might remain empty)
-          if (!is.na(v_neural$type_model) & !is.na(v_grad$type_model) & !is.na(v_glm$type_model) & !is.na(v_random$type_model)){
-            
-            table_results <- cbind(data_results,table_glm,table_random_forest,table_neural_network,table_gradient_boosting)%>% as.data.table()
-          }
-          
-        }
-        
-        table_training_time <- rbind(time_gbm,time_random_forest,time_glm,time_neural_network,time_auto_ml)
-        table_importance <- rbind(importance_gbm,importance_random_forest,importance_neural_network) %>% as.data.table()
-
-        # Used a list to access to different tables from only on one reactive objet
-        list(traning_time = table_training_time, table_importance = table_importance, results = table_results,auto_ml_model = dl_auto_ml)
-        
-        
-      })
-      
-      # Define output chart comparing predicted vs real values on test period for selected model(s)
-      output$output_curve <- renderDygraph({
-        
-        
-        req(!is.null(input$checkbox_time_series))
-        
-        if (input$checkbox_time_series == TRUE){
-          
-          data_output_curve <- table_forecast()[['results']]
-          
-        }
-        
-        else if (input$checkbox_time_series == FALSE){
-          
-
-          data_output_curve <- table_forecast()[['results']] %>% 
-            select(-c(setdiff(colnames(data),y))) %>% 
-            mutate(Counter = row_number()) %>% 
-            select(Counter,everything())
-          
-          
-        }
-          
-        output_dygraph <- dygraph(data = data_output_curve ,main = "Prediction results on test period") %>%
-          dyAxis("x",valueRange = c(0,nrow(data))) %>% 
-          dyAxis("y",valueRange = c(0,1.5 * max(eval(parse(text =paste0("table_forecast()[['results']]$",y)))))) %>%
-          dyOptions(animatedZooms = TRUE,fillGraph = T)
-        
-        
-        
-        # chart can be displayed with bar or line mode
-        if (input$bar_chart_mode == TRUE){
-          output_dygraph <- output_dygraph %>% dyBarChart()
-        }
-        
-        output_dygraph %>% dyLegend(width = 800)
-        
-      })
-      
-      # Define performance table visible on "Compare models performances" tab
-      output$score_table <- renderDT({
-        
-        req(!is.null(input$checkbox_time_series))
-        
-        if (input$checkbox_time_series == TRUE){
-          
-          req(!is.null(input$time_serie_select_column))
-          
-          performance_table <-  eval(parse(text = paste0("table_forecast()[['results']] %>% 
-                                                         gather(key = Model,value = Predicted_value,-",input$time_serie_select_column,",-y) %>% 
-                                                         as.data.table()")))
-        }
-
-        else if (input$checkbox_time_series == FALSE){
-          
-          performance_table <-  table_forecast()[['results']] %>%
-            select(-c(setdiff(colnames(data),y))) %>% 
-            gather(key = Model,value = Predicted_value,-y) %>%
-            as.data.table()
-        }
-          
-          performance_table <- performance_table %>% 
-            group_by(Model) %>%
-            summarise(`MAPE(%)` = round(100 * mean(abs((Predicted_value - eval(parse(text = y)))/eval(parse(text = y))),na.rm = TRUE),1),
-                      RMSE = round(sqrt(mean((Predicted_value - eval(parse(text = y)))**2)),0))
-        
-        
-        if (nrow(table_forecast()[['traning_time']]) != 0){
-          performance_table <- performance_table %>% merge(.,table_forecast()[['traning_time']],by = "Model")
-        }
-        
-        datatable(
-          performance_table %>% arrange(`MAPE(%)`) %>% as.data.table()
-          , extensions = 'Buttons', options = list(dom = 'Bfrtip',buttons = c('csv', 'excel', 'pdf', 'print'))
-        )
-      })
-      
-      # Define importance features table table visible on "Feature importance" tab
-      output$feature_importance <- renderPlotly({
-        
-        if (nrow(table_forecast()[['table_importance']]) != 0){
-          
-          
-          ggplotly(
-            
-            ggplot(data = table_forecast()[['table_importance']])+
-              geom_bar(aes(x = reorder(`variable`,scaled_importance),y = scaled_importance,fill =  `model`),stat = "identity",width = 0.3)+
-              facet_wrap( model ~ .)+
-              coord_flip()+
-              xlab("")+
-              ylab("")+
-              theme(legend.position="none")
-          )
-        }
-        
-      })
-      
-      
-      # Define results table visible on "Table of results" tab
-      output$table_of_results <- renderDT({
-        
-        datatable(
-          table_forecast()[['results']],
-          extensions = 'Buttons', options = list(dom = 'Bfrtip',buttons = c('csv', 'excel', 'pdf', 'print'))
-        )
-        
-        
-      },server = FALSE)
-      
-      
-      
-      # Synchronize train and test cursors
-      observeEvent(input$train_selector,{
-        updateSliderInput(session,'test_selector',
-                          value= c(input$train_selector[2],input$test_selector[2]) )
-      })
-      
-      observeEvent(input$test_selector,{
-        updateSliderInput(session,'train_selector',
-                          value= c(input$train_selector[1],input$test_selector[1]) )
-      })
-      
-      
-      # Send a warning if user clicks on "Time series" option and no date or Posixct date column exists on input data frame 
-      observeEvent(input$checkbox_time_series,{
-        
-        if (input$checkbox_time_series == TRUE & length(dates_variable_list()) == 0){
-          
-          
-          sendSweetAlert(
-            session = session,
-            title = "No Date or Posixct column has been detected on input data frame !",
-            text = "Click ok to go back",
-            type = "warning"
-            
-            
-          )
-        }
-      })
-      
-      
-      # Hide tabs of results_models tabItem when no model has been runed 
-      observe({
-        
-        if (is.na(v_glm$type_model) & is.na(v_random$type_model) & is.na(v_neural$type_model) & is.na(v_grad$type_model) & is.na(v_auto_ml$type_model)){
-          
-          hideTab(inputId = "results_models", target = "Compare models performances")
-          hideTab(inputId = "results_models", target = "Feature importance")
-          hideTab(inputId = "results_models", target = "Table of results")
-          
-          
-        }
-      })
-      
-      # When "Run tuned models!" button is clicked, send messagebox once all models have been trained
-      observe({
-        
-        if ("Generalized linear regression" %in% colnames(table_forecast()[['results']]) &
-            "Random forest" %in% colnames(table_forecast()[['results']]) &
-            "Neural network" %in% colnames(table_forecast()[['results']]) &
-            "Gradient boosted trees" %in% colnames(table_forecast()[['results']])
-        ){
-          
-          
-          sendSweetAlert(
-            session = session,
-            title = "The four machine learning models have been trained !",
-            text = "Click ok to see results",
-            type = "success"
-            
-            
-          )
-        }
-      })
-      
-      # When "Run auto ML" button is clicked, send messagebox once searching time is reached
-      observe({
-        
-        
-        if("Auto ML" %in% colnames(table_forecast()[['results']])){
-          
-          list <- c(HTML(paste0("<b>Selected model:</b> ",table_forecast()[['auto_ml_model']]@leader@algorithm)))
-          
-          for (i in 1:ncol(table_forecast()[['auto_ml_model']]@leader@model$model_summary)){
-            list <- rbind(list,HTML(paste0("<b>",colnames(table_forecast()[['auto_ml_model']]@leader@model$model_summary[i]),":</b> ",
-                                           table_forecast()[['auto_ml_model']]@leader@model$model_summary[i])))
-          }
-          
-          
-          # The message box indicates best model family and all associated hyper-parameter values
-          sendSweetAlert(
-            session = session,
-            title = "Auto ML algorithm succeed!",
-            text = HTML(paste0(
-              "<br>",
-              list)),
-            type = "success",
-            html = TRUE
-          )
-        }
-      })
-      
-      # Define Value Box concerning memory used by h2o cluster  
-      output$h2o_cluster_mem <- renderUI({
-        
-        argonInfoCard(
-          value = paste(round(as.numeric(cluster_status$free_mem)/1024**3,2), "GB", sep = ""),
-          title = "H2O Cluster Total Memory",gradient = TRUE,width = 7,
-          # stat = -1.10, 
-          # stat_icon = icon("arrow-down"),
-          # description = "Since yesterday", 
-          icon = icon("server"), 
-          icon_background = "yellow",
-          background_color = "lightblue"
-        )
-        
-      })
-      
-      # Define Value Box concerning number of cpu used by h2o cluster
-      output$h2o_cpu <- renderUI({
-        
-        argonInfoCard(
-          value = cluster_status$num_cpus,gradient = TRUE,width = 7,
-          title = "Number of CPUs in Use",
-          icon = icon("microchip"), 
-          icon_background = "yellow",
-          background_color = "lightblue"
-        )
-        
-      })
-      
-      
-    }
+    server = server
   )
   
   }
@@ -2054,7 +1543,7 @@ shinyML_regression <- function(data = data,y,framework = "h2o", share_app = FALS
                                
                                
                                argonDashHeader(gradient = TRUE,
-                                               color = "default",
+                                               color = "danger",
                                                separator = FALSE,
                                                
                                                div(align = "center",
