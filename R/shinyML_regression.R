@@ -639,7 +639,6 @@ shinyML_regression <- function(data = data,y,framework = "h2o", share_app = FALS
       
       else if (input$checkbox_time_series == FALSE){
         
-        
         data_output_curve <- table_forecast()[['results']] %>% 
           select(-c(setdiff(colnames(data),y))) %>% 
           mutate(Counter = row_number()) %>% 
@@ -1108,9 +1107,6 @@ shinyML_regression <- function(data = data,y,framework = "h2o", share_app = FALS
         argonInfoCard(
           value = paste(round(as.numeric(cluster_status$free_mem)/1024**3,2), "GB", sep = ""),
           title = "H2O Cluster Total Memory",gradient = TRUE,width = 7,
-          # stat = -1.10, 
-          # stat_icon = icon("arrow-down"),
-          # description = "Since yesterday", 
           icon = icon("server"), 
           icon_background = "yellow",
           background_color = "lightblue"
@@ -1210,7 +1206,8 @@ shinyML_regression <- function(data = data,y,framework = "h2o", share_app = FALS
         req(!is.null(test_2$date))
         
         data_results <- eval(parse(text = paste0("data[,.(",input$time_serie_select_column,",",y,")][",input$time_serie_select_column,">'",test_1$date,"',][",input$time_serie_select_column,"< '",test_2$date,"',]")))
-      }
+        
+        }
       
       else if (input$checkbox_time_series == FALSE){
         
@@ -1233,10 +1230,18 @@ shinyML_regression <- function(data = data,y,framework = "h2o", share_app = FALS
       # Verify that at least one explanatory variable is selected 
       if (var_input_list != "+"){  
         
-        
+        if (input$checkbox_time_series == TRUE){
         
         data_spark_train <- eval(parse(text = paste0("data[",input$time_serie_select_column,"<='",test_1$date,"',]")))
         data_spark_test <- eval(parse(text = paste0("data[",input$time_serie_select_column,">'",test_1$date,"',][",input$time_serie_select_column,"< '",test_2$date,"',]")))
+        
+        }
+        
+        else if (input$checkbox_time_series == FALSE){
+          
+          data_spark_train <- data_train
+          data_spark_test <- data_test
+        }
         
         data_spark_train <- copy_to(sc, data_spark_train, "data_spark_train", overwrite = TRUE)
         data_spark_test <- copy_to(sc, data_spark_test, "data_spark_test", overwrite = TRUE)
@@ -1260,6 +1265,7 @@ shinyML_regression <- function(data = data,y,framework = "h2o", share_app = FALS
           table_ml_glm <- sdf_predict(data_spark_test, fit) %>% collect %>% as.data.frame() %>% select(prediction)%>% mutate(prediction = round(prediction,3)) %>% 
             rename(`Generalized linear regression` = prediction)
           table_results <- cbind(data_results,table_ml_glm) %>% as.data.table()
+          
           
         }
         
@@ -1337,6 +1343,7 @@ shinyML_regression <- function(data = data,y,framework = "h2o", share_app = FALS
       
       # Used a list to access to different tables from only on one reactive objet 
       list(traning_time = table_training_time, table_importance = table_importance, results = table_results)
+      
       
     })
     
@@ -1724,7 +1731,7 @@ shinyML_regression <- function(data = data,y,framework = "h2o", share_app = FALS
 
 
 
-shinyML_regression(data = longley2,y = "Population",share_app = F,framework = "h2o")
+shinyML_regression(data = longley2,y = "Population",share_app = F,framework = "spark")
 
 
 
