@@ -425,7 +425,6 @@ shinyML_regression <- function(data = data,y,framework = "h2o", share_app = FALS
       
     })
     
-    
     # Make random forest parameters correspond to cursors when user click on "Run random forest model" button (and disable other models)
     observeEvent(input$run_random_forest,{
       
@@ -454,7 +453,6 @@ shinyML_regression <- function(data = data,y,framework = "h2o", share_app = FALS
       showTab(inputId = "results_models", target = "Table of results")
       
     })
-    
     
     # Make gradient boosting parameters correspond to cursors when user click on "Run gradient boosting model" button (and disable other models)
     observeEvent(input$run_gradient_boosting,{
@@ -872,9 +870,10 @@ shinyML_regression <- function(data = data,y,framework = "h2o", share_app = FALS
         
         # Make sure a value is set to checkbox_time_series checkbox 
         req(!is.null(input$checkbox_time_series))
+        
         if (input$checkbox_time_series == TRUE){
           req(!is.null(test_1$date))
-          data_results <- eval(parse(text = paste0("data[,.(",dates_variable_list(),",",y,")][",dates_variable_list(),">'",test_1$date,"',][",dates_variable_list(),"< '",test_2$date,"',]")))
+          data_results <- eval(parse(text = paste0("data[,.(",input$time_serie_select_column,",",y,")][",input$time_serie_select_column,">'",test_1$date,"',][",input$time_serie_select_column,"< '",test_2$date,"',]")))
         }
         
         else if (input$checkbox_time_series == FALSE){
@@ -885,9 +884,7 @@ shinyML_regression <- function(data = data,y,framework = "h2o", share_app = FALS
           data_train <- data %>% sample_frac(as.numeric(as.character(gsub("%","",input$percentage_selector)))*0.01)
           data_test <- data %>% anti_join(data_train)
           data_results <- data_test
-          
-          data_h2o_train <- as.h2o(data_train)
-          data_h2o_test <- as.h2o(data_test)
+
         }
         
         
@@ -904,8 +901,8 @@ shinyML_regression <- function(data = data,y,framework = "h2o", share_app = FALS
         if (length(var_input_list) != 0){
           
           if (input$checkbox_time_series == TRUE){
-            data_h2o_train <- as.h2o(eval(parse(text = paste0("data[",dates_variable_list(),"<='",test_1$date,"',][",dates_variable_list(),">='",train_1$date,"',]"))))
-            data_h2o_test <- as.h2o(eval(parse(text = paste0("data[",dates_variable_list(),">'",test_1$date,"',][",dates_variable_list(),"< '",test_2$date,"',]"))))
+            data_h2o_train <- as.h2o(eval(parse(text = paste0("data[",input$time_serie_select_column,"<='",test_1$date,"',][",input$time_serie_select_column,">='",train_1$date,"',]"))))
+            data_h2o_test <- as.h2o(eval(parse(text = paste0("data[",input$time_serie_select_column,">'",test_1$date,"',][",input$time_serie_select_column,"< '",test_2$date,"',]"))))
             
           }
           
@@ -1205,8 +1202,28 @@ shinyML_regression <- function(data = data,y,framework = "h2o", share_app = FALS
     # If "Run tuned models!" button is clicked, prediction results on test period are stored in four additional columns
     table_forecast <- reactive({
       
-      data_results <- eval(parse(text = paste0("data[,.(",date_column,",",y,")][",date_column,">'",test_1$date,"',][",date_column,"< '",test_2$date,"',]")))
+      # Make sure a value is set to checkbox_time_series checkbox 
+      req(!is.null(input$checkbox_time_series))
+      
+      if (input$checkbox_time_series == TRUE){
+        req(!is.null(test_1$date))
+        req(!is.null(test_2$date))
+        
+        data_results <- eval(parse(text = paste0("data[,.(",input$time_serie_select_column,",",y,")][",input$time_serie_select_column,">'",test_1$date,"',][",input$time_serie_select_column,"< '",test_2$date,"',]")))
+      }
+      
+      else if (input$checkbox_time_series == FALSE){
+        
+        req(!is.null(input$percentage_selector))
+        
+        data_train <- data %>% sample_frac(as.numeric(as.character(gsub("%","",input$percentage_selector)))*0.01)
+        data_test <- data %>% anti_join(data_train)
+        data_results <- data_test
+        
+      }
+
       table_results <- data_results
+      
       var_input_list <- ""
       
       
@@ -1218,8 +1235,8 @@ shinyML_regression <- function(data = data,y,framework = "h2o", share_app = FALS
         
         
         
-        data_spark_train <- eval(parse(text = paste0("data[",date_column,"<='",test_1$date,"',]")))
-        data_spark_test <- eval(parse(text = paste0("data[",date_column,">'",test_1$date,"',][",date_column,"< '",test_2$date,"',]")))
+        data_spark_train <- eval(parse(text = paste0("data[",input$time_serie_select_column,"<='",test_1$date,"',]")))
+        data_spark_test <- eval(parse(text = paste0("data[",input$time_serie_select_column,">'",test_1$date,"',][",input$time_serie_select_column,"< '",test_2$date,"',]")))
         
         data_spark_train <- copy_to(sc, data_spark_train, "data_spark_train", overwrite = TRUE)
         data_spark_test <- copy_to(sc, data_spark_test, "data_spark_test", overwrite = TRUE)
@@ -1357,6 +1374,34 @@ shinyML_regression <- function(data = data,y,framework = "h2o", share_app = FALS
       }
     })
     
+    # Define Value Box concerning memory used by h2o cluster  
+    output$spark_cluster_mem <- renderUI({
+      
+      argonInfoCard(
+        value = paste(gsub("g","GB",config_spark$spark.driver.memory), sep = ""),
+        title = "Spark Cluster Total Memory",gradient = TRUE,width = 7,
+        icon = icon("server"), 
+        icon_background = "yellow",
+        background_color = "lightblue"
+      )
+      
+    })
+    
+    # Define Value Box concerning number of cpu used by spark cluster
+
+    output$spark_cpu <- renderUI({
+      
+      argonInfoCard(
+        value = config_spark$spark.sql.shuffle.partitions,gradient = TRUE,width = 7,
+        title = "Number of CPUs in Use",
+        icon = icon("microchip"), 
+        icon_background = "yellow",
+        background_color = "lightblue"
+      )
+      
+
+    })
+    
   }
     
     
@@ -1374,181 +1419,160 @@ shinyML_regression <- function(data = data,y,framework = "h2o", share_app = FALS
   
   ## ---------------------------------------------------------------------------- HEADER -----------------------------------
   
-  argonHeader <- argonColumn(width = "100%",
-    
-    dashheader_explore_input ,
-      
-      
-    argonDashHeader(gradient = TRUE,
-                    color = "default",
-                    separator = FALSE,
-      
-      div(align = "center",
-          argonH1(HTML("<font color='white'> Select models parameters</font>"),display = 4)
-      ),
   
-    br(),
-    argonRow(
-      argonColumn(width = 6,div(align = "center",uiOutput("h2o_cluster_mem"))),
-      argonColumn(width = 6,div(align = "center",uiOutput("h2o_cpu")))
-    ),
-
-
-    argonRow(
-      argonCard(
-        width = 3,
-        src = NULL,
-        hover_lift = T,
-        icon = icon("cogs"),
-        status = "success",
-        shadow = TRUE,
-        hover_shadow = TRUE,
-        title = "Generalized linear regression",
-        div(align = "center",
-          argonRow(
-            argonColumn(
-                radioButtons(label = "Family",inputId = "glm_family",choices = c("gaussian","poisson", "gamma","tweedie"),
-                                   selected = "gaussian"),width = 6),
-                    
-                    argonColumn(
-                      radioButtons(label = "Link",inputId = "glm_link",choices = c("identity","log"),selected = "identity"),
-                      switchInput(label = "Intercept term",inputId = "intercept_term_glm",value = TRUE,width = "auto"),width = 6)
-                  ),
-                  
-                  sliderInput(label = "Lambda",inputId = "reg_param_glm",min = 0,max = 10,value = 0),
-                  sliderInput(label = "Alpha (0:Ridge <-> 1:Lasso)",inputId = "alpha_param_glm",min = 0,max = 1,value = 0.5),
-                  sliderInput(label = "Maximum iteraions",inputId = "max_iter_glm",min = 50,max = 300,value = 100),
-                  actionButton("run_glm","Run glm",style = 'color:white; background-color:green; padding:4px; font-size:120%',
-                               icon = icon("cogs",lib = "font-awesome"))
-              )
-              
-              
-              
-            ),
-            
-            argonCard(
-              width = 3,
-              src = NULL,
-              hover_lift = T,
-              icon = icon("cogs"),
-              status = "danger",
-              shadow = TRUE,
-              #border_level = 2,
-              hover_shadow = TRUE,
-              title = "Random Forest",
-              div(align = "center",
-                  sliderInput(label = "Number of trees",min = 1,max = 100, inputId = "num_tree_random_forest",value = 50),
-                  sliderInput(label = "Subsampling rate",min = 0.1,max = 1, inputId = "subsampling_rate_random_forest",value = 0.6),
-                  sliderInput(label = "Max depth",min = 1,max = 50, inputId = "max_depth_random_forest",value = 20),
-                  sliderInput(label = "Number of bins",min = 2,max = 100, inputId = "n_bins_random_forest",value = 20),
-                  actionButton("run_random_forest","Run random forest",style = 'color:white; background-color:red; padding:4px; font-size:120%',
-                               icon = icon("cogs",lib = "font-awesome"))
-              )
-              
-            ),
-            
-            
-            argonCard(
-              width = 3,
-              src = NULL,
-              hover_lift = T,
-              icon = icon("cogs"),
-              status = "primary",
-              shadow = TRUE,
-              #border_level = 2,
-              hover_shadow = TRUE,
-              title = "Neural network",
-              div(align = "center",
-                  argonRow(
-                    argonColumn(
-                      radioButtons(label = "Activation function",inputId = "activation_neural_net",
-                                   choices = c( "Rectifier", "Maxout","Tanh", "RectifierWithDropout", "MaxoutWithDropout","TanhWithDropout"),selected = "Rectifier"),width = 6),
-                    
-                    argonColumn(
-                      radioButtons(label = "Loss function",inputId = "loss_neural_net",
-                                   choices = c("Automatic", "Quadratic", "Huber", "Absolute", "Quantile"),selected = "Automatic"),width = 6)
-                  ),
-                  
-                  textInput(label = "Hidden layers",inputId = "hidden_neural_net",value = "c(200,200)"),
-                  sliderInput(label = "Epochs",min = 10,max = 100, inputId = "epochs_neural_net",value = 10),
-                  sliderInput(label = "Learning rate",min = 0.001,max = 0.1, inputId = "rate_neural_net",value = 0.005),
-                  actionButton("run_neural_network","Run neural network",style = 'color:white; background-color:darkblue; padding:4px; font-size:120%',
-                               icon = icon("cogs",lib = "font-awesome"))
-              )
-              
-            ),
-            
-            argonCard(
-              width = 3,
-              src = NULL,
-              hover_lift = T,
-              icon = icon("cogs"),
-              status = "warning",
-              shadow = TRUE,
-              #border_level = 2,
-              hover_shadow = TRUE,
-              title = "Gradient boosting",
-              div(align = "center",
-                  sliderInput(label = "Max depth",min = 1,max = 20, inputId = "max_depth_gbm",value = 5),
-                  sliderInput(label = "Number of trees",min = 1,max = 100, inputId = "n_trees_gbm",value = 50),
-                  sliderInput(label = "Sample rate",min = 0.1,max = 1, inputId = "sample_rate_gbm",value = 1),
-                  sliderInput(label = "Learn rate",min = 0.1,max = 1, inputId = "learn_rate_gbm",value = 0.1),
-                  actionButton("run_gradient_boosting","Run gradient boosting",style = 'color:white; background-color:orange; padding:4px; font-size:120%',
-                               icon = icon("cogs",lib = "font-awesome"))
-              )
-              
-            )
-            
-          )
-    ),
-    
-    
-  dashheader_explore_results 
-      
-    
-
+  dashheader_select_parameters <- argonDashHeader(gradient = TRUE,
+                                                  color = "default",
+                                                  separator = FALSE,
+                                                  
+                                                  div(align = "center",
+                                                      argonH1(HTML("<font color='white'> Select models parameters</font>"),display = 4)
+                                                  ),
+                                                  
+                                                  br(),
+                                                  argonRow(
+                                                    argonColumn(width = 6,div(align = "center",uiOutput("h2o_cluster_mem"))),
+                                                    argonColumn(width = 6,div(align = "center",uiOutput("h2o_cpu")))
+                                                  ),
+                                                  
+                                                  
+                                                  argonRow(
+                                                    argonCard(
+                                                      width = 3,
+                                                      src = NULL,
+                                                      hover_lift = T,
+                                                      icon = icon("cogs"),
+                                                      status = "success",
+                                                      shadow = TRUE,
+                                                      hover_shadow = TRUE,
+                                                      title = "Generalized linear regression",
+                                                      div(align = "center",
+                                                          argonRow(
+                                                            argonColumn(
+                                                              radioButtons(label = "Family",inputId = "glm_family",choices = c("gaussian","poisson", "gamma","tweedie"),
+                                                                           selected = "gaussian"),width = 6),
+                                                            
+                                                            argonColumn(
+                                                              radioButtons(label = "Link",inputId = "glm_link",choices = c("identity","log"),selected = "identity"),
+                                                              switchInput(label = "Intercept term",inputId = "intercept_term_glm",value = TRUE,width = "auto"),width = 6)
+                                                          ),
+                                                          
+                                                          sliderInput(label = "Lambda",inputId = "reg_param_glm",min = 0,max = 10,value = 0),
+                                                          sliderInput(label = "Alpha (0:Ridge <-> 1:Lasso)",inputId = "alpha_param_glm",min = 0,max = 1,value = 0.5),
+                                                          sliderInput(label = "Maximum iteraions",inputId = "max_iter_glm",min = 50,max = 300,value = 100),
+                                                          actionButton("run_glm","Run glm",style = 'color:white; background-color:green; padding:4px; font-size:120%',
+                                                                       icon = icon("cogs",lib = "font-awesome"))
+                                                      )
+                                                      
+                                                      
+                                                      
+                                                    ),
+                                                    
+                                                    argonCard(
+                                                      width = 3,
+                                                      src = NULL,
+                                                      hover_lift = T,
+                                                      icon = icon("cogs"),
+                                                      status = "danger",
+                                                      shadow = TRUE,
+                                                      #border_level = 2,
+                                                      hover_shadow = TRUE,
+                                                      title = "Random Forest",
+                                                      div(align = "center",
+                                                          sliderInput(label = "Number of trees",min = 1,max = 100, inputId = "num_tree_random_forest",value = 50),
+                                                          sliderInput(label = "Subsampling rate",min = 0.1,max = 1, inputId = "subsampling_rate_random_forest",value = 0.6),
+                                                          sliderInput(label = "Max depth",min = 1,max = 50, inputId = "max_depth_random_forest",value = 20),
+                                                          sliderInput(label = "Number of bins",min = 2,max = 100, inputId = "n_bins_random_forest",value = 20),
+                                                          actionButton("run_random_forest","Run random forest",style = 'color:white; background-color:red; padding:4px; font-size:120%',
+                                                                       icon = icon("cogs",lib = "font-awesome"))
+                                                      )
+                                                      
+                                                    ),
+                                                    
+                                                    
+                                                    argonCard(
+                                                      width = 3,
+                                                      src = NULL,
+                                                      hover_lift = T,
+                                                      icon = icon("cogs"),
+                                                      status = "primary",
+                                                      shadow = TRUE,
+                                                      #border_level = 2,
+                                                      hover_shadow = TRUE,
+                                                      title = "Neural network",
+                                                      div(align = "center",
+                                                          argonRow(
+                                                            argonColumn(
+                                                              radioButtons(label = "Activation function",inputId = "activation_neural_net",
+                                                                           choices = c( "Rectifier", "Maxout","Tanh", "RectifierWithDropout", "MaxoutWithDropout","TanhWithDropout"),selected = "Rectifier"),width = 6),
+                                                            
+                                                            argonColumn(
+                                                              radioButtons(label = "Loss function",inputId = "loss_neural_net",
+                                                                           choices = c("Automatic", "Quadratic", "Huber", "Absolute", "Quantile"),selected = "Automatic"),width = 6)
+                                                          ),
+                                                          
+                                                          textInput(label = "Hidden layers",inputId = "hidden_neural_net",value = "c(200,200)"),
+                                                          sliderInput(label = "Epochs",min = 10,max = 100, inputId = "epochs_neural_net",value = 10),
+                                                          sliderInput(label = "Learning rate",min = 0.001,max = 0.1, inputId = "rate_neural_net",value = 0.005),
+                                                          actionButton("run_neural_network","Run neural network",style = 'color:white; background-color:darkblue; padding:4px; font-size:120%',
+                                                                       icon = icon("cogs",lib = "font-awesome"))
+                                                      )
+                                                      
+                                                    ),
+                                                    
+                                                    argonCard(
+                                                      width = 3,
+                                                      src = NULL,
+                                                      hover_lift = T,
+                                                      icon = icon("cogs"),
+                                                      status = "warning",
+                                                      shadow = TRUE,
+                                                      #border_level = 2,
+                                                      hover_shadow = TRUE,
+                                                      title = "Gradient boosting",
+                                                      div(align = "center",
+                                                          sliderInput(label = "Max depth",min = 1,max = 20, inputId = "max_depth_gbm",value = 5),
+                                                          sliderInput(label = "Number of trees",min = 1,max = 100, inputId = "n_trees_gbm",value = 50),
+                                                          sliderInput(label = "Sample rate",min = 0.1,max = 1, inputId = "sample_rate_gbm",value = 1),
+                                                          sliderInput(label = "Learn rate",min = 0.1,max = 1, inputId = "learn_rate_gbm",value = 0.1),
+                                                          actionButton("run_gradient_boosting","Run gradient boosting",style = 'color:white; background-color:orange; padding:4px; font-size:120%',
+                                                                       icon = icon("cogs",lib = "font-awesome"))
+                                                      )
+                                                      
+                                                    )
+                                                    
+                                                  )
   )
   
-  
-  
 
-  
-  
-  
   ## ---------------------------------------------------------------------------- LANCEMENT APPLI -----------------------------------
   
   
-  # App
-  app <- shiny::shinyApp(
-    ui = argonDashPage(
-      title = "shinyML_regression",
-      author = "Jean",
-      description = "Use of shinyML_regression function",
-      #sidebar = argonSidebar,
-      navbar = argonNav,
-      header = argonHeader,
-      footer = argonFooter
-    ),
-    server = server
-  )
+
   
   }
   
   else if(framework == "spark"){
     
+    # Install spark if necessary
+    if (nrow(spark_installed_versions()) == 0){spark_install()}
     
-    argonHeader <- argonColumn(width = "100%",
+    # Connect to local Spark cluster
+    sc <- spark_connect(master = "local")
+    config_spark<- spark_session_config(sc)
                                
-                               dashheader_explore_input ,
                                
-                               
-                               argonDashHeader(gradient = TRUE,
-                                               color = "danger",
-                                               separator = FALSE,
+    dashheader_select_parameters <- argonDashHeader(gradient = TRUE,
+                                        color = "danger",
+                                        separator = FALSE,
                                                
                                                div(align = "center",
                                                    argonH1(HTML("<font color='white'> Select models parameters</font>"),display = 4)
                                                ),
+                                        br(),
+                                        argonRow(
+                                          argonColumn(width = 6,div(align = "center",uiOutput("spark_cluster_mem"))),
+                                          argonColumn(width = 6,div(align = "center",uiOutput("spark_cpu")))
+                                        ),
                                                
                                                argonRow(
                                                  argonCard(
@@ -1558,7 +1582,6 @@ shinyML_regression <- function(data = data,y,framework = "h2o", share_app = FALS
                                                    icon = icon("cogs"),
                                                    status = "success",
                                                    shadow = TRUE,
-                                                   #border_level = 2,
                                                    hover_shadow = TRUE,
                                                    title = "Generalized linear regression",
                                                    div(align = "center",
@@ -1649,31 +1672,36 @@ shinyML_regression <- function(data = data,y,framework = "h2o", share_app = FALS
                                                  )
                                                  
                                                )
-                               ),
+                               )
                                
-                               
-                               dashheader_explore_results 
- 
-                       
-    )
+                         
     
     ## ---------------------------------------------------------------------------- LANCEMENT APPLI -----------------------------------
     
     
-    # App
-    app <- shiny::shinyApp(
-      ui = argonDashPage(
-        title = "shinyML_regression",
-        author = "Jean",
-        description = "Use of shinyML_regression function",
-        navbar = argonNav,
-        header = argonHeader,
-        footer = argonFooter
-      ),
-      server = server 
-    )
  
   }
+  
+  argonHeader <- argonColumn(width = "100%",
+                             
+                             dashheader_explore_input ,
+                             dashheader_select_parameters,
+                             dashheader_explore_results 
+                             
+  )
+  
+  # App
+  app <- shiny::shinyApp(
+    ui = argonDashPage(
+      title = "shinyML_regression",
+      author = "Jean",
+      description = "Use of shinyML_regression function",
+      navbar = argonNav,
+      header = argonHeader,
+      footer = argonFooter
+    ),
+    server = server
+  )
   
   # Allow to share the dashboard on local LAN
   if (share_app == TRUE){
