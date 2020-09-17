@@ -65,6 +65,7 @@ library(DT)
 library(sparklyr)
 library(argonR)
 library(argonDash)
+library(sparklyr)
 longley2 <- longley %>% mutate(Year = as.Date(as.character(Year),format = "%Y"))
 
 
@@ -201,7 +202,7 @@ shinyML_regression <- function(data = data,y,framework = "h2o", share_app = FALS
                                 br(),
                                 br(),
                                 br(),
-                                withSpinner(plotlyOutput("explore_dataset_chart",height = 250, width = 1100))
+                                withSpinner(plotlyOutput("explore_dataset_chart",height = "60%", width = "100%"))
                                 
                               ),
                               
@@ -292,7 +293,7 @@ shinyML_regression <- function(data = data,y,framework = "h2o", share_app = FALS
                                                                  argonTab(
                                                                    tabName = "Result charts on test period",
                                                                    active = TRUE,
-                                                                   withSpinner(dygraphOutput("output_curve", height = 200, width = 1100)),
+                                                                   withSpinner(dygraphOutput("output_curve", height = 200, width = "100%")),
                                                                    br(),
                                                                    div(align = "center",
                                                                        switchInput(label = "Bar chart mode",inputId = "bar_chart_mode",value = TRUE)
@@ -301,11 +302,19 @@ shinyML_regression <- function(data = data,y,framework = "h2o", share_app = FALS
                                                                  argonTab(
                                                                    tabName = "Compare models performances",
                                                                    active = FALSE,
-                                                                   withSpinner(DTOutput("score_table"))
+                                                                   div(align = "center",
+                                                                       br(),
+                                                                       br(),
+                                                                     uiOutput("message_compare_models_performances")),
+                                                                    withSpinner(DTOutput("score_table"))
                                                                  ),
                                                                  argonTab(tabName = "Feature importance",
                                                                           active = FALSE,
-                                                                          withSpinner(plotlyOutput("feature_importance"))
+                                                                          div(align = "center",
+                                                                              br(),
+                                                                              br(),
+                                                                              uiOutput("feature_importance_glm_message")),
+                                                                              withSpinner(plotlyOutput("feature_importance"))
                                                                           
                                                                  ),
                                                                  argonTab(tabName = "Table of results",
@@ -647,7 +656,7 @@ shinyML_regression <- function(data = data,y,framework = "h2o", share_app = FALS
         
       }
       
-      output_dygraph <- dygraph(data = data_output_curve ,main = "Prediction results on test period") %>%
+      output_dygraph <- dygraph(data = data_output_curve ,main = "Prediction results on test period",width = "100%") %>%
         dyAxis("x",valueRange = c(0,nrow(data))) %>% 
         dyAxis("y",valueRange = c(0,1.5 * max(eval(parse(text =paste0("table_forecast()[['results']]$",y)))))) %>%
         dyOptions(animatedZooms = TRUE,fillGraph = T)
@@ -706,6 +715,7 @@ shinyML_regression <- function(data = data,y,framework = "h2o", share_app = FALS
       
       if (nrow(table_forecast()[['table_importance']]) != 0){
         
+        if (framework == 'h2o'){
         
         ggplotly(
           
@@ -717,6 +727,21 @@ shinyML_regression <- function(data = data,y,framework = "h2o", share_app = FALS
             ylab("")+
             theme(legend.position="none")
         )
+          
+        }
+        
+        else if (framework == 'spark'){
+          ggplotly(
+            
+            ggplot(data = table_forecast()[['table_importance']])+
+              geom_bar(aes(x = reorder(`feature`,importance),y = importance,fill =  `model`),stat = "identity",width = 0.3)+
+              facet_wrap( model ~ .)+
+              coord_flip()+
+              xlab("")+
+              ylab("")+
+              theme(legend.position="none")
+          )
+        }
       }
       
     })
@@ -761,6 +786,54 @@ shinyML_regression <- function(data = data,y,framework = "h2o", share_app = FALS
       }
     })
     
+    #Message indicating that feature importance is not available for glm model
+    output$feature_importance_glm_message <- renderUI({
+      if (!is.na(v_glm$type_model) & is.na(v_random$type_model) & is.na(v_neural$type_model) &  is.na(v_decision_tree$type_model) & is.na(v_grad$type_model) & is.na(v_auto_ml$type_model)){
+        
+        sendSweetAlert(
+          session = session,
+          title = "Sorry ...",
+          text = "Feature importance not available for generalized regression method !",
+          type = "error"
+          
+          
+        )
+        
+        argonH1("Feature importance not available for generalized regression method",display = 4)
+      }
+    })
+    
+    
+    # Message indicating that results are not available if no model has been runed
+    output$message_compare_models_performances <- renderUI({
+      if (is.na(v_glm$type_model) & is.na(v_random$type_model) & is.na(v_decision_tree$type_model) & is.na(v_grad$type_model & is.na(v_neural$type_model) & is.na(v_auto_ml$type_model))){
+        
+        sendSweetAlert(
+          session = session,
+          title = "",
+          text = "Please run at least one algorithm to see results !",
+          type = "error"
+          
+          
+        )
+        
+        argonH1("Please run at least one algorithm to see results !",display = 4)
+      }
+    })
+    
+    
+    # Hide tabs of results_models tabItem when no model has been runed 
+    observe({
+      
+      if (is.na(v_glm$type_model) & is.na(v_random$type_model) & is.na(v_decision_tree$type_model) & is.na(v_grad$type_model)){
+        
+        hideTab(inputId = "results_models", target = "Compare models performances")
+        hideTab(inputId = "results_models", target = "Feature importance")
+        hideTab(inputId = "results_models", target = "Table of results")
+        
+        
+      }
+    })
     
     
     if(framework == "h2o"){
@@ -1035,22 +1108,6 @@ shinyML_regression <- function(data = data,y,framework = "h2o", share_app = FALS
         list(traning_time = table_training_time, table_importance = table_importance, results = table_results,auto_ml_model = dl_auto_ml)
         
         
-      })
-      
-
-      
-      
-      # Hide tabs of results_models tabItem when no model has been runed 
-      observe({
-        
-        if (is.na(v_glm$type_model) & is.na(v_random$type_model) & is.na(v_neural$type_model) & is.na(v_grad$type_model) & is.na(v_auto_ml$type_model)){
-          
-          hideTab(inputId = "results_models", target = "Compare models performances")
-          hideTab(inputId = "results_models", target = "Feature importance")
-          hideTab(inputId = "results_models", target = "Table of results")
-          
-          
-        }
       })
       
       # When "Run tuned models!" button is clicked, send messagebox once all models have been trained
@@ -1341,31 +1398,21 @@ shinyML_regression <- function(data = data,y,framework = "h2o", share_app = FALS
       table_training_time <- rbind(time_gbm,time_random_forest,time_glm,time_decision_tree)
       table_importance <- rbind(importance_gbm,importance_random_forest,importance_decision_tree) %>% as.data.table()
       
+      
       # Used a list to access to different tables from only on one reactive objet 
       list(traning_time = table_training_time, table_importance = table_importance, results = table_results)
       
+     
       
     })
     
-    # Hide tabs of results_models tabItem when no model has been runed 
-    observe({
-      
-      if (is.na(v_glm$type_model) & is.na(v_random$type_model) & is.na(v_neural$type_model) & is.na(v_grad$type_model) & is.na(v_auto_ml$type_model)){
-        
-        hideTab(inputId = "results_models", target = "Compare models performances")
-        hideTab(inputId = "results_models", target = "Feature importance")
-        hideTab(inputId = "results_models", target = "Table of results")
-        
-        
-      }
-    })
-    
+
     # When "Run tuned models!" button is clicked, send messagebox once all models have been trained
     observe({
       
       if ("Generalized linear regression" %in% colnames(table_forecast()[['results']]) &
           "Random forest" %in% colnames(table_forecast()[['results']]) &
-          "Neural network" %in% colnames(table_forecast()[['results']]) &
+          "Decision tree" %in% colnames(table_forecast()[['results']]) &
           "Gradient boosted trees" %in% colnames(table_forecast()[['results']])
       ){
         
@@ -1381,6 +1428,7 @@ shinyML_regression <- function(data = data,y,framework = "h2o", share_app = FALS
       }
     })
     
+
     # Define Value Box concerning memory used by h2o cluster  
     output$spark_cluster_mem <- renderUI({
       
@@ -1395,7 +1443,6 @@ shinyML_regression <- function(data = data,y,framework = "h2o", share_app = FALS
     })
     
     # Define Value Box concerning number of cpu used by spark cluster
-
     output$spark_cpu <- renderUI({
       
       argonInfoCard(
@@ -1409,8 +1456,7 @@ shinyML_regression <- function(data = data,y,framework = "h2o", share_app = FALS
 
     })
     
-  }
-    
+    }
     
   }
 
