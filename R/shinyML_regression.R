@@ -659,7 +659,7 @@ shinyML_regression <- function(data = data,y,framework = "h2o", share_app = FALS
       output_dygraph <- dygraph(data = data_output_curve ,main = "Prediction results on test period",width = "100%",height = "150%") %>%
         dyAxis("x",valueRange = c(0,nrow(data))) %>% 
         dyAxis("y",valueRange = c(0,1.5 * max(eval(parse(text =paste0("table_forecast()[['results']]$",y)))))) %>%
-        dyOptions(animatedZooms = TRUE,fillGraph = T)
+        dyOptions(animatedZooms = TRUE,fillGraph = T,drawPoints = TRUE, pointSize = 2)
       
       
       
