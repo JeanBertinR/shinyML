@@ -42,6 +42,7 @@ library(sparklyr)
 #' @importFrom plotly plotlyOutput renderPlotly ggplotly plot_ly layout
 #' @importFrom shinyWidgets materialSwitch switchInput sendSweetAlert knobInput awesomeCheckbox
 #' @importFrom stats predict reorder cor
+#' @author Jean Bertin, \email{jean.bertin@@gadz.org}
 #' @export
 #' 
 #' 
@@ -265,97 +266,69 @@ shinyML_regression <- function(data = data,y,framework = "h2o", share_app = FALS
   dashheader_explore_results <- argonDashHeader(gradient = TRUE,
                                                 color = "primary",
                                                 separator = FALSE,
-                                  div(align = "center",
-                                    argonH1(HTML("<font color='white'> Explore results </font>"),display = 4)
-                                                   ),
-                                    br(),
-                                    argonRow(
-                                    argonCard(width = 9,
-                                        title = "Predictions on test period",
-                                        src = NULL,
-                                        hover_lift = TRUE,
-                                        shadow = TRUE,
-                                        icon = icon("cogs"),
-                                                               status = "danger",
-                                                               argonTabSet(
-                                                                 width = 12,
-                                                                 id = "results_models",
-                                                                 card_wrapper = TRUE,
-                                                                 horizontal = TRUE,
-                                                                 circle = FALSE,
-                                                                 size = "sm",
-                                                                 iconList = list(
-                                                                   argonIcon("cloud-upload-96"), 
-                                                                   argonIcon("bell-55"), 
-                                                                   argonIcon("calendar-grid-58"),
-                                                                   argonIcon("calendar-grid-58")
-                                                                 ),
-                                                                 argonTab(
-                                                                   tabName = "Result charts on test period",
-                                                                   active = TRUE,
-                                                                   withSpinner(dygraphOutput("output_curve", height = 200, width = "100%")),
-                                                                   br(),
-                                                                   div(align = "center",
-                                                                       switchInput(label = "Bar chart mode",inputId = "bar_chart_mode",value = TRUE)
-                                                                   )
-                                                                 ),
-                                                                 argonTab(
-                                                                   tabName = "Compare models performances",
-                                                                   active = FALSE,
-                                                                   div(align = "center",
-                                                                       br(),
-                                                                       br(),
-                                                                     uiOutput("message_compare_models_performances")),
-                                                                    withSpinner(DTOutput("score_table"))
-                                                                 ),
-                                                                 argonTab(tabName = "Feature importance",
-                                                                          active = FALSE,
-                                                                          div(align = "center",
-                                                                              br(),
-                                                                              br(),
-                                                                              uiOutput("feature_importance_glm_message")),
-                                                                              withSpinner(plotlyOutput("feature_importance"))
-                                                                          
-                                                                 ),
-                                                                 argonTab(tabName = "Table of results",
-                                                                          active = FALSE,
-                                                                          withSpinner(DTOutput("table_of_results")))
-                                                               ),
-                                                               br(),
-                                                               br(),
-                                                               div(align = "center",
-                                                                   actionButton("train_all","Run all models !",style = 'color:white; background-color:red; padding:4px; font-size:120%',
-                                                                                icon = icon("cogs",lib = "font-awesome"))
-                                                               )
-                                                               
-                                                               
-                                                     ),
-                                                     
-                                                     
-                                                     argonCard(
-                                                       width = 3,
-                                                       src = NULL,
-                                                       hover_lift = T,
-                                                       icon = icon("cogs"),
-                                                       status = "warning",
-                                                       shadow = TRUE,
-                                                       #border_level = 2,
-                                                       hover_shadow = TRUE,
-                                                       title = "Auto Machine Learning",
-                                                       div(align = "center",
-                                                           knobInput(inputId = "run_time_auto_ml",label = "Max running time (in seconds)",value = 15,min = 10,max = 60,
-                                                                     displayPrevious = TRUE, lineCap = "round",fgColor = "#428BCA",inputColor = "#428BCA"
-                                                                     
-                                                           ),
-                                                           
-                                                           br(),
-                                                           actionButton("run_auto_ml","Run auto ML",style = 'color:white; background-color:red; padding:4px; font-size:120%',
-                                                                        icon = icon("cogs",lib = "font-awesome"))
-                                                       )
-                                                       
-                                                     )
-                                                     
-                                                   )
+                                                div(align = "center",
+                                                    argonH1(HTML("<font color='white'> Explore results </font>"),display = 4)
+                                                ),
+                                                br(),
+                                                argonRow(
+                                                  argonCard(width = 12,
+                                                            title = "Predictions on test period",
+                                                            src = NULL,
+                                                            hover_lift = TRUE,
+                                                            shadow = TRUE,
+                                                            icon = icon("cogs"),
+                                                            status = "danger",
+                                                            argonTabSet(
+                                                              width = 12,
+                                                              id = "results_models",
+                                                              card_wrapper = TRUE,
+                                                              horizontal = TRUE,
+                                                              circle = FALSE,
+                                                              size = "sm",
+                                                              iconList = list(
+                                                                argonIcon("cloud-upload-96"), 
+                                                                argonIcon("bell-55"), 
+                                                                argonIcon("calendar-grid-58"),
+                                                                argonIcon("calendar-grid-58")
+                                                              ),
+                                                              argonTab(
+                                                                tabName = "Result charts on test period",
+                                                                active = TRUE,
+                                                                withSpinner(dygraphOutput("output_curve", height = 200, width = "100%")),
+                                                                br(),
+                                                                div(align = "center",
+                                                                    switchInput(label = "Bar chart mode",inputId = "bar_chart_mode",value = TRUE)
+                                                                )
+                                                              ),
+                                                              argonTab(
+                                                                tabName = "Compare models performances",
+                                                                active = FALSE,
+                                                                div(align = "center",
+                                                                    br(),
+                                                                    br(),
+                                                                    uiOutput("message_compare_models_performances")),
+                                                                withSpinner(DTOutput("score_table"))
+                                                              ),
+                                                              argonTab(tabName = "Feature importance",
+                                                                       active = FALSE,
+                                                                       div(align = "center",
+                                                                           br(),
+                                                                           br(),
+                                                                           uiOutput("message_feature_importance"),
+                                                                           uiOutput("feature_importance_glm_message")),
+                                                                       withSpinner(plotlyOutput("feature_importance"))
+                                                                       
+                                                              ),
+                                                              argonTab(tabName = "Table of results",
+                                                                       active = FALSE,
+                                                                       withSpinner(DTOutput("table_of_results")))
+                                                            ),
+                                                            br(),
+                                                            br()
+                                                   
+                                                  )
+                                                  
+                                                )
   )
   
   server = function(session,input, output) {
@@ -390,7 +363,7 @@ shinyML_regression <- function(data = data,y,framework = "h2o", share_app = FALS
     time_gbm <- data.table()
     time_random_forest <- data.table()
     time_glm <- data.table()
-
+    
     
     # Intitalization of variables importances per model (not available for generalized linear regression)
     importance_gbm <- data.table()
@@ -404,7 +377,7 @@ shinyML_regression <- function(data = data,y,framework = "h2o", share_app = FALS
     `MAPE(%)` <- NULL
     
     
-
+    
     
     # Make glm parameters correspond to cursors and radiobuttons choices when user click on "Run generalized linear regression" button (and disable other models)
     observeEvent(input$run_glm,{
@@ -490,7 +463,7 @@ shinyML_regression <- function(data = data,y,framework = "h2o", share_app = FALS
       showTab(inputId = "results_models", target = "Feature importance")
       showTab(inputId = "results_models", target = "Table of results")
       
-    
+      
     })
     
     dates_variable_list <- reactive({
@@ -502,7 +475,7 @@ shinyML_regression <- function(data = data,y,framework = "h2o", share_app = FALS
       }
       dates_columns_list
     })
-  
+    
     output$Time_series_checkbox <- renderUI({
       if (length(dates_variable_list()) >= 1){value = TRUE}
       else{value = FALSE}
@@ -675,6 +648,7 @@ shinyML_regression <- function(data = data,y,framework = "h2o", share_app = FALS
     # Define performance table visible on "Compare models performances" tab
     output$score_table <- renderDT({
       
+      req(ncol(table_forecast()[['results']]) > 2)
       req(!is.null(input$checkbox_time_series))
       
       if (input$checkbox_time_series == TRUE){
@@ -716,17 +690,17 @@ shinyML_regression <- function(data = data,y,framework = "h2o", share_app = FALS
       if (nrow(table_forecast()[['table_importance']]) != 0){
         
         if (framework == 'h2o'){
-        
-        ggplotly(
           
-          ggplot(data = table_forecast()[['table_importance']])+
-            geom_bar(aes(x = reorder(`variable`,scaled_importance),y = scaled_importance,fill =  `model`),stat = "identity",width = 0.3)+
-            facet_wrap( model ~ .)+
-            coord_flip()+
-            xlab("")+
-            ylab("")+
-            theme(legend.position="none")
-        )
+          ggplotly(
+            
+            ggplot(data = table_forecast()[['table_importance']])+
+              geom_bar(aes(x = reorder(`variable`,scaled_importance),y = scaled_importance,fill =  `model`),stat = "identity",width = 0.3)+
+              facet_wrap( model ~ .)+
+              coord_flip()+
+              xlab("")+
+              ylab("")+
+              theme(legend.position="none")
+          )
           
         }
         
@@ -757,7 +731,7 @@ shinyML_regression <- function(data = data,y,framework = "h2o", share_app = FALS
       
       
     },server = FALSE)
- 
+    
     # Synchronize train and test cursors
     observeEvent(input$train_selector,{
       updateSliderInput(session,'test_selector',
@@ -768,7 +742,7 @@ shinyML_regression <- function(data = data,y,framework = "h2o", share_app = FALS
       updateSliderInput(session,'train_selector',
                         value= c(input$train_selector[1],input$test_selector[1]) )
     })
-
+    
     # Send a warning if user clicks on "Time series" option and no date or Posixct date column exists on input data frame 
     observeEvent(input$checkbox_time_series,{
       
@@ -806,18 +780,37 @@ shinyML_regression <- function(data = data,y,framework = "h2o", share_app = FALS
     
     # Message indicating that results are not available if no model has been runed
     output$message_compare_models_performances <- renderUI({
-      if (is.na(v_glm$type_model) & is.na(v_random$type_model) & is.na(v_decision_tree$type_model) & is.na(v_grad$type_model & is.na(v_neural$type_model) & is.na(v_auto_ml$type_model))){
-        
+      
+      if (ncol(table_forecast()[['results']]) < 3){  
         sendSweetAlert(
           session = session,
           title = "",
-          text = "Please run at least one algorithm to see results !",
+          text = "Please run at least one algorithm to check model performances !",
           type = "error"
           
           
         )
         
-        argonH1("Please run at least one algorithm to see results !",display = 4)
+        argonH1("Please run at least one algorithm to check model performances !",display = 4)
+      }
+    })
+    
+    
+    
+    # Message indicating that results are not available if no model has been runed
+    output$message_feature_importance <- renderUI({
+      if (is.na(v_glm$type_model) & is.na(v_random$type_model) & is.na(v_decision_tree$type_model) & is.na(v_grad$type_model & is.na(v_neural$type_model) & is.na(v_auto_ml$type_model))){
+        
+        sendSweetAlert(
+          session = session,
+          title = "",
+          text = "Please run at least one algorithm to check features importances !",
+          type = "error"
+          
+          
+        )
+        
+        argonH1("Please run at least one algorithm to check features importances !",display = 4)
       }
     })
     
@@ -837,60 +830,60 @@ shinyML_regression <- function(data = data,y,framework = "h2o", share_app = FALS
     
     
     if(framework == "h2o"){
-  
-    time_neural_network <- data.table()
-    time_auto_ml <- data.table()
       
-    importance_neural_network <- data.table()
-  
-    # Make all parameters correspond to cursors and radiobuttons choices when user click on "Run tuned models!" button
-    observeEvent(input$train_all,{
+      time_neural_network <- data.table()
+      time_auto_ml <- data.table()
       
-      train_1$date <- input$train_selector[1]
-      test_1$date <- input$test_selector[1]
-      test_2$date <- input$test_selector[2]
+      importance_neural_network <- data.table()
       
-      model$train_variables <- input$input_variables
+      # Make all parameters correspond to cursors and radiobuttons choices when user click on "Run tuned models!" button
+      observeEvent(input$train_all,{
+        
+        train_1$date <- input$train_selector[1]
+        test_1$date <- input$test_selector[1]
+        test_2$date <- input$test_selector[2]
+        
+        model$train_variables <- input$input_variables
+        
+        v_neural$type_model <- "ml_neural_network"
+        v_grad$type_model <- "ml_gradient_boosted_trees"
+        v_glm$type_model <- "ml_generalized_linear_regression"
+        v_random$type_model <- "ml_random_forest"
+        v_auto_ml$type_model <- NA
+        
+        parameter$family_glm <- input$glm_family
+        parameter$glm_link <- input$glm_link
+        parameter$intercept_term_glm <- input$intercept_term_glm
+        parameter$reg_param_glm <- input$reg_param_glm
+        parameter$alpha_param_glm <- input$alpha_param_glm
+        parameter$max_iter_glm <- input$max_iter_glm
+        
+        
+        parameter$num_tree_random_forest <- input$num_tree_random_forest
+        parameter$subsampling_rate_random_forest <- input$subsampling_rate_random_forest
+        parameter$max_depth_random_forest <-  input$max_depth_random_forest
+        parameter$n_bins_random_forest <- input$n_bins_random_forest
+        
+        parameter$sample_rate_gbm <- input$sample_rate_gbm
+        parameter$n_trees_gbm <- input$n_trees_gbm
+        parameter$max_depth_gbm <- input$max_depth_gbm
+        parameter$learn_rate_gbm <- input$learn_rate_gbm
+        
+        parameter$hidden_neural_net <- input$hidden_neural_net
+        parameter$epochs_neural_net <- input$epochs_neural_net
+        parameter$activation_neural_net <- input$activation_neural_net
+        parameter$loss_neural_net <- input$loss_neural_net
+        parameter$rate_neural_net <- input$rate_neural_net
+        
+        showTab(inputId = "results_models", target = "Compare models performances")
+        showTab(inputId = "results_models", target = "Feature importance")
+        showTab(inputId = "results_models", target = "Table of results")        
+        
+      })
       
-      v_neural$type_model <- "ml_neural_network"
-      v_grad$type_model <- "ml_gradient_boosted_trees"
-      v_glm$type_model <- "ml_generalized_linear_regression"
-      v_random$type_model <- "ml_random_forest"
-      v_auto_ml$type_model <- NA
       
-      parameter$family_glm <- input$glm_family
-      parameter$glm_link <- input$glm_link
-      parameter$intercept_term_glm <- input$intercept_term_glm
-      parameter$reg_param_glm <- input$reg_param_glm
-      parameter$alpha_param_glm <- input$alpha_param_glm
-      parameter$max_iter_glm <- input$max_iter_glm
-      
-      
-      parameter$num_tree_random_forest <- input$num_tree_random_forest
-      parameter$subsampling_rate_random_forest <- input$subsampling_rate_random_forest
-      parameter$max_depth_random_forest <-  input$max_depth_random_forest
-      parameter$n_bins_random_forest <- input$n_bins_random_forest
-      
-      parameter$sample_rate_gbm <- input$sample_rate_gbm
-      parameter$n_trees_gbm <- input$n_trees_gbm
-      parameter$max_depth_gbm <- input$max_depth_gbm
-      parameter$learn_rate_gbm <- input$learn_rate_gbm
-      
-      parameter$hidden_neural_net <- input$hidden_neural_net
-      parameter$epochs_neural_net <- input$epochs_neural_net
-      parameter$activation_neural_net <- input$activation_neural_net
-      parameter$loss_neural_net <- input$loss_neural_net
-      parameter$rate_neural_net <- input$rate_neural_net
-      
-      showTab(inputId = "results_models", target = "Compare models performances")
-      showTab(inputId = "results_models", target = "Feature importance")
-      showTab(inputId = "results_models", target = "Table of results")        
-      
-    })
-    
-    
-     # Make neural network parameters correspond to cursors and radiobuttons choices when user click on "Run neural network regression" button (and disable other models)
-    observeEvent(input$run_neural_network,{
+      # Make neural network parameters correspond to cursors and radiobuttons choices when user click on "Run neural network regression" button (and disable other models)
+      observeEvent(input$run_neural_network,{
         
         train_1$date <- input$train_selector[1]
         test_1$date <- input$test_selector[1]
@@ -914,8 +907,8 @@ shinyML_regression <- function(data = data,y,framework = "h2o", share_app = FALS
         showTab(inputId = "results_models", target = "Table of results")
         
       })
- 
-    observeEvent(input$run_auto_ml,{
+      
+      observeEvent(input$run_auto_ml,{
         
         train_1$date <- input$train_selector[1]
         test_1$date <- input$test_selector[1]
@@ -956,7 +949,7 @@ shinyML_regression <- function(data = data,y,framework = "h2o", share_app = FALS
           data_train <- data %>% sample_frac(as.numeric(as.character(gsub("%","",input$percentage_selector)))*0.01)
           data_test <- data %>% anti_join(data_train)
           data_results <- data_test
-
+          
         }
         
         
@@ -1188,420 +1181,432 @@ shinyML_regression <- function(data = data,y,framework = "h2o", share_app = FALS
     
     
     else if(framework == "spark"){
-    
-    time_decision_tree <- data.table()
-    importance_decision_tree <- data.table()
-    
-    # Make all parameters correspond to cursors and radiobuttons choices when user click on "Run tuned models!" button
-    observeEvent(input$train_all,{
       
-      test_1$date <- input$test_selector[1]
-      test_2$date <- input$test_selector[2]
-      model$train_variables <- input$input_variables
-      v_decision_tree$type_model <- "ml_decision_tree"
-      v_glm$type_model <- "ml_generalized_linear_regression"
-      v_grad$type_model <- "ml_gradient_boosted_trees"
-      v_random$type_model <- "ml_random_forest"
+      time_decision_tree <- data.table()
+      importance_decision_tree <- data.table()
       
-      parameter$step_size_gbm <- input$step_size_gbm
-      parameter$subsampling_rate_gbm <- input$subsampling_rate_gbm
-      parameter$max_depth_gbm <- input$max_depth_gbm
-      
-      parameter$num_tree_random_forest <- input$num_tree_random_forest
-      parameter$subsampling_rate_random_forest <- input$subsampling_rate_random_forest
-      parameter$max_depth_random_forest <-  input$max_depth_random_forest
-      
-      
-      parameter$family_glm <- input$glm_family
-      parameter$link_glm <- input$glm_link
-      parameter$intercept_term_glm <- input$intercept_term_glm
-      parameter$reg_param_glm <- input$reg_param_glm
-      parameter$max_iter_glm <- input$max_iter_glm
-      
-      parameter$max_depth_decision_tree <- input$max_depth_decision_tree
-      parameter$max_bins_decision_tree <- input$max_bins_decision_tree
-      parameter$min_instance_decision_tree <- input$min_instance_decision_tree
-      
-      showTab(inputId = "results_models", target = "Feature importance")
-      showTab(inputId = "results_models", target = "Compare models performances")
-      showTab(inputId = "results_models", target = "Table of results")
-      
-      
-    })
-    
-    # Make decision tree parameters correspond to cursors when user click on "Run decision tree" button (and disable other models)
-    observeEvent(input$run_decision_tree,{
-      
-      test_1$date <- input$test_selector[1]
-      test_2$date <- input$test_selector[2]
-      model$train_variables <- input$input_variables
-      parameter$max_depth_decision_tree <- input$max_depth_decision_tree
-      parameter$max_bins_decision_tree <- input$max_bins_decision_tree
-      parameter$min_instance_decision_tree <- input$min_instance_decision_tree
-      
-      v_decision_tree$type_model <- "ml_decision_tree"
-      
-      v_glm$type_model <- NA
-      v_grad$type_model <- NA
-      v_random$type_model <- NA
-      
-      showTab(inputId = "results_models", target = "Compare models performances")
-      showTab(inputId = "results_models", target = "Feature importance")
-      showTab(inputId = "results_models", target = "Table of results")  
-      
-    })
-    
-    # Define the table of predicted data
-    # If "Run tuned models!" button is clicked, prediction results on test period are stored in four additional columns
-    table_forecast <- reactive({
-      
-      # Make sure a value is set to checkbox_time_series checkbox 
-      req(!is.null(input$checkbox_time_series))
-      
-      if (input$checkbox_time_series == TRUE){
-        req(!is.null(test_1$date))
-        req(!is.null(test_2$date))
+      # Make all parameters correspond to cursors and radiobuttons choices when user click on "Run tuned models!" button
+      observeEvent(input$train_all,{
         
-        data_results <- eval(parse(text = paste0("data[,.(",input$time_serie_select_column,",",y,")][",input$time_serie_select_column,">'",test_1$date,"',][",input$time_serie_select_column,"< '",test_2$date,"',]")))
+        test_1$date <- input$test_selector[1]
+        test_2$date <- input$test_selector[2]
+        model$train_variables <- input$input_variables
+        v_decision_tree$type_model <- "ml_decision_tree"
+        v_glm$type_model <- "ml_generalized_linear_regression"
+        v_grad$type_model <- "ml_gradient_boosted_trees"
+        v_random$type_model <- "ml_random_forest"
         
-        }
-      
-      else if (input$checkbox_time_series == FALSE){
+        parameter$step_size_gbm <- input$step_size_gbm
+        parameter$subsampling_rate_gbm <- input$subsampling_rate_gbm
+        parameter$max_depth_gbm <- input$max_depth_gbm
         
-        req(!is.null(input$percentage_selector))
+        parameter$num_tree_random_forest <- input$num_tree_random_forest
+        parameter$subsampling_rate_random_forest <- input$subsampling_rate_random_forest
+        parameter$max_depth_random_forest <-  input$max_depth_random_forest
         
-        data_train <- data %>% sample_frac(as.numeric(as.character(gsub("%","",input$percentage_selector)))*0.01)
-        data_test <- data %>% anti_join(data_train)
-        data_results <- data_test
         
-      }
-
-      table_results <- data_results
+        parameter$family_glm <- input$glm_family
+        parameter$link_glm <- input$glm_link
+        parameter$intercept_term_glm <- input$intercept_term_glm
+        parameter$reg_param_glm <- input$reg_param_glm
+        parameter$max_iter_glm <- input$max_iter_glm
+        
+        parameter$max_depth_decision_tree <- input$max_depth_decision_tree
+        parameter$max_bins_decision_tree <- input$max_bins_decision_tree
+        parameter$min_instance_decision_tree <- input$min_instance_decision_tree
+        
+        showTab(inputId = "results_models", target = "Feature importance")
+        showTab(inputId = "results_models", target = "Compare models performances")
+        showTab(inputId = "results_models", target = "Table of results")
+        
+        
+      })
       
-      var_input_list <- ""
+      # Make decision tree parameters correspond to cursors when user click on "Run decision tree" button (and disable other models)
+      observeEvent(input$run_decision_tree,{
+        
+        test_1$date <- input$test_selector[1]
+        test_2$date <- input$test_selector[2]
+        model$train_variables <- input$input_variables
+        parameter$max_depth_decision_tree <- input$max_depth_decision_tree
+        parameter$max_bins_decision_tree <- input$max_bins_decision_tree
+        parameter$min_instance_decision_tree <- input$min_instance_decision_tree
+        
+        v_decision_tree$type_model <- "ml_decision_tree"
+        
+        v_glm$type_model <- NA
+        v_grad$type_model <- NA
+        v_random$type_model <- NA
+        
+        showTab(inputId = "results_models", target = "Compare models performances")
+        showTab(inputId = "results_models", target = "Feature importance")
+        showTab(inputId = "results_models", target = "Table of results")  
+        
+      })
       
-      
-      for (i in 1:length(model$train_variables)){var_input_list <- paste0(var_input_list,"+",model$train_variables[i])}
-      var_input_list <- ifelse(startsWith(var_input_list,"+"),substr(var_input_list,2,nchar(var_input_list)),var_input_list)
-      
-      # Verify that at least one explanatory variable is selected 
-      if (var_input_list != "+"){  
+      # Define the table of predicted data
+      # If "Run tuned models!" button is clicked, prediction results on test period are stored in four additional columns
+      table_forecast <- reactive({
+        
+        # Make sure a value is set to checkbox_time_series checkbox 
+        req(!is.null(input$checkbox_time_series))
         
         if (input$checkbox_time_series == TRUE){
-        
-        data_spark_train <- eval(parse(text = paste0("data[",input$time_serie_select_column,"<='",test_1$date,"',]")))
-        data_spark_test <- eval(parse(text = paste0("data[",input$time_serie_select_column,">'",test_1$date,"',][",input$time_serie_select_column,"< '",test_2$date,"',]")))
-        
+          req(!is.null(test_1$date))
+          req(!is.null(test_2$date))
+          
+          data_results <- eval(parse(text = paste0("data[,.(",input$time_serie_select_column,",",y,")][",input$time_serie_select_column,">'",test_1$date,"',][",input$time_serie_select_column,"< '",test_2$date,"',]")))
+          
         }
         
         else if (input$checkbox_time_series == FALSE){
           
-          data_spark_train <- data_train
-          data_spark_test <- data_test
-        }
-        
-        data_spark_train <- copy_to(sc, data_spark_train, "data_spark_train", overwrite = TRUE)
-        data_spark_test <- copy_to(sc, data_spark_test, "data_spark_test", overwrite = TRUE)
-        
-        
-        
-        # Calculation of glm predictions and associated calculation time 
-        if (!is.na(v_glm$type_model) & v_glm$type_model == "ml_generalized_linear_regression"){
+          req(!is.null(input$percentage_selector))
           
-          t1 <- Sys.time()
-          eval(parse(text = paste0("fit <- data_spark_train %>% ml_generalized_linear_regression(", y ," ~ " ,var_input_list ,
-                                   ",family  = ", parameter$family_glm,
-                                   ",link =",parameter$link_glm,
-                                   ",fit_intercept =",parameter$intercept_term_glm,
-                                   ",reg_param =",parameter$reg_param_glm,
-                                   ",max_iter =",parameter$max_iter_glm,
-                                   ")")))
-          t2 <- Sys.time()
-          time_glm <- data.frame(`Training time` =  paste0(round(t2 - t1,1)," seconds"), Model = "Generalized linear regression")
-          
-          table_ml_glm <- sdf_predict(data_spark_test, fit) %>% collect %>% as.data.frame() %>% select(prediction)%>% mutate(prediction = round(prediction,3)) %>% 
-            rename(`Generalized linear regression` = prediction)
-          table_results <- cbind(data_results,table_ml_glm) %>% as.data.table()
-          
+          data_train <- data %>% sample_frac(as.numeric(as.character(gsub("%","",input$percentage_selector)))*0.01)
+          data_test <- data %>% anti_join(data_train)
+          data_results <- data_test
           
         }
         
-        # Calculation of gradient boosting trees predictions and associated calculation time 
-        if (!is.na(v_grad$type_model) & v_grad$type_model == "ml_gradient_boosted_trees"){
+        table_results <- data_results
+        
+        var_input_list <- ""
+        
+        
+        for (i in 1:length(model$train_variables)){var_input_list <- paste0(var_input_list,"+",model$train_variables[i])}
+        var_input_list <- ifelse(startsWith(var_input_list,"+"),substr(var_input_list,2,nchar(var_input_list)),var_input_list)
+        
+        # Verify that at least one explanatory variable is selected 
+        if (var_input_list != "+"){  
+          
+          if (input$checkbox_time_series == TRUE){
+            
+            data_spark_train <- eval(parse(text = paste0("data[",input$time_serie_select_column,"<='",test_1$date,"',]")))
+            data_spark_test <- eval(parse(text = paste0("data[",input$time_serie_select_column,">'",test_1$date,"',][",input$time_serie_select_column,"< '",test_2$date,"',]")))
+            
+          }
+          
+          else if (input$checkbox_time_series == FALSE){
+            
+            data_spark_train <- data_train
+            data_spark_test <- data_test
+          }
+          
+          data_spark_train <- copy_to(sc, data_spark_train, "data_spark_train", overwrite = TRUE)
+          data_spark_test <- copy_to(sc, data_spark_test, "data_spark_test", overwrite = TRUE)
           
           
-          t1 <- Sys.time()
           
-          eval(parse(text = paste0("fit <- data_spark_train %>% ml_gradient_boosted_trees(", y ," ~ " ,var_input_list ,
-                                   ",step_size =",parameter$step_size_gbm,
-                                   ",subsampling_rate =",parameter$subsampling_rate_gbm,
-                                   ",max_depth =",parameter$max_depth_gbm,
-                                   " )")))
-          t2 <- Sys.time()
+          # Calculation of glm predictions and associated calculation time 
+          if (!is.na(v_glm$type_model) & v_glm$type_model == "ml_generalized_linear_regression"){
+            
+            t1 <- Sys.time()
+            eval(parse(text = paste0("fit <- data_spark_train %>% ml_generalized_linear_regression(", y ," ~ " ,var_input_list ,
+                                     ",family  = ", parameter$family_glm,
+                                     ",link =",parameter$link_glm,
+                                     ",fit_intercept =",parameter$intercept_term_glm,
+                                     ",reg_param =",parameter$reg_param_glm,
+                                     ",max_iter =",parameter$max_iter_glm,
+                                     ")")))
+            t2 <- Sys.time()
+            time_glm <- data.frame(`Training time` =  paste0(round(t2 - t1,1)," seconds"), Model = "Generalized linear regression")
+            
+            table_ml_glm <- sdf_predict(data_spark_test, fit) %>% collect %>% as.data.frame() %>% select(prediction)%>% mutate(prediction = round(prediction,3)) %>% 
+              rename(`Generalized linear regression` = prediction)
+            table_results <- cbind(data_results,table_ml_glm) %>% as.data.table()
+            
+            
+          }
           
-          time_gbm <- data.frame(`Training time` =  paste0(round(t2 - t1,1)," seconds"), Model = "Gradient boosted trees") 
-          importance_gbm <- ml_feature_importances(fit) %>% mutate(model = "Gradient boosted trees")
+          # Calculation of gradient boosting trees predictions and associated calculation time 
+          if (!is.na(v_grad$type_model) & v_grad$type_model == "ml_gradient_boosted_trees"){
+            
+            
+            t1 <- Sys.time()
+            
+            eval(parse(text = paste0("fit <- data_spark_train %>% ml_gradient_boosted_trees(", y ," ~ " ,var_input_list ,
+                                     ",step_size =",parameter$step_size_gbm,
+                                     ",subsampling_rate =",parameter$subsampling_rate_gbm,
+                                     ",max_depth =",parameter$max_depth_gbm,
+                                     " )")))
+            t2 <- Sys.time()
+            
+            time_gbm <- data.frame(`Training time` =  paste0(round(t2 - t1,1)," seconds"), Model = "Gradient boosted trees") 
+            importance_gbm <- ml_feature_importances(fit) %>% mutate(model = "Gradient boosted trees")
+            
+            table_ml_gradient_boosted <- sdf_predict(data_spark_test, fit) %>% collect %>% as.data.frame() %>% select(prediction) %>% mutate(prediction = round(prediction,3)) %>% 
+              rename(`Gradient boosted trees` = prediction)
+            table_results <- cbind(data_results,table_ml_gradient_boosted) %>% as.data.table()
+            
+          }
           
-          table_ml_gradient_boosted <- sdf_predict(data_spark_test, fit) %>% collect %>% as.data.frame() %>% select(prediction) %>% mutate(prediction = round(prediction,3)) %>% 
-            rename(`Gradient boosted trees` = prediction)
-          table_results <- cbind(data_results,table_ml_gradient_boosted) %>% as.data.table()
+          # Calculation of random forest predictions and associated calculation time 
+          if (!is.na(v_random$type_model) & v_random$type_model == "ml_random_forest"){
+            
+            t1 <- Sys.time()
+            eval(parse(text = paste0("fit <- data_spark_train %>% ml_random_forest(", y ," ~ " ,var_input_list ,
+                                     ",num_trees  =",parameter$num_tree_random_forest,
+                                     ",subsampling_rate =",parameter$subsampling_rate_random_forest,
+                                     ",max_depth  =",parameter$max_depth_random_forest,
+                                     ")")))
+            t2 <- Sys.time()
+            time_random_forest <- data.frame(`Training time` =  paste0(round(t2 - t1,1)," seconds"), Model = "Random forest")
+            importance_random_forest <- ml_feature_importances(fit) %>% mutate(model = "Random forest")
+            
+            table_ml_random_forest <- sdf_predict(data_spark_test, fit) %>% collect %>% as.data.frame() %>% select(prediction)%>% mutate(prediction = round(prediction,3)) %>% 
+              rename(`Random forest` = prediction)
+            table_results <- cbind(data_results,table_ml_random_forest) %>% as.data.table()
+            
+          }
+          
+          
+          # Calculation of decision trees predictions and associated calculation time 
+          if (!is.na(v_decision_tree$type_model) & v_decision_tree$type_model == "ml_decision_tree"){
+            
+            t1 <- Sys.time()
+            eval(parse(text = paste0("fit <- data_spark_train %>% ml_decision_tree(", y ," ~ " ,var_input_list ,
+                                     ",max_depth  =",parameter$max_depth_decision_tree,
+                                     ",max_bins  =",parameter$max_bins_decision_tree,
+                                     ",min_instances_per_node  =",parameter$min_instance_decision_tree,
+                                     ")")))
+            t2 <- Sys.time()
+            time_decision_tree <- data.frame(`Training time` =  paste0(round(t2 - t1,1)," seconds"), Model = "Decision tree")
+            importance_decision_tree <- ml_feature_importances(fit) %>% mutate(model = "Decision tree")
+            
+            table_ml_decision_tree <- sdf_predict(data_spark_test, fit) %>% collect %>% as.data.frame() %>% select(prediction)%>% mutate(prediction = round(prediction,3)) %>% 
+              rename(`Decision tree` = prediction)
+            table_results <- cbind(data_results,table_ml_decision_tree) %>% as.data.table()
+            
+          }
+          
+          # Assembly results of all models (some column might remain empty)
+          if (!is.na(v_decision_tree$type_model) & !is.na(v_grad$type_model) & !is.na(v_glm$type_model) & !is.na(v_random$type_model))
+            
+            table_results <- cbind(data_results,table_ml_gradient_boosted,table_ml_random_forest,table_ml_glm,table_ml_decision_tree) %>% 
+            as.data.table()
           
         }
         
-        # Calculation of random forest predictions and associated calculation time 
-        if (!is.na(v_random$type_model) & v_random$type_model == "ml_random_forest"){
+        table_training_time <- rbind(time_gbm,time_random_forest,time_glm,time_decision_tree)
+        table_importance <- rbind(importance_gbm,importance_random_forest,importance_decision_tree) %>% as.data.table()
+        
+        
+        # Used a list to access to different tables from only on one reactive objet 
+        list(traning_time = table_training_time, table_importance = table_importance, results = table_results)
+        
+        
+        
+      })
+      
+      
+      # When "Run tuned models!" button is clicked, send messagebox once all models have been trained
+      observe({
+        
+        if ("Generalized linear regression" %in% colnames(table_forecast()[['results']]) &
+            "Random forest" %in% colnames(table_forecast()[['results']]) &
+            "Decision tree" %in% colnames(table_forecast()[['results']]) &
+            "Gradient boosted trees" %in% colnames(table_forecast()[['results']])
+        ){
           
-          t1 <- Sys.time()
-          eval(parse(text = paste0("fit <- data_spark_train %>% ml_random_forest(", y ," ~ " ,var_input_list ,
-                                   ",num_trees  =",parameter$num_tree_random_forest,
-                                   ",subsampling_rate =",parameter$subsampling_rate_random_forest,
-                                   ",max_depth  =",parameter$max_depth_random_forest,
-                                   ")")))
-          t2 <- Sys.time()
-          time_random_forest <- data.frame(`Training time` =  paste0(round(t2 - t1,1)," seconds"), Model = "Random forest")
-          importance_random_forest <- ml_feature_importances(fit) %>% mutate(model = "Random forest")
           
-          table_ml_random_forest <- sdf_predict(data_spark_test, fit) %>% collect %>% as.data.frame() %>% select(prediction)%>% mutate(prediction = round(prediction,3)) %>% 
-            rename(`Random forest` = prediction)
-          table_results <- cbind(data_results,table_ml_random_forest) %>% as.data.table()
-          
+          sendSweetAlert(
+            session = session,
+            title = "The four machine learning models have been trained !",
+            text = "Click ok to see results",
+            type = "success"
+            
+            
+          )
         }
-        
-        
-        # Calculation of decision trees predictions and associated calculation time 
-        if (!is.na(v_decision_tree$type_model) & v_decision_tree$type_model == "ml_decision_tree"){
-          
-          t1 <- Sys.time()
-          eval(parse(text = paste0("fit <- data_spark_train %>% ml_decision_tree(", y ," ~ " ,var_input_list ,
-                                   ",max_depth  =",parameter$max_depth_decision_tree,
-                                   ",max_bins  =",parameter$max_bins_decision_tree,
-                                   ",min_instances_per_node  =",parameter$min_instance_decision_tree,
-                                   ")")))
-          t2 <- Sys.time()
-          time_decision_tree <- data.frame(`Training time` =  paste0(round(t2 - t1,1)," seconds"), Model = "Decision tree")
-          importance_decision_tree <- ml_feature_importances(fit) %>% mutate(model = "Decision tree")
-          
-          table_ml_decision_tree <- sdf_predict(data_spark_test, fit) %>% collect %>% as.data.frame() %>% select(prediction)%>% mutate(prediction = round(prediction,3)) %>% 
-            rename(`Decision tree` = prediction)
-          table_results <- cbind(data_results,table_ml_decision_tree) %>% as.data.table()
-          
-        }
-        
-        # Assembly results of all models (some column might remain empty)
-        if (!is.na(v_decision_tree$type_model) & !is.na(v_grad$type_model) & !is.na(v_glm$type_model) & !is.na(v_random$type_model))
-          
-          table_results <- cbind(data_results,table_ml_gradient_boosted,table_ml_random_forest,table_ml_glm,table_ml_decision_tree) %>% 
-          as.data.table()
-        
-      }
-      
-      table_training_time <- rbind(time_gbm,time_random_forest,time_glm,time_decision_tree)
-      table_importance <- rbind(importance_gbm,importance_random_forest,importance_decision_tree) %>% as.data.table()
+      })
       
       
-      # Used a list to access to different tables from only on one reactive objet 
-      list(traning_time = table_training_time, table_importance = table_importance, results = table_results)
-      
-     
-      
-    })
-    
-
-    # When "Run tuned models!" button is clicked, send messagebox once all models have been trained
-    observe({
-      
-      if ("Generalized linear regression" %in% colnames(table_forecast()[['results']]) &
-          "Random forest" %in% colnames(table_forecast()[['results']]) &
-          "Decision tree" %in% colnames(table_forecast()[['results']]) &
-          "Gradient boosted trees" %in% colnames(table_forecast()[['results']])
-      ){
+      # Define Value Box concerning memory used by h2o cluster  
+      output$spark_cluster_mem <- renderUI({
         
-        
-        sendSweetAlert(
-          session = session,
-          title = "The four machine learning models have been trained !",
-          text = "Click ok to see results",
-          type = "success"
-          
-          
+        argonInfoCard(
+          value = paste(gsub("g","GB",config_spark$spark.driver.memory), sep = ""),
+          title = "Spark Cluster Total Memory",gradient = TRUE,width = 7,
+          icon = icon("server"), 
+          icon_background = "yellow",
+          background_color = "lightblue"
         )
-      }
-    })
-    
-
-    # Define Value Box concerning memory used by h2o cluster  
-    output$spark_cluster_mem <- renderUI({
+        
+      })
       
-      argonInfoCard(
-        value = paste(gsub("g","GB",config_spark$spark.driver.memory), sep = ""),
-        title = "Spark Cluster Total Memory",gradient = TRUE,width = 7,
-        icon = icon("server"), 
-        icon_background = "yellow",
-        background_color = "lightblue"
-      )
+      # Define Value Box concerning number of cpu used by spark cluster
+      output$spark_cpu <- renderUI({
+        
+        argonInfoCard(
+          value = config_spark$spark.sql.shuffle.partitions,gradient = TRUE,width = 7,
+          title = "Number of CPUs in Use",
+          icon = icon("microchip"), 
+          icon_background = "yellow",
+          background_color = "lightblue"
+        )
+        
+        
+      })
       
-    })
-    
-    # Define Value Box concerning number of cpu used by spark cluster
-    output$spark_cpu <- renderUI({
-      
-      argonInfoCard(
-        value = config_spark$spark.sql.shuffle.partitions,gradient = TRUE,width = 7,
-        title = "Number of CPUs in Use",
-        icon = icon("microchip"), 
-        icon_background = "yellow",
-        background_color = "lightblue"
-      )
-      
-
-    })
-    
     }
     
   }
-
+  
   if(framework == "h2o"){
-  
-  # Run h2o instance (might require to unset proxy authentification credentials )
-  Sys.setenv(http_proxy="")
-  Sys.setenv(http_proxy_user="")
-  Sys.setenv(https_proxy_user="")
-  h2o.init()
-  h2o::h2o.no_progress()
-  cluster_status <- h2o.clusterStatus()
-  
-  ## ---------------------------------------------------------------------------- HEADER -----------------------------------
-  
-  
-  dashheader_select_parameters <- argonDashHeader(gradient = TRUE,
-                                                  color = "default",
-                                                  separator = FALSE,
-                                                  
-                                                  div(align = "center",
-                                                      argonH1(HTML("<font color='white'> Select models parameters</font>"),display = 4)
-                                                  ),
-                                                  
-                                                  br(),
-                                                  argonRow(
-                                                    argonColumn(width = 6,div(align = "center",uiOutput("h2o_cluster_mem"))),
-                                                    argonColumn(width = 6,div(align = "center",uiOutput("h2o_cpu")))
-                                                  ),
-                                                  
-                                                  
-                                                  argonRow(
-                                                    argonCard(
-                                                      width = 3,
-                                                      src = NULL,
-                                                      hover_lift = T,
-                                                      icon = icon("cogs"),
-                                                      status = "success",
-                                                      shadow = TRUE,
-                                                      hover_shadow = TRUE,
-                                                      title = "Generalized linear regression",
-                                                      div(align = "center",
-                                                          argonRow(
-                                                            argonColumn(
-                                                              radioButtons(label = "Family",inputId = "glm_family",choices = c("gaussian","poisson", "gamma","tweedie"),
-                                                                           selected = "gaussian"),width = 6),
+    
+    # Run h2o instance (might require to unset proxy authentification credentials )
+    Sys.setenv(http_proxy="")
+    Sys.setenv(http_proxy_user="")
+    Sys.setenv(https_proxy_user="")
+    h2o.init()
+    h2o::h2o.no_progress()
+    cluster_status <- h2o.clusterStatus()
+    
+    ## ---------------------------------------------------------------------------- HEADER -----------------------------------
+    
+    
+    dashheader_select_parameters <- argonDashHeader(gradient = TRUE,
+                                                    color = "default",
+                                                    separator = FALSE,
+                                                    
+                                                    div(align = "center",
+                                                        argonH1(HTML("<font color='white'> Configure parameters and run models </font>"),display = 4)
+                                                    ),
+                                                    
+                                                    br(),
+                                                    argonRow(
+                                                      argonColumn(width = 6,div(align = "center",uiOutput("h2o_cluster_mem"))),
+                                                      argonColumn(width = 6,div(align = "center",uiOutput("h2o_cpu")))
+                                                    ),
+                                                    
+                                                    
+                                                    argonRow(
+                                                      argonCard(
+                                                        width = 3,
+                                                        icon = icon("cogs"),
+                                                        status = "success",
+                                                        title = "Generalized linear regression",
+                                                        div(align = "center",
+                                                            argonRow(
+                                                              argonColumn(
+                                                                radioButtons(label = "Family",inputId = "glm_family",choices = c("gaussian","poisson", "gamma","tweedie"),
+                                                                             selected = "gaussian"),width = 6),
+                                                              
+                                                              argonColumn(
+                                                                radioButtons(label = "Link",inputId = "glm_link",choices = c("identity","log"),selected = "identity"),
+                                                                switchInput(label = "Intercept term",inputId = "intercept_term_glm",value = TRUE,width = "auto"),width = 6)
+                                                            ),
                                                             
-                                                            argonColumn(
-                                                              radioButtons(label = "Link",inputId = "glm_link",choices = c("identity","log"),selected = "identity"),
-                                                              switchInput(label = "Intercept term",inputId = "intercept_term_glm",value = TRUE,width = "auto"),width = 6)
-                                                          ),
-                                                          
-                                                          sliderInput(label = "Lambda",inputId = "reg_param_glm",min = 0,max = 10,value = 0),
-                                                          sliderInput(label = "Alpha (0:Ridge <-> 1:Lasso)",inputId = "alpha_param_glm",min = 0,max = 1,value = 0.5),
-                                                          sliderInput(label = "Maximum iteraions",inputId = "max_iter_glm",min = 50,max = 300,value = 100),
-                                                          actionButton("run_glm","Run glm",style = 'color:white; background-color:green; padding:4px; font-size:120%',
-                                                                       icon = icon("cogs",lib = "font-awesome"))
-                                                      )
+                                                            sliderInput(label = "Lambda",inputId = "reg_param_glm",min = 0,max = 10,value = 0),
+                                                            sliderInput(label = "Alpha (0:Ridge <-> 1:Lasso)",inputId = "alpha_param_glm",min = 0,max = 1,value = 0.5),
+                                                            sliderInput(label = "Maximum iteraions",inputId = "max_iter_glm",min = 50,max = 300,value = 100),
+                                                            actionButton("run_glm","Run glm",style = 'color:white; background-color:green; padding:4px; font-size:120%',
+                                                                         icon = icon("cogs",lib = "font-awesome"))
+                                                        )
+                                                        
+                                                        
+                                                        
+                                                      ),
+                                                      
+                                                      argonCard(
+                                                        width = 3,
+                                                        icon = icon("cogs"),
+                                                        status = "danger",
+                                                        title = "Random Forest",
+                                                        div(align = "center",
+                                                            sliderInput(label = "Number of trees",min = 1,max = 100, inputId = "num_tree_random_forest",value = 50),
+                                                            sliderInput(label = "Subsampling rate",min = 0.1,max = 1, inputId = "subsampling_rate_random_forest",value = 0.6),
+                                                            sliderInput(label = "Max depth",min = 1,max = 50, inputId = "max_depth_random_forest",value = 20),
+                                                            sliderInput(label = "Number of bins",min = 2,max = 100, inputId = "n_bins_random_forest",value = 20),
+                                                            actionButton("run_random_forest","Run random forest",style = 'color:white; background-color:red; padding:4px; font-size:120%',
+                                                                         icon = icon("cogs",lib = "font-awesome"))
+                                                        )
+                                                        
+                                                      ),
                                                       
                                                       
-                                                      
-                                                    ),
-                                                    
-                                                    argonCard(
-                                                      width = 3,
-                                                      src = NULL,
-                                                      hover_lift = T,
-                                                      icon = icon("cogs"),
-                                                      status = "danger",
-                                                      shadow = TRUE,
-                                                      #border_level = 2,
-                                                      hover_shadow = TRUE,
-                                                      title = "Random Forest",
-                                                      div(align = "center",
-                                                          sliderInput(label = "Number of trees",min = 1,max = 100, inputId = "num_tree_random_forest",value = 50),
-                                                          sliderInput(label = "Subsampling rate",min = 0.1,max = 1, inputId = "subsampling_rate_random_forest",value = 0.6),
-                                                          sliderInput(label = "Max depth",min = 1,max = 50, inputId = "max_depth_random_forest",value = 20),
-                                                          sliderInput(label = "Number of bins",min = 2,max = 100, inputId = "n_bins_random_forest",value = 20),
-                                                          actionButton("run_random_forest","Run random forest",style = 'color:white; background-color:red; padding:4px; font-size:120%',
-                                                                       icon = icon("cogs",lib = "font-awesome"))
-                                                      )
-                                                      
-                                                    ),
-                                                    
-                                                    
-                                                    argonCard(
-                                                      width = 3,
-                                                      src = NULL,
-                                                      hover_lift = T,
-                                                      icon = icon("cogs"),
-                                                      status = "primary",
-                                                      shadow = TRUE,
-                                                      #border_level = 2,
-                                                      hover_shadow = TRUE,
-                                                      title = "Neural network",
-                                                      div(align = "center",
-                                                          argonRow(
-                                                            argonColumn(
-                                                              radioButtons(label = "Activation function",inputId = "activation_neural_net",
-                                                                           choices = c( "Rectifier", "Maxout","Tanh", "RectifierWithDropout", "MaxoutWithDropout","TanhWithDropout"),selected = "Rectifier"),width = 6),
+                                                      argonCard(
+                                                        width = 3,
+                                                        icon = icon("cogs"),
+                                                        status = "primary",
+                                                        title = "Neural network",
+                                                        div(align = "center",
+                                                            argonRow(
+                                                              argonColumn(
+                                                                radioButtons(label = "Activation function",inputId = "activation_neural_net",
+                                                                             choices = c( "Rectifier", "Maxout","Tanh", "RectifierWithDropout", "MaxoutWithDropout","TanhWithDropout"),selected = "Rectifier"),width = 6),
+                                                              
+                                                              argonColumn(
+                                                                radioButtons(label = "Loss function",inputId = "loss_neural_net",
+                                                                             choices = c("Automatic", "Quadratic", "Huber", "Absolute", "Quantile"),selected = "Automatic"),width = 6)
+                                                            ),
                                                             
-                                                            argonColumn(
-                                                              radioButtons(label = "Loss function",inputId = "loss_neural_net",
-                                                                           choices = c("Automatic", "Quadratic", "Huber", "Absolute", "Quantile"),selected = "Automatic"),width = 6)
-                                                          ),
-                                                          
-                                                          textInput(label = "Hidden layers",inputId = "hidden_neural_net",value = "c(200,200)"),
-                                                          sliderInput(label = "Epochs",min = 10,max = 100, inputId = "epochs_neural_net",value = 10),
-                                                          sliderInput(label = "Learning rate",min = 0.001,max = 0.1, inputId = "rate_neural_net",value = 0.005),
-                                                          actionButton("run_neural_network","Run neural network",style = 'color:white; background-color:darkblue; padding:4px; font-size:120%',
-                                                                       icon = icon("cogs",lib = "font-awesome"))
+                                                            textInput(label = "Hidden layers",inputId = "hidden_neural_net",value = "c(200,200)"),
+                                                            sliderInput(label = "Epochs",min = 10,max = 100, inputId = "epochs_neural_net",value = 10),
+                                                            sliderInput(label = "Learning rate",min = 0.001,max = 0.1, inputId = "rate_neural_net",value = 0.005),
+                                                            actionButton("run_neural_network","Run neural network",style = 'color:white; background-color:darkblue; padding:4px; font-size:120%',
+                                                                         icon = icon("cogs",lib = "font-awesome"))
+                                                        )
+                                                        
+                                                      ),
+                                                      
+                                                      argonCard(
+                                                        width = 3,
+                                                        icon = icon("cogs"),
+                                                        status = "warning",
+                                                        title = "Gradient boosting",
+                                                        div(align = "center",
+                                                            sliderInput(label = "Max depth",min = 1,max = 20, inputId = "max_depth_gbm",value = 5),
+                                                            sliderInput(label = "Number of trees",min = 1,max = 100, inputId = "n_trees_gbm",value = 50),
+                                                            sliderInput(label = "Sample rate",min = 0.1,max = 1, inputId = "sample_rate_gbm",value = 1),
+                                                            sliderInput(label = "Learn rate",min = 0.1,max = 1, inputId = "learn_rate_gbm",value = 0.1),
+                                                            actionButton("run_gradient_boosting","Run gradient boosting",style = 'color:white; background-color:orange; padding:4px; font-size:120%',
+                                                                         icon = icon("cogs",lib = "font-awesome"))
+                                                        )
+                                                        
                                                       )
                                                       
                                                     ),
-                                                    
-                                                    argonCard(
-                                                      width = 3,
-                                                      src = NULL,
-                                                      hover_lift = T,
-                                                      icon = icon("cogs"),
-                                                      status = "warning",
-                                                      shadow = TRUE,
-                                                      #border_level = 2,
-                                                      hover_shadow = TRUE,
-                                                      title = "Gradient boosting",
-                                                      div(align = "center",
-                                                          sliderInput(label = "Max depth",min = 1,max = 20, inputId = "max_depth_gbm",value = 5),
-                                                          sliderInput(label = "Number of trees",min = 1,max = 100, inputId = "n_trees_gbm",value = 50),
-                                                          sliderInput(label = "Sample rate",min = 0.1,max = 1, inputId = "sample_rate_gbm",value = 1),
-                                                          sliderInput(label = "Learn rate",min = 0.1,max = 1, inputId = "learn_rate_gbm",value = 0.1),
-                                                          actionButton("run_gradient_boosting","Run gradient boosting",style = 'color:white; background-color:orange; padding:4px; font-size:120%',
-                                                                       icon = icon("cogs",lib = "font-awesome"))
+                                                    argonRow(
+                                                      argonColumn(width = 6,
+                                                            argonCard(width = 12,icon = icon("cogs"),status = "warning",title = "Compare all models",
+                                                                div(align = "center",
+                                                                  argonH1("Click this button to run all model simultaneously",display = 4),
+                                                                  argonH1(HTML("<small><i> The four models will be runed with the parameters selected above</i></small>"),display = 4), 
+                                                                  br(),
+                                                                  br(),
+                                                                  actionBttn(label = "Run all models !",inputId = "train_all",color = "primary", icon = icon("cogs",lib = "font-awesome")),
+                                                                  br()
+                                                                 )
+                                                                            
+                                                                )
+                                                              ),
+                                                      argonColumn(width = 6,
+                                                          argonCard(width = 12,icon = icon("cogs"),status = "warning", title = "Auto Machine Learning",
+                                                                    div(align = "center",
+                                                                        knobInput(inputId = "run_time_auto_ml",label = "Max running time (in seconds)",value = 15,min = 10,max = 60,
+                                                                                  displayPrevious = TRUE, lineCap = "round",fgColor = "#428BCA",inputColor = "#428BCA"
+                                                                                  
+                                                                        ),
+                                                                        br(),
+                                                                        actionButton("run_auto_ml","Run auto ML",style = 'color:white; background-color:red; padding:4px; font-size:120%',
+                                                                                     icon = icon("cogs",lib = "font-awesome"))
+                                                                    )
+                                                                    
+                                                                  )
+                                                                    
+                                                                  
                                                       )
-                                                      
                                                     )
-                                                    
-                                                  )
-  )
-  
-
-  ## ---------------------------------------------------------------------------- LANCEMENT APPLI -----------------------------------
-  
-  
-
-  
+    )
+    
+    
+    ## ---------------------------------------------------------------------------- LANCEMENT APPLI -----------------------------------
+    
+    
+    
+    
   }
   
   else if(framework == "spark"){
@@ -1612,127 +1617,125 @@ shinyML_regression <- function(data = data,y,framework = "h2o", share_app = FALS
     # Connect to local Spark cluster
     sc <- spark_connect(master = "local")
     config_spark<- spark_session_config(sc)
-                               
-                               
+    
+    
     dashheader_select_parameters <- argonDashHeader(gradient = TRUE,
-                                        color = "danger",
-                                        separator = FALSE,
-                                               
-                                               div(align = "center",
-                                                   argonH1(HTML("<font color='white'> Select models parameters</font>"),display = 4)
-                                               ),
-                                        br(),
-                                        argonRow(
-                                          argonColumn(width = 6,div(align = "center",uiOutput("spark_cluster_mem"))),
-                                          argonColumn(width = 6,div(align = "center",uiOutput("spark_cpu")))
-                                        ),
-                                               
-                                               argonRow(
-                                                 argonCard(
-                                                   width = 3,
-                                                   src = NULL,
-                                                   hover_lift = T,
-                                                   icon = icon("cogs"),
-                                                   status = "success",
-                                                   shadow = TRUE,
-                                                   hover_shadow = TRUE,
-                                                   title = "Generalized linear regression",
-                                                   div(align = "center",
-                                                       argonRow(
-                                                         argonColumn(
-                                                           radioButtons(label = "Family",inputId = "glm_family",choices = c("gaussian","Gamma","poisson"),
-                                                                        selected = "gaussian"),width = 6),
-                                                         
-                                                         argonColumn(
-                                                           radioButtons(label = "Link",inputId = "glm_link",choices = c("identity","log"),selected = "identity"),
-                                                           switchInput(label = "Intercept term",inputId = "intercept_term_glm",value = TRUE,width = "auto"),width = 6)
-                                                       ),
-                                                       
-                                                       sliderInput(label = "Lambda",inputId = "reg_param_glm",min = 0,max = 10,value = 0),
-                                                       sliderInput(label = "Alpha (0:Ridge <-> 1:Lasso)",inputId = "alpha_param_glm",min = 0,max = 1,value = 0.5),
-                                                       sliderInput(label = "Maximum iteraions",inputId = "max_iter_glm",min = 50,max = 300,value = 100),
-                                                       actionButton("run_glm","Run glm",style = 'color:white; background-color:green; padding:4px; font-size:120%',
-                                                                    icon = icon("cogs",lib = "font-awesome"))
-                                                   )
-                                                   
-                                                   
-                                                   
-                                                 ),
-                                                 
-                                                 argonCard(
-                                                   width = 3,
-                                                   src = NULL,
-                                                   hover_lift = T,
-                                                   icon = icon("cogs"),
-                                                   status = "danger",
-                                                   shadow = TRUE,
-                                                   #border_level = 2,
-                                                   hover_shadow = TRUE,
-                                                   title = "Random Forest",
-                                                   div(align = "center",
-                                                       sliderInput(label = "Number of trees",min = 1,max = 100, inputId = "num_tree_random_forest",value = 50),
-                                                       sliderInput(label = "Subsampling rate",min = 0.1,max = 1, inputId = "subsampling_rate_random_forest",value = 1),
-                                                       sliderInput(label = "Max depth",min = 1,max = 50, inputId = "max_depth_random_forest",value = 20),
-                                                       sliderInput(label = "Number of bins",min = 2,max = 100, inputId = "n_bins_random_forest",value = 20),
-                                                       actionButton("run_random_forest","Run random forest",style = 'color:white; background-color:red; padding:4px; font-size:120%',
-                                                                    icon = icon("cogs",lib = "font-awesome"))
-                                                   )
-                                                   
-                                                 ),
-                                                 
-                                                 
-                                                 argonCard(
-                                                   width = 3,
-                                                   src = NULL,
-                                                   hover_lift = T,
-                                                   icon = icon("cogs"),
-                                                   status = "primary",
-                                                   shadow = TRUE,
-                                                   #border_level = 2,
-                                                   hover_shadow = TRUE,
-                                                   title = "Decision tree",
-                                                   div(align = "center",
-                                                       argonRow(
-                                                         argonColumn(
-                                                           sliderInput(label = "Max depth",inputId = "max_depth_decision_tree",min = 1,max = 30,value = 20),
-                                                           sliderInput(label = "Max bins",inputId = "max_bins_decision_tree",min = 2,max = 60,value = 32),
-                                                           sliderInput(label = "Min instance per node",inputId = "min_instance_decision_tree",min = 1,max = 10,value = 1),
-                                                           actionButton("run_decision_tree","Run decision tree regression",style = 'color:white; background-color:darkblue; padding:4px; font-size:120%',
-                                                                        icon = icon("cogs",lib = "font-awesome"))
-                                                         )
-                                                         
-                                                       )
-                                                   )
-                                                 ),
-                                                 
-                                                 argonCard(
-                                                   width = 3,
-                                                   src = NULL,
-                                                   hover_lift = T,
-                                                   icon = icon("cogs"),
-                                                   status = "warning",
-                                                   shadow = TRUE,
-                                                   hover_shadow = TRUE,
-                                                   title = "Gradient boosting",
-                                                   div(align = "center",
-                                                       sliderInput(label = "Step size",min = 0,max = 1, inputId = "step_size_gbm",value = 0.1),
-                                                       sliderInput(label = "Subsampling rate",min = 0.1,max = 1, inputId = "subsampling_rate_gbm",value = 1),
-                                                       sliderInput(label = "Max depth",min = 1,max = 30, inputId = "max_depth_gbm",value = 20),
-                                                       actionButton("run_gradient_boosting","Run gradient boosting",style = 'color:white; background-color:orange; padding:4px; font-size:120%',
-                                                                    icon = icon("cogs",lib = "font-awesome"))
-                                                   )
-                                                   
-                                                 )
-                                                 
-                                               )
-                               )
-                               
-                         
+                                                    color = "danger",
+                                                    separator = FALSE,
+                                                    
+                                                    div(align = "center",
+                                                        argonH1(HTML("<font color='white'> Configure parameters and run models </font>"),display = 4)
+                                                    ),
+                                                    br(),
+                                                    argonRow(
+                                                      argonColumn(width = 6,div(align = "center",uiOutput("spark_cluster_mem"))),
+                                                      argonColumn(width = 6,div(align = "center",uiOutput("spark_cpu")))
+                                                    ),
+                                                    
+                                                    argonRow(
+                                                      argonCard(
+                                                        width = 3,
+                                                        icon = icon("cogs"),
+                                                        status = "success",
+                                                        title = "Generalized linear regression",
+                                                        div(align = "center",
+                                                            argonRow(
+                                                              argonColumn(
+                                                                radioButtons(label = "Family",inputId = "glm_family",choices = c("gaussian","Gamma","poisson"),
+                                                                             selected = "gaussian"),width = 6),
+                                                              
+                                                              argonColumn(
+                                                                radioButtons(label = "Link",inputId = "glm_link",choices = c("identity","log"),selected = "identity"),
+                                                                switchInput(label = "Intercept term",inputId = "intercept_term_glm",value = TRUE,width = "auto"),width = 6)
+                                                            ),
+                                                            
+                                                            sliderInput(label = "Lambda",inputId = "reg_param_glm",min = 0,max = 10,value = 0),
+                                                            sliderInput(label = "Alpha (0:Ridge <-> 1:Lasso)",inputId = "alpha_param_glm",min = 0,max = 1,value = 0.5),
+                                                            sliderInput(label = "Maximum iteraions",inputId = "max_iter_glm",min = 50,max = 300,value = 100),
+                                                            actionButton("run_glm","Run glm",style = 'color:white; background-color:green; padding:4px; font-size:120%',
+                                                                         icon = icon("cogs",lib = "font-awesome"))
+                                                        )
+                                                        
+                                                        
+                                                        
+                                                      ),
+                                                      
+                                                      argonCard(
+                                                        width = 3,
+                                                        icon = icon("cogs"),
+                                                        status = "danger",
+                                                        title = "Random Forest",
+                                                        div(align = "center",
+                                                            sliderInput(label = "Number of trees",min = 1,max = 100, inputId = "num_tree_random_forest",value = 50),
+                                                            sliderInput(label = "Subsampling rate",min = 0.1,max = 1, inputId = "subsampling_rate_random_forest",value = 1),
+                                                            sliderInput(label = "Max depth",min = 1,max = 50, inputId = "max_depth_random_forest",value = 20),
+                                                            sliderInput(label = "Number of bins",min = 2,max = 100, inputId = "n_bins_random_forest",value = 20),
+                                                            actionButton("run_random_forest","Run random forest",style = 'color:white; background-color:red; padding:4px; font-size:120%',
+                                                                         icon = icon("cogs",lib = "font-awesome"))
+                                                        )
+                                                        
+                                                      ),
+                                                      
+                                                      
+                                                      argonCard(
+                                                        width = 3,
+                                                        icon = icon("cogs"),
+                                                        status = "primary",
+                                                        title = "Decision tree",
+                                                        div(align = "center",
+                                                            argonRow(
+                                                              argonColumn(
+                                                                sliderInput(label = "Max depth",inputId = "max_depth_decision_tree",min = 1,max = 30,value = 20),
+                                                                sliderInput(label = "Max bins",inputId = "max_bins_decision_tree",min = 2,max = 60,value = 32),
+                                                                sliderInput(label = "Min instance per node",inputId = "min_instance_decision_tree",min = 1,max = 10,value = 1),
+                                                                actionButton("run_decision_tree","Run decision tree regression",style = 'color:white; background-color:darkblue; padding:4px; font-size:120%',
+                                                                             icon = icon("cogs",lib = "font-awesome"))
+                                                              )
+                                                              
+                                                            )
+                                                        )
+                                                      ),
+                                                      
+                                                      argonCard(
+                                                        width = 3,
+                                                        icon = icon("cogs"),
+                                                        status = "warning",
+                                                        title = "Gradient boosting",
+                                                        div(align = "center",
+                                                            sliderInput(label = "Step size",min = 0,max = 1, inputId = "step_size_gbm",value = 0.1),
+                                                            sliderInput(label = "Subsampling rate",min = 0.1,max = 1, inputId = "subsampling_rate_gbm",value = 1),
+                                                            sliderInput(label = "Max depth",min = 1,max = 30, inputId = "max_depth_gbm",value = 20),
+                                                            actionButton("run_gradient_boosting","Run gradient boosting",style = 'color:white; background-color:orange; padding:4px; font-size:120%',
+                                                                         icon = icon("cogs",lib = "font-awesome"))
+                                                        )
+                                                        
+                                                      )
+                                                      
+                                                    ),
+                                                    argonRow(
+                                                      argonColumn(width = 12,center = T,
+                                                          argonCard(width = 12,icon = icon("cogs"),status = "warning",title = "Compare all models",
+                                                              div(align = "center",
+                                                                  argonH1("Click this button to run all model simultaneously",display = 4),
+                                                                  argonH1(HTML("<small><i> The four models will be runed with the parameters selected above</i></small>"),display = 4), 
+                                                                  br(),
+                                                                  br(),
+                                                                  actionBttn(label = "Run all models !",inputId = "train_all",color = "primary", icon = icon("cogs",lib = "font-awesome")),
+                                                                  br()
+                                                                  )
+                                                                            
+                                                                )
+                                                        
+                                                      )
+                                                    )
+    )
+    
+    
     
     ## ---------------------------------------------------------------------------- LANCEMENT APPLI -----------------------------------
     
     
- 
+    
   }
   
   argonHeader <- argonColumn(width = "100%",
@@ -1778,6 +1781,3 @@ shinyML_regression <- function(data = data,y,framework = "h2o", share_app = FALS
 
 
 shinyML_regression(data = longley2,y = "Population",share_app = F,framework = "spark")
-
-
-
