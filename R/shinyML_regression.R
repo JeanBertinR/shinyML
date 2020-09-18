@@ -194,16 +194,19 @@ shinyML_regression <- function(data = data,y,framework = "h2o", share_app = FALS
                               ),
                               
                               argonTab(
+                                
                                 tabName = "Explore dataset",
                                 active = TRUE,
-                                div(align = "center", column(width = 6,uiOutput("X_axis_explore_dataset")),
-                                    column(width = 6,selectInput(inputId = "y_variable_input_curve",label = "Y-axis variable",choices = colnames(data),selected = y))), 
-                                #div(align = "center", column(width = 6,selectInput(inputId = "y_variable_input_curve",label = "Y-axis variable",choices = colnames(data),selected = y))),
+                                argonRow(
+                                  argonColumn(width = 6,div(align = "center",uiOutput("X_axis_explore_dataset"))),
+                                  argonColumn(width = 6,div(align = "center",selectInput(inputId = "y_variable_input_curve",label = "Y-axis variable",choices = colnames(data),selected = y)))
+                                  ), 
+
+                                br(),
+                                br(),
+                                br(),
+                                withSpinner(plotlyOutput("explore_dataset_chart",width = "100%",height = "120%"))
                                 
-                                br(),
-                                br(),
-                                br(),
-                                withSpinner(plotlyOutput("explore_dataset_chart",height = "60%", width = "100%"))
                                 
                               ),
                               
@@ -213,12 +216,14 @@ shinyML_regression <- function(data = data,y,framework = "h2o", share_app = FALS
                                 active = FALSE,
                                 fluidRow( 
                                   column(width = 6,
-                                         withSpinner(DTOutput("variables_class_input", height = 180, width = 500))),
+                                         br(),
+                                         br(),
+                                         withSpinner(DTOutput("variables_class_input", height = "100%", width = "100%"))),
                                   column(width = 6,
                                          div(align = "center",
                                              radioButtons(inputId = "input_var_graph_type",label = "",choices = c("Boxplot","Histogram"),
                                                           selected = "Boxplot",inline = T)),
-                                         withSpinner(plotlyOutput("variable_boxplot", height = 180, width = 500)))
+                                         withSpinner(plotlyOutput("variable_boxplot", height = "100%", width = "100%")))
                                 )
                                 
                               ),
@@ -226,7 +231,7 @@ shinyML_regression <- function(data = data,y,framework = "h2o", share_app = FALS
                               argonTab(
                                 tabName = "Correlation matrix",
                                 active = FALSE,
-                                withSpinner(plotlyOutput("correlation_matrix", height = 180, width = 1100))
+                                withSpinner(plotlyOutput("correlation_matrix", height = "100%", width = "100%"))
                                 
                               )
                             )
@@ -294,7 +299,7 @@ shinyML_regression <- function(data = data,y,framework = "h2o", share_app = FALS
                                                               argonTab(
                                                                 tabName = "Result charts on test period",
                                                                 active = TRUE,
-                                                                withSpinner(dygraphOutput("output_curve", height = 200, width = "100%")),
+                                                                withSpinner(dygraphOutput("output_curve",  width = "100%")),
                                                                 br(),
                                                                 div(align = "center",
                                                                     switchInput(label = "Bar chart mode",inputId = "bar_chart_mode",value = TRUE)
@@ -569,7 +574,7 @@ shinyML_regression <- function(data = data,y,framework = "h2o", share_app = FALS
         )
       }
       
-      datatable(table_classes,options = list(pageLength =3,searching = FALSE,lengthChange = FALSE),selection = list(mode = "single",selected = c(1))
+      datatable(table_classes,options = list(pageLength =10,searching = FALSE,lengthChange = FALSE),selection = list(mode = "single",selected = c(1))
       )
     })
     
@@ -593,11 +598,33 @@ shinyML_regression <- function(data = data,y,framework = "h2o", share_app = FALS
     output$explore_dataset_chart <- renderPlotly({
       
       req(!is.null(input$checkbox_time_series))
+      req(!is.null(input$x_variable_input_curve))
+      req(!is.null(input$y_variable_input_curve))
       
-      plot_ly(data = data, x = eval(parse(text = paste0("data$",input$x_variable_input_curve))), 
-              y = eval(parse(text = paste0("data$",input$y_variable_input_curve))),
-              type = "scatter",mode = "markers") %>% 
-        layout(xaxis = list(title = input$x_variable_input_curve),  yaxis = list(title = input$y_variable_input_curve))
+      if (input$checkbox_time_series == TRUE){
+        data_train_chart <- eval(parse(text = paste0("data[",input$time_serie_select_column," <= input$train_selector[2],]")))
+        data_test_chart <- eval(parse(text = paste0("data[",input$time_serie_select_column," >= input$test_selector[1],]")))
+        
+      }
+      
+      else if (input$checkbox_time_series == FALSE){
+        
+        req(!is.null(table_forecast()[["data_train"]]))
+        data_train_chart <- table_forecast()[["data_train"]]
+        data_test_chart <- table_forecast()[["data_test"]]
+        
+      }
+      
+      plot_ly(data = data_train_chart, x = eval(parse(text = paste0("data_train_chart$",input$x_variable_input_curve))), 
+              y = eval(parse(text = paste0("data_train_chart$",input$y_variable_input_curve))),
+              type = "scatter",mode = "markers",
+              name = "Training dataset") %>% 
+          add_trace(x = eval(parse(text = paste0("data_test_chart$",input$x_variable_input_curve))), 
+                  y = eval(parse(text = paste0("data_test_chart$",input$y_variable_input_curve))),
+                  type = "scatter",mode = "markers",
+                  name = "Testing dataset") %>% 
+          layout(xaxis = list(title = input$x_variable_input_curve),  yaxis = list(title = input$y_variable_input_curve),legend = list(orientation = "h",xanchor = "center",x = 0.5,y= 1.2))
+      
     })
     
     # Define input data chart and train/test periods splitting
@@ -629,7 +656,7 @@ shinyML_regression <- function(data = data,y,framework = "h2o", share_app = FALS
         
       }
       
-      output_dygraph <- dygraph(data = data_output_curve ,main = "Prediction results on test period",width = "100%") %>%
+      output_dygraph <- dygraph(data = data_output_curve ,main = "Prediction results on test period",width = "100%",height = "150%") %>%
         dyAxis("x",valueRange = c(0,nrow(data))) %>% 
         dyAxis("y",valueRange = c(0,1.5 * max(eval(parse(text =paste0("table_forecast()[['results']]$",y)))))) %>%
         dyOptions(animatedZooms = TRUE,fillGraph = T)
@@ -938,6 +965,8 @@ shinyML_regression <- function(data = data,y,framework = "h2o", share_app = FALS
         
         if (input$checkbox_time_series == TRUE){
           req(!is.null(test_1$date))
+          data_train <- data.table()
+          data_test <- data.table()
           data_results <- eval(parse(text = paste0("data[,.(",input$time_serie_select_column,",",y,")][",input$time_serie_select_column,">'",test_1$date,"',][",input$time_serie_select_column,"< '",test_2$date,"',]")))
         }
         
@@ -969,6 +998,11 @@ shinyML_regression <- function(data = data,y,framework = "h2o", share_app = FALS
             data_h2o_train <- as.h2o(eval(parse(text = paste0("data[",input$time_serie_select_column,"<='",test_1$date,"',][",input$time_serie_select_column,">='",train_1$date,"',]"))))
             data_h2o_test <- as.h2o(eval(parse(text = paste0("data[",input$time_serie_select_column,">'",test_1$date,"',][",input$time_serie_select_column,"< '",test_2$date,"',]"))))
             
+          }
+          
+          else if (input$checkbox_time_series == FALSE){
+            data_h2o_train <- as.h2o(data_train)
+            data_h2o_test <- as.h2o(data_test)
           }
           
           
@@ -1098,7 +1132,7 @@ shinyML_regression <- function(data = data,y,framework = "h2o", share_app = FALS
         table_importance <- rbind(importance_gbm,importance_random_forest,importance_neural_network) %>% as.data.table()
         
         # Used a list to access to different tables from only on one reactive objet
-        list(traning_time = table_training_time, table_importance = table_importance, results = table_results,auto_ml_model = dl_auto_ml)
+        list(data_train = data_train, data_test = data_test, traning_time = table_training_time, table_importance = table_importance, results = table_results,auto_ml_model = dl_auto_ml)
         
         
       })
@@ -1393,7 +1427,7 @@ shinyML_regression <- function(data = data,y,framework = "h2o", share_app = FALS
         
         
         # Used a list to access to different tables from only on one reactive objet 
-        list(traning_time = table_training_time, table_importance = table_importance, results = table_results)
+        list(data_train = data_train, data_test = data_test, traning_time = table_training_time, table_importance = table_importance, results = table_results)
         
         
         
@@ -1780,4 +1814,4 @@ shinyML_regression <- function(data = data,y,framework = "h2o", share_app = FALS
 
 
 
-shinyML_regression(data = longley2,y = "Population",share_app = F,framework = "spark")
+shinyML_regression(data = longley2,y = "Population",share_app = F,framework = "h2o")
