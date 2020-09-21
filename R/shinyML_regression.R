@@ -142,7 +142,7 @@ shinyML_regression <- function(data = data,y,framework = "h2o", share_app = FALS
   argonNav  <- argonDashNavbar(
       argonDropNav(
         title = HTML(paste0("shiny<font color='orange'>ML</font>")), 
-        src = "https://www.zupimages.net/up/20/09/djw2.png", 
+        src = "https://www.zupimages.net/up/20/39/ql8k.jpg", 
         orientation = "left"
       )
     )
@@ -867,7 +867,6 @@ shinyML_regression <- function(data = data,y,framework = "h2o", share_app = FALS
     #Message indicating that feature importance is not available for glm model
     output$feature_importance_glm_message <- renderUI({
       if (!is.na(v_glm$type_model) & is.na(v_random$type_model) & is.na(v_neural$type_model) &  is.na(v_decision_tree$type_model) & is.na(v_grad$type_model) & is.na(v_auto_ml$type_model)){
-        
         sendSweetAlert(
           session = session,
           title = "Sorry ...",
@@ -903,8 +902,10 @@ shinyML_regression <- function(data = data,y,framework = "h2o", share_app = FALS
     
     # Message indicating that results are not available if no model has been runed
     output$message_feature_importance <- renderUI({
-      if (is.na(v_glm$type_model) & is.na(v_random$type_model) & is.na(v_decision_tree$type_model) & is.na(v_grad$type_model & is.na(v_neural$type_model) & is.na(v_auto_ml$type_model))){
-        
+      
+      #if (is.na(v_glm$type_model) & is.na(v_random$type_model) & is.na(v_decision_tree$type_model) & is.na(v_grad$type_model & is.na(v_neural$type_model) & is.na(v_auto_ml$type_model))){
+      if (ncol(table_forecast()[['results']]) < 3){  
+          
         sendSweetAlert(
           session = session,
           title = "",
@@ -1352,7 +1353,7 @@ shinyML_regression <- function(data = data,y,framework = "h2o", share_app = FALS
           
           
           
-          # Calculation of glm predictions and associated calculation time 
+          # Calculation of glm predictions and associated calculation time ml
           if (!is.na(v_glm$type_model) & v_glm$type_model == "ml_generalized_linear_regression"){
             
             t1 <- Sys.time()
