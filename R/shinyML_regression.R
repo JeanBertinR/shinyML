@@ -139,26 +139,44 @@ shinyML_regression <- function(data = data,y,framework = "h2o", share_app = FALS
   ## ---------------------------------------------------------------------------- NAVBAR -----------------------------------
   
   
-  
-  argonNav <- argonDashNavbar(
-    argonDropNav(
-      title = HTML("shiny<font color='orange'>ML</font>"), 
-      src = "https://www.zupimages.net/up/20/09/djw2.png", 
-      orientation = "left"
+  argonNav  <- argonDashNavbar(
+      argonDropNav(
+        title = HTML(paste0("shiny<font color='orange'>ML</font>")), 
+        src = "https://www.zupimages.net/up/20/09/djw2.png", 
+        orientation = "left"
+      )
     )
-  )
+
   
   ## ---------------------------------------------------------------------------- FOOTER -----------------------------------
   
   
   argonFooter <- argonDashFooter(
-    copyrights = "@Divad Nojnarg, 2018",
-    src = "https://github.com/DivadNojnarg",
+    copyrights = "@shinyML, 2020",
+    src = "https://jeanbertinr.github.io/shinyMLpackage/",
     argonFooterMenu(
-      argonFooterItem("RinteRface", src = "https://github.com/RinteRface"),
-      argonFooterItem("argon", src = "https://demos.creative-tim.com/argon-design-system/index.html")
+      argonFooterItem("GitHub", src = "https://github.com/JeanBertinR/shinyML"),
+      argonFooterItem("CRAN", src = "https://cran.r-project.org/web/packages/shinyML/index.html")
     )
   )
+  
+  dashheader_framework <- argonDashHeader(
+    
+    gradient = TRUE,
+    color = "danger",
+    separator = FALSE,
+    argonRow(
+      argonColumn(width = "25%",uiOutput("framework_used")),
+      argonColumn(width = "25%",uiOutput("framework_memory")),
+
+      argonColumn(width = "25%",uiOutput("framework_cpu")),
+      argonColumn(width = "25%",uiOutput("dataset_infoCard"))
+    
+      
+    )
+
+  )
+  
   
   
   dashheader_explore_input <-  argonDashHeader(
@@ -383,7 +401,79 @@ shinyML_regression <- function(data = data,y,framework = "h2o", share_app = FALS
     
     
     
+    output$framework_used <- renderUI({
+      if (framework == "h2o"){selected_framework <- "H2O"}
+      else if (framework == "spark"){selected_framework <- "Spark"}
+      
+      argonInfoCard(
+        value = selected_framework,gradient = TRUE,width = 12,
+        title = "Selected framework",
+        icon = icon("atom"), 
+        icon_background = "red",
+        background_color = "lightblue"
+      )
+      
+      })
     
+    
+    
+    
+    # Define Value Box concerning memory used by framework
+    output$framework_memory <- renderUI({
+      
+      if (framework == "h2o"){
+        used_memory <- paste(round(as.numeric(cluster_status$free_mem)/1024**3,2), "GB", sep = "")
+        title <- "H2O Cluster Total Memory"
+        
+      }
+      
+      else if (framework == "spark"){
+        
+        used_memory <- paste(gsub("g","GB",config_spark$spark.driver.memory), sep = "")
+        title <-"Spark Cluster Total Memory"
+      }
+      
+      argonInfoCard(
+        value = used_memory ,
+        title = title,
+        gradient = TRUE,width = 12,
+        icon = icon("server"), 
+        icon_background = "yellow",
+        background_color = "lightblue"
+      )
+    })
+    
+    
+    # Define Value Box concerning number of cpu used by cluster
+    output$framework_cpu <- renderUI({
+      
+      if (framework == "h2o"){cpu_number <- cluster_status$num_cpus}
+      else if (framework == "spark"){cpu_number <- config_spark$spark.sql.shuffle.partitions}
+      
+      argonInfoCard(
+        value = cpu_number,gradient = TRUE,width = 12,
+        title = "Number of CPUs in Use",
+        icon = icon("microchip"), 
+        icon_background = "green",
+        background_color = "lightblue"
+      )
+          
+    })
+    
+    
+    output$dataset_infoCard <- renderUI({
+      argonInfoCard(
+        value = paste0(nrow(data)," rows * ",ncol(data)," columns"),
+        gradient = TRUE,width = 12,
+        title = "Your dataset",
+        icon = icon("image"), 
+        icon_background = "blue",
+        background_color = "lightblue"
+      )
+      })
+    
+
+
     # Make glm parameters correspond to cursors and radiobuttons choices when user click on "Run generalized linear regression" button (and disable other models)
     observeEvent(input$run_glm,{
       
@@ -406,10 +496,7 @@ shinyML_regression <- function(data = data,y,framework = "h2o", share_app = FALS
       parameter$alpha_param_glm <- input$alpha_param_glm
       parameter$max_iter_glm <- input$max_iter_glm
       
-      hideTab(inputId = "results_models", target = "Feature importance")
-      showTab(inputId = "results_models", target = "Compare models performances")
-      showTab(inputId = "results_models", target = "Table of results")
-      
+
     })
     
     # Make random forest parameters correspond to cursors when user click on "Run random forest model" button (and disable other models)
@@ -434,11 +521,7 @@ shinyML_regression <- function(data = data,y,framework = "h2o", share_app = FALS
       parameter$subsampling_rate_random_forest <- input$subsampling_rate_random_forest
       parameter$max_depth_random_forest <-  input$max_depth_random_forest
       parameter$n_bins_random_forest <- input$n_bins_random_forest
-      
-      showTab(inputId = "results_models", target = "Compare models performances")
-      showTab(inputId = "results_models", target = "Feature importance")
-      showTab(inputId = "results_models", target = "Table of results")
-      
+
     })
     
     # Make gradient boosting parameters correspond to cursors when user click on "Run gradient boosting model" button (and disable other models)
@@ -462,12 +545,6 @@ shinyML_regression <- function(data = data,y,framework = "h2o", share_app = FALS
       parameter$learn_rate_gbm <- input$learn_rate_gbm
       parameter$step_size_gbm <- input$step_size_gbm
       parameter$subsampling_rate_gbm <- input$subsampling_rate_gbm
-      
-      
-      showTab(inputId = "results_models", target = "Compare models performances")
-      showTab(inputId = "results_models", target = "Feature importance")
-      showTab(inputId = "results_models", target = "Table of results")
-      
       
     })
     
@@ -842,20 +919,7 @@ shinyML_regression <- function(data = data,y,framework = "h2o", share_app = FALS
     })
     
     
-    # Hide tabs of results_models tabItem when no model has been runed 
-    observe({
-      
-      if (is.na(v_glm$type_model) & is.na(v_random$type_model) & is.na(v_decision_tree$type_model) & is.na(v_grad$type_model)){
-        
-        hideTab(inputId = "results_models", target = "Compare models performances")
-        hideTab(inputId = "results_models", target = "Feature importance")
-        hideTab(inputId = "results_models", target = "Table of results")
-        
-        
-      }
-    })
-    
-    
+
     if(framework == "h2o"){
       
       time_neural_network <- data.table()
@@ -902,10 +966,6 @@ shinyML_regression <- function(data = data,y,framework = "h2o", share_app = FALS
         parameter$loss_neural_net <- input$loss_neural_net
         parameter$rate_neural_net <- input$rate_neural_net
         
-        showTab(inputId = "results_models", target = "Compare models performances")
-        showTab(inputId = "results_models", target = "Feature importance")
-        showTab(inputId = "results_models", target = "Table of results")        
-        
       })
       
       
@@ -928,11 +988,7 @@ shinyML_regression <- function(data = data,y,framework = "h2o", share_app = FALS
         parameter$activation_neural_net <- input$activation_neural_net
         parameter$loss_neural_net <- input$loss_neural_net
         parameter$rate_neural_net <- input$rate_neural_net
-        
-        showTab(inputId = "results_models", target = "Compare models performances")
-        showTab(inputId = "results_models", target = "Feature importance")
-        showTab(inputId = "results_models", target = "Table of results")
-        
+
       })
       
       observeEvent(input$run_auto_ml,{
@@ -949,11 +1005,7 @@ shinyML_regression <- function(data = data,y,framework = "h2o", share_app = FALS
         v_auto_ml$type_model <- "ml_auto"
         
         parameter$run_time_auto_ml <-  input$run_time_auto_ml
-        hideTab(inputId = "results_models", target = "Feature importance")
-        showTab(inputId = "results_models", target = "Compare models performances")
-        showTab(inputId = "results_models", target = "Table of results")
-        
-        
+
       })
       
       # Define the table of predicted data
@@ -1185,31 +1237,8 @@ shinyML_regression <- function(data = data,y,framework = "h2o", share_app = FALS
         }
       })
       
-      # Define Value Box concerning memory used by h2o cluster  
-      output$h2o_cluster_mem <- renderUI({
-        
-        argonInfoCard(
-          value = paste(round(as.numeric(cluster_status$free_mem)/1024**3,2), "GB", sep = ""),
-          title = "H2O Cluster Total Memory",gradient = TRUE,width = 7,
-          icon = icon("server"), 
-          icon_background = "yellow",
-          background_color = "lightblue"
-        )
-        
-      })
-      
-      # Define Value Box concerning number of cpu used by h2o cluster
-      output$h2o_cpu <- renderUI({
-        
-        argonInfoCard(
-          value = cluster_status$num_cpus,gradient = TRUE,width = 7,
-          title = "Number of CPUs in Use",
-          icon = icon("microchip"), 
-          icon_background = "yellow",
-          background_color = "lightblue"
-        )
-        
-      })
+
+
       
     }
     
@@ -1249,11 +1278,6 @@ shinyML_regression <- function(data = data,y,framework = "h2o", share_app = FALS
         parameter$max_bins_decision_tree <- input$max_bins_decision_tree
         parameter$min_instance_decision_tree <- input$min_instance_decision_tree
         
-        showTab(inputId = "results_models", target = "Feature importance")
-        showTab(inputId = "results_models", target = "Compare models performances")
-        showTab(inputId = "results_models", target = "Table of results")
-        
-        
       })
       
       # Make decision tree parameters correspond to cursors when user click on "Run decision tree" button (and disable other models)
@@ -1271,10 +1295,6 @@ shinyML_regression <- function(data = data,y,framework = "h2o", share_app = FALS
         v_glm$type_model <- NA
         v_grad$type_model <- NA
         v_random$type_model <- NA
-        
-        showTab(inputId = "results_models", target = "Compare models performances")
-        showTab(inputId = "results_models", target = "Feature importance")
-        showTab(inputId = "results_models", target = "Table of results")  
         
       })
       
@@ -1456,35 +1476,11 @@ shinyML_regression <- function(data = data,y,framework = "h2o", share_app = FALS
       })
       
       
-      # Define Value Box concerning memory used by h2o cluster  
-      output$spark_cluster_mem <- renderUI({
-        
-        argonInfoCard(
-          value = paste(gsub("g","GB",config_spark$spark.driver.memory), sep = ""),
-          title = "Spark Cluster Total Memory",gradient = TRUE,width = 7,
-          icon = icon("server"), 
-          icon_background = "yellow",
-          background_color = "lightblue"
-        )
-        
-      })
-      
-      # Define Value Box concerning number of cpu used by spark cluster
-      output$spark_cpu <- renderUI({
-        
-        argonInfoCard(
-          value = config_spark$spark.sql.shuffle.partitions,gradient = TRUE,width = 7,
-          title = "Number of CPUs in Use",
-          icon = icon("microchip"), 
-          icon_background = "yellow",
-          background_color = "lightblue"
-        )
-        
-        
-      })
+
       
     }
-    
+      
+
   }
   
   if(framework == "h2o"){
@@ -1773,7 +1769,7 @@ shinyML_regression <- function(data = data,y,framework = "h2o", share_app = FALS
   }
   
   argonHeader <- argonColumn(width = "100%",
-                             
+                             dashheader_framework,
                              dashheader_explore_input ,
                              dashheader_select_parameters,
                              dashheader_explore_results 
