@@ -463,7 +463,7 @@ shinyML_regression <- function(data = data,y,framework = "h2o", share_app = FALS
     
     output$dataset_infoCard <- renderUI({
       argonInfoCard(
-        value = paste0(nrow(data)," rows * ",ncol(data)," columns"),
+        value = paste0(nrow(data)," rows x ",ncol(data)," columns"),
         gradient = TRUE,width = 12,
         title = "Your dataset",
         icon = icon("image"), 
