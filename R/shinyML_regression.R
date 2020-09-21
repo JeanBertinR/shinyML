@@ -903,7 +903,6 @@ shinyML_regression <- function(data = data,y,framework = "h2o", share_app = FALS
     # Message indicating that results are not available if no model has been runed
     output$message_feature_importance <- renderUI({
       
-      #if (is.na(v_glm$type_model) & is.na(v_random$type_model) & is.na(v_decision_tree$type_model) & is.na(v_grad$type_model & is.na(v_neural$type_model) & is.na(v_auto_ml$type_model))){
       if (ncol(table_forecast()[['results']]) < 3){  
           
         sendSweetAlert(
