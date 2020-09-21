@@ -68,7 +68,7 @@ another using the “Explore dataset” tab.
 
 <p align="center">
 
-<img src="vignettes/explore_data.gif">
+<img src="vignettes/Explore_data.gif">
 
 </p>
 
