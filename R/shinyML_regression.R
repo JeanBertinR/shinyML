@@ -329,7 +329,8 @@ shinyML_regression <- function(data = data,y,framework = "h2o", share_app = FALS
                                                                 div(align = "center",
                                                                     br(),
                                                                     br(),
-                                                                    uiOutput("message_compare_models_performances")),
+                                                                    uiOutput("message_compare_models_performances")
+                                                                    ),
                                                                 withSpinner(DTOutput("score_table"))
                                                               ),
                                                               argonTab(tabName = "Feature importance",
@@ -363,11 +364,48 @@ shinyML_regression <- function(data = data,y,framework = "h2o", share_app = FALS
     
     test_1 <- reactiveValues() 
     test_2 <- reactiveValues()
+
+    
+    dates_variable_list <- reactive({
+      dates_columns_list <- c()
+      for (i in colnames(data)){
+        if (is.Date(eval(parse(text = paste0("data$",i)))) | is.POSIXct(eval(parse(text = paste0("data$",i))))){
+          dates_columns_list <- c(dates_columns_list,i)
+        }
+      }
+      dates_columns_list
+    })
+
+    
+    
+    output$Time_series_checkbox <- renderUI({
+      
+      if (length(dates_variable_list()) >= 1){
+        value = TRUE
+      }
+      else {value = FALSE}
+      
+      awesomeCheckbox("checkbox_time_series", "Time series",status = "primary",value = value)
+      
+        
+    })
     
     observe({
-      req(!is.null(input$time_serie_select_column))
-      test_1$date <-  eval(parse(text = paste0("mean(as.Date(data$",input$time_serie_select_column,"))")))
-      test_2$date <-  eval(parse(text = paste0("max(as.Date(data$",input$time_serie_select_column,"))")))
+      req(!is.null(input$checkbox_time_series))
+      if (input$checkbox_time_series == TRUE & length(dates_variable_list()) > 1){
+        updateAwesomeCheckbox(session = session,inputId = "checkbox_time_series",label = "Time series",value = FALSE)
+      }
+    })
+  
+    
+    observe({
+      
+      req(!is.null(input$checkbox_time_series))
+      if (input$checkbox_time_series == TRUE){
+        req(!is.null(input$time_serie_select_column))
+        test_1$date <-  eval(parse(text = paste0("mean(as.Date(data$",input$time_serie_select_column,"))")))
+        test_2$date <-  eval(parse(text = paste0("max(as.Date(data$",input$time_serie_select_column,"))")))
+      }
       
     }) 
     
@@ -400,7 +438,7 @@ shinyML_regression <- function(data = data,y,framework = "h2o", share_app = FALS
     `MAPE(%)` <- NULL
     
     
-    
+    # Define Info Box indicating which machine learning framework is used
     output$framework_used <- renderUI({
       if (framework == "h2o"){selected_framework <- "H2O"}
       else if (framework == "spark"){selected_framework <- "Spark"}
@@ -414,8 +452,6 @@ shinyML_regression <- function(data = data,y,framework = "h2o", share_app = FALS
       )
       
       })
-    
-    
     
     
     # Define Value Box concerning memory used by framework
@@ -547,24 +583,14 @@ shinyML_regression <- function(data = data,y,framework = "h2o", share_app = FALS
       parameter$subsampling_rate_gbm <- input$subsampling_rate_gbm
       
     })
+
     
-    dates_variable_list <- reactive({
-      dates_columns_list <- c()
-      for (i in colnames(data)){
-        if (is.Date(eval(parse(text = paste0("data$",i)))) | is.POSIXct(eval(parse(text = paste0("data$",i))))){
-          dates_columns_list <- c(dates_columns_list,i)
-        }
-      }
-      dates_columns_list
-    })
+
+
     
-    output$Time_series_checkbox <- renderUI({
-      if (length(dates_variable_list()) >= 1){value = TRUE}
-      else{value = FALSE}
-      
-      awesomeCheckbox("checkbox_time_series", "Time series",status = "primary",value = value)
-      
-    })
+    
+
+    
     
     output$slider_time_series_train <- renderUI({
       
@@ -600,8 +626,7 @@ shinyML_regression <- function(data = data,y,framework = "h2o", share_app = FALS
       if (input$checkbox_time_series == FALSE){
         
         selectInput(label = "Train/ Test splitting",inputId = "percentage_selector",choices = paste0(c(50:99),"%"),selected = 70,multiple = FALSE)
-        #sliderInput(label = "Train/ Test splitting",inputId = "train_selector",min = 0, max = 100, post  = " %", value = 70)
-        
+
       }
     })
     
@@ -718,8 +743,8 @@ shinyML_regression <- function(data = data,y,framework = "h2o", share_app = FALS
       req(!is.null(input$checkbox_time_series))
       
       if (input$checkbox_time_series == TRUE){
-        
-        data_output_curve <- table_forecast()[['results']]
+        req(!is.null(input$time_serie_select_column))
+        data_output_curve <- eval(parse(text = paste0("table_forecast()[['results']][,.(",input$time_serie_select_column,",",y,")]")))
         
       }
       
@@ -730,7 +755,7 @@ shinyML_regression <- function(data = data,y,framework = "h2o", share_app = FALS
           mutate(Counter = row_number()) %>% 
           select(Counter,everything())
         
-        
+
       }
       
       output_dygraph <- dygraph(data = data_output_curve ,main = "Prediction results on test period",width = "100%",height = "150%") %>%
@@ -752,7 +777,8 @@ shinyML_regression <- function(data = data,y,framework = "h2o", share_app = FALS
     # Define performance table visible on "Compare models performances" tab
     output$score_table <- renderDT({
       
-      req(ncol(table_forecast()[['results']]) > 2)
+
+      req(ncol(table_forecast()[['results']]) > ncol(data))
       req(!is.null(input$checkbox_time_series))
       
       if (input$checkbox_time_series == TRUE){
@@ -775,7 +801,7 @@ shinyML_regression <- function(data = data,y,framework = "h2o", share_app = FALS
       performance_table <- performance_table %>% 
         group_by(Model) %>%
         summarise(`MAPE(%)` = round(100 * mean(abs((Predicted_value - eval(parse(text = y)))/eval(parse(text = y))),na.rm = TRUE),1),
-                  RMSE = round(sqrt(mean((Predicted_value - eval(parse(text = y)))**2)),0))
+                  RMSE = round(sqrt(mean((Predicted_value - eval(parse(text = y)))**2)),2))
       
       
       if (nrow(table_forecast()[['traning_time']]) != 0){
@@ -847,19 +873,19 @@ shinyML_regression <- function(data = data,y,framework = "h2o", share_app = FALS
                         value= c(input$train_selector[1],input$test_selector[1]) )
     })
     
-    # Send a warning if user clicks on "Time series" option and no date or Posixct date column exists on input data frame 
+    # Send a warning if user clicks on "Time series" option and no date or Posixct date column exists on input data frame
     observeEvent(input$checkbox_time_series,{
-      
+
       if (input$checkbox_time_series == TRUE & length(dates_variable_list()) == 0){
-        
-        
+
+
         sendSweetAlert(
           session = session,
           title = "No Date or Posixct column has been detected on input data frame !",
           text = "Click ok to go back",
           type = "warning"
-          
-          
+
+
         )
       }
     })
@@ -884,7 +910,7 @@ shinyML_regression <- function(data = data,y,framework = "h2o", share_app = FALS
     # Message indicating that results are not available if no model has been runed
     output$message_compare_models_performances <- renderUI({
       
-      if (ncol(table_forecast()[['results']]) < 3){  
+      if (ncol(table_forecast()[['results']]) <= ncol(data)){  
         sendSweetAlert(
           session = session,
           title = "",
@@ -899,11 +925,13 @@ shinyML_regression <- function(data = data,y,framework = "h2o", share_app = FALS
     })
     
     
+
+    
     
     # Message indicating that results are not available if no model has been runed
     output$message_feature_importance <- renderUI({
       
-      if (ncol(table_forecast()[['results']]) < 3){  
+      if (ncol(table_forecast()[['results']]) <= ncol(data)){  
           
         sendSweetAlert(
           session = session,
@@ -1019,7 +1047,9 @@ shinyML_regression <- function(data = data,y,framework = "h2o", share_app = FALS
           req(!is.null(test_1$date))
           data_train <- data.table()
           data_test <- data.table()
-          data_results <- eval(parse(text = paste0("data[,.(",input$time_serie_select_column,",",y,")][",input$time_serie_select_column,">'",test_1$date,"',][",input$time_serie_select_column,"< '",test_2$date,"',]")))
+          data_results <- eval(parse(text = paste0("data[",input$time_serie_select_column,">'",test_1$date,"',][",input$time_serie_select_column,"< '",test_2$date,"',]")))
+          
+          
         }
         
         else if (input$checkbox_time_series == FALSE){
@@ -1030,7 +1060,8 @@ shinyML_regression <- function(data = data,y,framework = "h2o", share_app = FALS
           data_train <- data %>% sample_frac(as.numeric(as.character(gsub("%","",input$percentage_selector)))*0.01)
           data_test <- data %>% anti_join(data_train)
           data_results <- data_test
-          
+            
+
         }
         
         
@@ -1309,7 +1340,7 @@ shinyML_regression <- function(data = data,y,framework = "h2o", share_app = FALS
           req(!is.null(test_1$date))
           req(!is.null(test_2$date))
           
-          data_results <- eval(parse(text = paste0("data[,.(",input$time_serie_select_column,",",y,")][",input$time_serie_select_column,">'",test_1$date,"',][",input$time_serie_select_column,"< '",test_2$date,"',]")))
+          data_results <- eval(parse(text = paste0("data[",input$time_serie_select_column,">'",test_1$date,"',][",input$time_serie_select_column,"< '",test_2$date,"',]")))
           
         }
         
@@ -1809,5 +1840,5 @@ shinyML_regression <- function(data = data,y,framework = "h2o", share_app = FALS
 }
 
 
-
-shinyML_regression(data = longley2,y = "Population",share_app = F,framework = "h2o")
+shinyML_regression(data = iris,y = "Petal.Width",share_app = F,framework = "h2o")
+#shinyML_regression(data = longley2,y = "Population",share_app = F,framework = "h2o")
