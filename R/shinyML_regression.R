@@ -1,25 +1,11 @@
-library(data.table)
-library(shiny)
-library(argonDash)
-library(argonR)
-library(plotly)
-library(dygraphs)
-library(h2o)
-library(shinycssloaders)
-library(shinyWidgets)
-library(DT)
-library(tidyr)
-library(dplyr)
-library(sparklyr)
-library(shinyjs)
 #' @title Implement a shiny web app to compare h2o supervised regression models on time series
 #'
-#' @description This function creates in one line of code a shareable web app to compare supervised regression model performance (framework: H2O).
+#' @description This function creates in one line of code a shareable web app to compare supervised regression model performance
 #'
 #' @param data Time serie containing one or more input values and one output value. 
 #'    The time serie must be a data.frame or a data.table and must contain at least one time-based column on Date or POSIXct format.
 #' 
-#' @param y the numerical output variable to forecast (must correpond to one data column)
+#' @param y the numerical output variable to forecast (must correspond to one data column)
 #' 
 #' @param framework the machine learning framework choosed to train and test models (either h2o or Spark). h2o by default.
 #' 
@@ -33,13 +19,13 @@ library(shinyjs)
 #'\dontrun{
 #' library(shinyML)
 #' # Classical regression analysis 
-#' shinyML_regression(data = iris,y = "Petal.Width",share_app = F,framework = "h2o")
+#' shinyML_regression(data = iris,y = "Petal.Width",framework = "h2o")
 #' 
 #' # Time series analysis
 #' longley2 <- longley %>% mutate(Year = as.Date(as.character(Year),format = "%Y"))
-#' shinyML_regression(data = longley2,y = "Population",share_app = F,framework = "h2o")
+#' shinyML_regression(data = longley2,y = "Population",framework = "h2o")
 #'}
-#' @import shiny argonDash argonR dygraphs data.table ggplot2 shinycssloaders
+#' @import shiny argonDash argonR dygraphs data.table ggplot2 shinycssloaders sparklyr
 #' @importFrom dplyr %>% select mutate group_by summarise arrange rename select_if
 #' @importFrom tidyr gather
 #' @importFrom DT renderDT DTOutput datatable
@@ -448,7 +434,7 @@ shinyML_regression <- function(data = data,y,framework = "h2o", share_app = FALS
     
     # Define DashHeader for "Configure parameters and run models" tab (specific for Spark framework)
     dashheader_select_parameters <- argonDashHeader(gradient = TRUE,
-                                                    color = "danger",
+                                                    color = "warning",
                                                     separator = FALSE,
                                                     div(align = "center",
                                                         argonH1(HTML("<font color='white'> Configure parameters and run models </font>"),display = 4)
@@ -727,6 +713,7 @@ shinyML_regression <- function(data = data,y,framework = "h2o", share_app = FALS
       
     })
 
+    # Define train slider (only applicable for time series analysis) 
     output$slider_time_series_train <- renderUI({
       
       req(!is.null(input$checkbox_time_series))
@@ -740,6 +727,7 @@ shinyML_regression <- function(data = data,y,framework = "h2o", share_app = FALS
       }
     })
     
+    # Define test slider (only applicable for time series analysis) 
     output$slider_time_series_test <- renderUI({
       
       req(!is.null(input$checkbox_time_series))
@@ -754,6 +742,7 @@ shinyML_regression <- function(data = data,y,framework = "h2o", share_app = FALS
       
     })
     
+    # Define slider percentage to separate training dataset from testing dataset 
     output$slider_percentage <- renderUI({
       
       req(!is.null(input$checkbox_time_series))
@@ -765,29 +754,27 @@ shinyML_regression <- function(data = data,y,framework = "h2o", share_app = FALS
       }
     })
     
+    # Define selectInput to choose which Date or POSIXct column to use among input dataset colnames (only applicable for time series analysis)
     output$time_series_column <- renderUI({
       
       req(!is.null(input$checkbox_time_series))
-      
       if (input$checkbox_time_series == TRUE){
         selectInput(inputId = "time_serie_select_column",label = "Date column",choices = dates_variable_list(),multiple = FALSE)
       }
-      
     })
     
+    # Define explanatory variables list
     output$Variables_input_selection<- renderUI({
-      
       
       req(!is.null(input$checkbox_time_series))
       variable_input_list <- x[!(x %in% dates_variable_list())]
-      
       selectInput( inputId  = "input_variables",label = "Input variables: ",choices = x,multiple = TRUE,selected = variable_input_list)
     })
     
+    # Define X-axis for input data chart 
     output$X_axis_explore_dataset <- renderUI({
       
       req(!is.null(input$checkbox_time_series))
-      
       if (input$checkbox_time_series == TRUE){
         req(!is.null(input$time_serie_select_column))
         selected_column <- input$time_serie_select_column        
@@ -864,7 +851,7 @@ shinyML_regression <- function(data = data,y,framework = "h2o", share_app = FALS
       
     })
     
-    # Define input data chart and train/test periods splitting
+    # Define correlation matrix object
     output$correlation_matrix <- renderPlotly({
       
       data_correlation <- as.matrix(select_if(data, is.numeric))
@@ -985,7 +972,7 @@ shinyML_regression <- function(data = data,y,framework = "h2o", share_app = FALS
       
     })
     
-    # Define results table visible on "Table of results" tab
+    # Define results table 
     output$table_of_results <- renderDT({
       
       datatable(
@@ -1001,27 +988,9 @@ shinyML_regression <- function(data = data,y,framework = "h2o", share_app = FALS
       updateSliderInput(session,'test_selector',
                         value= c(input$train_selector[2],input$test_selector[2]) )
     })
-    
     observeEvent(input$test_selector,{
       updateSliderInput(session,'train_selector',
                         value= c(input$train_selector[1],input$test_selector[1]) )
-    })
-    
-    # Send a warning if user clicks on "Time series" option and no date or Posixct date column exists on input data frame
-    observeEvent(input$checkbox_time_series,{
-
-      if (input$checkbox_time_series == TRUE & length(dates_variable_list()) == 0){
-
-
-        sendSweetAlert(
-          session = session,
-          title = "No Date or Posixct column has been detected on input data frame !",
-          text = "Click ok to go back",
-          type = "warning"
-
-
-        )
-      }
     })
     
     #Message indicating that feature importance is not available for glm model
@@ -1040,7 +1009,7 @@ shinyML_regression <- function(data = data,y,framework = "h2o", share_app = FALS
       }
     })
     
-    # Message indicating that results are not available if no model has been runed
+    # Message indicating that results are not available if no model has been running
     output$message_compare_models_performances <- renderUI({
       
       if (ncol(table_forecast()[['results']]) <= ncol(data)){  
@@ -1057,7 +1026,7 @@ shinyML_regression <- function(data = data,y,framework = "h2o", share_app = FALS
       }
     })
     
-    # Message indicating that results are not available if no model has been runed
+    # Message indicating that results are not available if no model has been running
     output$message_feature_importance <- renderUI({
       
       if (ncol(table_forecast()[['results']]) <= ncol(data)){  
@@ -1075,7 +1044,21 @@ shinyML_regression <- function(data = data,y,framework = "h2o", share_app = FALS
       }
     })
     
-
+    # When "Run all models!" button is clicked, send messageBox once all models have been trained
+    observe({
+      
+      if (ncol(table_forecast()[['results']]) == ncol(data) + 4){
+        
+        sendSweetAlert(
+          session = session,
+          title = "The four machine learning models have been trained !",
+          text = "Click ok to see results",
+          type = "success"
+        )
+      }
+    })
+    
+    # Define specific sever-side objects is H2O framework is selected
     if(framework == "h2o"){
 
       # Make all parameters correspond to cursors and radiobuttons choices when user click on "Run tuned models!" button
@@ -1141,6 +1124,7 @@ shinyML_regression <- function(data = data,y,framework = "h2o", share_app = FALS
 
       })
       
+      # Make autoML parameter correspond to knobInput when user click on "Run Auto ML" button 
       observeEvent(input$run_auto_ml,{
         
         train_1$date <- input$train_selector[1]
@@ -1158,8 +1142,7 @@ shinyML_regression <- function(data = data,y,framework = "h2o", share_app = FALS
 
       })
       
-      # Define the table of predicted data
-      # If "Run all models!" button is clicked, prediction results on test period are stored in four additional columns
+      # Define a list of object related to model results (specific for H2O framework)
       table_forecast <- reactive({
         
         # Make sure a value is set to checkbox_time_series checkbox 
@@ -1342,40 +1325,15 @@ shinyML_regression <- function(data = data,y,framework = "h2o", share_app = FALS
         
       })
       
-      # When "Run tuned models!" button is clicked, send messagebox once all models have been trained
+      # When "Run auto ML" button is clicked, send messageBox once searching time is reached
       observe({
-        
-        if ("Generalized linear regression" %in% colnames(table_forecast()[['results']]) &
-            "Random forest" %in% colnames(table_forecast()[['results']]) &
-            "Neural network" %in% colnames(table_forecast()[['results']]) &
-            "Gradient boosted trees" %in% colnames(table_forecast()[['results']])
-        ){
-          
-          
-          sendSweetAlert(
-            session = session,
-            title = "The four machine learning models have been trained !",
-            text = "Click ok to see results",
-            type = "success"
-            
-            
-          )
-        }
-      })
-      
-      # When "Run auto ML" button is clicked, send messagebox once searching time is reached
-      observe({
-        
         
         if("Auto ML" %in% colnames(table_forecast()[['results']])){
-          
           list <- c(HTML(paste0("<b>Selected model:</b> ",table_forecast()[['auto_ml_model']]@leader@algorithm)))
-          
           for (i in 1:ncol(table_forecast()[['auto_ml_model']]@leader@model$model_summary)){
             list <- rbind(list,HTML(paste0("<b>",colnames(table_forecast()[['auto_ml_model']]@leader@model$model_summary[i]),":</b> ",
                                            table_forecast()[['auto_ml_model']]@leader@model$model_summary[i])))
           }
-          
           
           # The message box indicates best model family and all associated hyper-parameter values
           sendSweetAlert(
@@ -1389,12 +1347,12 @@ shinyML_regression <- function(data = data,y,framework = "h2o", share_app = FALS
           )
         }
       })
-      
     }
     
+    # Define specific sever-side objects is Spark framework is selected
     else if(framework == "spark"){
       
-      # Make all parameters correspond to cursors and radiobuttons choices when user click on "Run tuned models!" button
+      # Make all parameters correspond to cursors and radiobuttons choices when user click on "Run all models!" button
       observeEvent(input$train_all,{
         
         test_1$date <- input$test_selector[1]
@@ -1444,8 +1402,7 @@ shinyML_regression <- function(data = data,y,framework = "h2o", share_app = FALS
         
       })
       
-      # Define the table of predicted data
-      # If "Run tuned models!" button is clicked, prediction results on test period are stored in four additional columns
+      # Define a list of object related to model results (specific for Spark framework)
       table_forecast <- reactive({
         
         # Make sure a value is set to checkbox_time_series checkbox 
@@ -1599,32 +1556,12 @@ shinyML_regression <- function(data = data,y,framework = "h2o", share_app = FALS
         
       })
 
-      # When "Run tuned models!" button is clicked, send messagebox once all models have been trained
-      observe({
-        
-        if ("Generalized linear regression" %in% colnames(table_forecast()[['results']]) &
-            "Random forest" %in% colnames(table_forecast()[['results']]) &
-            "Decision tree" %in% colnames(table_forecast()[['results']]) &
-            "Gradient boosted trees" %in% colnames(table_forecast()[['results']])
-        ){
-          
-          
-          sendSweetAlert(
-            session = session,
-            title = "The four machine learning models have been trained !",
-            text = "Click ok to see results",
-            type = "success"
-            
-            
-          )
-        }
-      })
-
     }
 
   }
   
   ## ---------------------------------------------------------------------------- LAUNCH APP  -----------------------------------
+  # Assembly UI and SERVER sides inside shinyApp 
   app <- shiny::shinyApp(
     ui = argonDashPage(
       useShinyjs(),  
@@ -1649,11 +1586,5 @@ shinyML_regression <- function(data = data,y,framework = "h2o", share_app = FALS
       runApp(app,host = "0.0.0.0",port = port,quiet = TRUE)
     }
   }
-  
   else {runApp(app)}
-  
 }
-
-
-shinyML_regression(data = iris,y = "Petal.Width",share_app = F,framework = "h2o")
-#shinyML_regression(data = longley2,y = "Population",share_app = F,framework = "h2o")
