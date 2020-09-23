@@ -11,6 +11,7 @@ library(DT)
 library(tidyr)
 library(dplyr)
 library(sparklyr)
+library(shinyjs)
 #' @title Implement a shiny web app to compare h2o supervised regression models on time series
 #'
 #' @description This function creates in one line of code a shareable web app to compare supervised regression model performance (framework: H2O).
@@ -31,8 +32,12 @@ library(sparklyr)
 #' @examples
 #'\dontrun{
 #' library(shinyML)
+#' # Classical regression analysis 
+#' shinyML_regression(data = iris,y = "Petal.Width",share_app = F,framework = "h2o")
+#' 
+#' # Time series analysis
 #' longley2 <- longley %>% mutate(Year = as.Date(as.character(Year),format = "%Y"))
-#' shiny_h2o(data =longley2,y = "GNP",share_app = FALSE)
+#' shinyML_regression(data = longley2,y = "Population",share_app = F,framework = "h2o")
 #'}
 #' @import shiny argonDash argonR dygraphs data.table ggplot2 shinycssloaders
 #' @importFrom dplyr %>% select mutate group_by summarise arrange rename select_if
@@ -41,8 +46,9 @@ library(sparklyr)
 #' @importFrom h2o h2o.init as.h2o h2o.deeplearning h2o.varimp h2o.predict h2o.gbm h2o.glm h2o.randomForest h2o.automl h2o.clusterStatus
 #' @importFrom plotly plotlyOutput renderPlotly ggplotly plot_ly layout
 #' @importFrom shinyWidgets materialSwitch switchInput sendSweetAlert knobInput awesomeCheckbox
+#' @importFrom shinyjs useShinyjs hideElement
 #' @importFrom stats predict reorder cor
-#' @author Jean Bertin, \email{jean.bertin@@gadz.org}
+#' @author Jean Bertin, \email{jean.bertin@gadz.org}
 #' @export
 #' 
 #' 
@@ -391,9 +397,10 @@ shinyML_regression <- function(data = data,y,framework = "h2o", share_app = FALS
     })
     
     observe({
-      req(!is.null(input$checkbox_time_series))
-      if (input$checkbox_time_series == TRUE & length(dates_variable_list()) > 1){
-        updateAwesomeCheckbox(session = session,inputId = "checkbox_time_series",label = "Time series",value = FALSE)
+      #req(!is.null(input$checkbox_time_series))
+      if (length(dates_variable_list()) == 0){
+        
+        shinyjs::hideElement("Time_series_checkbox")
       }
     })
   
@@ -1810,6 +1817,7 @@ shinyML_regression <- function(data = data,y,framework = "h2o", share_app = FALS
   # App
   app <- shiny::shinyApp(
     ui = argonDashPage(
+      useShinyjs(),  
       title = "shinyML_regression",
       author = "Jean",
       description = "Use of shinyML_regression function",
