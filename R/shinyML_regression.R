@@ -109,9 +109,12 @@ shinyML_regression <- function(data = data,y,framework = "h2o", share_app = FALS
   Model <- NULL
   `.` <- NULL
   `MAPE(%)` <- NULL
-
+  Counter <- NULL
+  feature <- NULL
+  importance <- NULL
+  fit <- NULL
+  prediction <- NULL
   
-
   ## ---------------------------------------------------------------------------- UI  -----------------------------------
   
   # Define Navigation Bar 
@@ -850,13 +853,11 @@ shinyML_regression <- function(data = data,y,framework = "h2o", share_app = FALS
       }
       
       else if (input$checkbox_time_series == FALSE){
-        
         data_output_curve <- table_forecast()[['results']] %>% 
           select(-c(setdiff(colnames(data),y))) %>% 
           mutate(Counter = row_number()) %>% 
           select(Counter,everything())
         
-
       }
       
       output_dygraph <- dygraph(data = data_output_curve ,main = "Prediction results on test period",width = "100%",height = "150%") %>%
@@ -1177,7 +1178,7 @@ shinyML_regression <- function(data = data,y,framework = "h2o", share_app = FALS
           if (!is.na(v_glm$type_model) & v_glm$type_model == "ml_generalized_linear_regression"){
             
             t1 <- Sys.time()
-            dl_fit1 <- h2o.glm(x = as.character(var_input_list),
+            fit <- h2o.glm(x = as.character(var_input_list),
                                y = y,
                                training_frame = data_h2o_train,
                                family = parameter$family_glm,
@@ -1190,7 +1191,7 @@ shinyML_regression <- function(data = data,y,framework = "h2o", share_app = FALS
             )
             t2 <- Sys.time()
             time_glm <- data.frame(`Training time` =  paste0(round(t2 - t1,1)," seconds"), Model = "Generalized linear regression")
-            table_glm <- h2o.predict(dl_fit1,data_h2o_test) %>% as.data.table() %>% mutate(predict = round(predict,3)) %>% rename(`Generalized linear regression` = predict)
+            table_glm <- h2o.predict(fit,data_h2o_test) %>% as.data.table() %>% mutate(predict = round(predict,3)) %>% rename(`Generalized linear regression` = predict)
             table_results <- cbind(data_results,table_glm)%>% as.data.table()
             
           }
@@ -1201,7 +1202,7 @@ shinyML_regression <- function(data = data,y,framework = "h2o", share_app = FALS
             
             
             t1 <- Sys.time()
-            dl_fit1 <- h2o.randomForest(x = as.character(var_input_list),
+            fit <- h2o.randomForest(x = as.character(var_input_list),
                                         y = y,
                                         training_frame = data_h2o_train,
                                         ntrees = parameter$num_tree_random_forest,
@@ -1212,8 +1213,8 @@ shinyML_regression <- function(data = data,y,framework = "h2o", share_app = FALS
             )
             t2 <- Sys.time()
             time_random_forest <- data.frame(`Training time` =  paste0(round(t2 - t1,1)," seconds"), Model = "Random forest")
-            importance_random_forest <- h2o.varimp(dl_fit1) %>% as.data.table() %>% select(`variable`,scaled_importance) %>% mutate(model = "Random forest")
-            table_random_forest<- h2o.predict(dl_fit1,data_h2o_test) %>% as.data.table() %>% mutate(predict = round(predict,3))  %>% rename(`Random forest` = predict)
+            importance_random_forest <- h2o.varimp(fit) %>% as.data.table() %>% select(`variable`,scaled_importance) %>% mutate(model = "Random forest")
+            table_random_forest<- h2o.predict(fit,data_h2o_test) %>% as.data.table() %>% mutate(predict = round(predict,3))  %>% rename(`Random forest` = predict)
             table_results <- cbind(data_results,table_random_forest)%>% as.data.table()
             
           }
@@ -1222,7 +1223,7 @@ shinyML_regression <- function(data = data,y,framework = "h2o", share_app = FALS
           if (!is.na(v_neural$type_model) & v_neural$type_model == "ml_neural_network"){
             
             t1 <- Sys.time()
-            dl_fit1 <- h2o.deeplearning(x = as.character(var_input_list),
+            fit <- h2o.deeplearning(x = as.character(var_input_list),
                                         y = y,
                                         training_frame = data_h2o_train,
                                         activation = parameter$activation_neural_net,
@@ -1236,8 +1237,8 @@ shinyML_regression <- function(data = data,y,framework = "h2o", share_app = FALS
             t2 <- Sys.time()
             
             time_neural_network <- data.frame(`Training time` =  paste0(round(t2 - t1,1)," seconds"), Model = "Neural network")
-            importance_neural_network <- h2o.varimp(dl_fit1) %>% as.data.table() %>% select(`variable`,scaled_importance) %>% mutate(model = "Neural network")
-            table_neural_network <- h2o.predict(dl_fit1,data_h2o_test) %>% as.data.table() %>% mutate(predict = round(predict,3)) %>% rename(`Neural network` = predict)
+            importance_neural_network <- h2o.varimp(fit) %>% as.data.table() %>% select(`variable`,scaled_importance) %>% mutate(model = "Neural network")
+            table_neural_network <- h2o.predict(fit,data_h2o_test) %>% as.data.table() %>% mutate(predict = round(predict,3)) %>% rename(`Neural network` = predict)
             table_results <- cbind(data_results,table_neural_network)%>% as.data.table()
             
           }
@@ -1246,7 +1247,7 @@ shinyML_regression <- function(data = data,y,framework = "h2o", share_app = FALS
           if (!is.na(v_grad$type_model) & v_grad$type_model == "ml_gradient_boosted_trees"){
             
             t1 <- Sys.time()
-            dl_fit1 <- h2o.gbm(x = as.character(var_input_list),
+            fit <- h2o.gbm(x = as.character(var_input_list),
                                y = y,
                                training_frame = data_h2o_train,
                                sample_rate = parameter$sample_rate_gbm,
@@ -1258,8 +1259,8 @@ shinyML_regression <- function(data = data,y,framework = "h2o", share_app = FALS
             )
             t2 <- Sys.time()
             time_gbm <- data.frame(`Training time` =  paste0(round(t2 - t1,1)," seconds"), Model = "Gradient boosted trees")
-            importance_gbm <- h2o.varimp(dl_fit1) %>% as.data.table() %>% select(`variable`,scaled_importance) %>% mutate(model = "Gradient boosted trees")
-            table_gradient_boosting <- h2o.predict(dl_fit1,data_h2o_test) %>% as.data.table() %>% mutate(predict = round(predict,3)) %>% rename(`Gradient boosted trees` = predict)
+            importance_gbm <- h2o.varimp(fit) %>% as.data.table() %>% select(`variable`,scaled_importance) %>% mutate(model = "Gradient boosted trees")
+            table_gradient_boosting <- h2o.predict(fit,data_h2o_test) %>% as.data.table() %>% mutate(predict = round(predict,3)) %>% rename(`Gradient boosted trees` = predict)
             table_results <- cbind(data_results,table_gradient_boosting)%>% as.data.table()
             
           }
