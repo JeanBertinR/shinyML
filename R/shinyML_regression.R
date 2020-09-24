@@ -26,41 +26,20 @@
 #' shinyML_regression(data = longley2,y = "Population",framework = "h2o")
 #'}
 #' @import shiny argonDash argonR dygraphs data.table ggplot2 shinycssloaders sparklyr
-#' @importFrom dplyr %>% select mutate group_by summarise arrange rename select_if
-#' @importFrom tidyr gather
+#' @importFrom dplyr %>% select mutate group_by summarise arrange rename select_if row_number sample_frac anti_join
+#' @importFrom tidyr gather everything
 #' @importFrom DT renderDT DTOutput datatable
 #' @importFrom h2o h2o.init as.h2o h2o.deeplearning h2o.varimp h2o.predict h2o.gbm h2o.glm h2o.randomForest h2o.automl h2o.clusterStatus
-#' @importFrom plotly plotlyOutput renderPlotly ggplotly plot_ly layout
-#' @importFrom shinyWidgets materialSwitch switchInput sendSweetAlert knobInput awesomeCheckbox
+#' @importFrom plotly plotlyOutput renderPlotly ggplotly plot_ly layout add_trace
+#' @importFrom shinyWidgets materialSwitch switchInput sendSweetAlert knobInput awesomeCheckbox actionBttn
 #' @importFrom shinyjs useShinyjs hideElement
 #' @importFrom stats predict reorder cor
+#' @importFrom lubridate is.Date is.POSIXct
 #' @author Jean Bertin, \email{jean.bertin@gadz.org}
 #' @export
 #' 
 #' 
 #' 
-library(shiny)
-library(argonR)
-library(argonDash)
-library(magrittr)
-library(lubridate)
-library(h2o)
-library(data.table)
-library(dplyr)
-library(tidyr)
-library(dygraphs)
-library(plotly)
-library(shiny)
-library(shinydashboard)
-library(shinyWidgets)
-library(shinycssloaders)
-library(DT)
-library(sparklyr)
-library(argonR)
-library(argonDash)
-library(sparklyr)
-longley2 <- longley %>% mutate(Year = as.Date(as.character(Year),format = "%Y"))
-
 
 shinyML_regression <- function(data = data,y,framework = "h2o", share_app = FALSE,port = NULL){
   
