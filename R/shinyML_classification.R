@@ -1,6 +1,6 @@
-#' @title Implement a shiny web app to compare h2o and Spark supervised machine learning models for regression tasks
+#' @title Implement a shiny web app to compare h2o and Spark supervised machine learning models for classification tasks
 #'
-#' @description This function creates in one line of code a shareable web app to compare supervised regression model performances
+#' @description This function creates in one line of code a shareable web app to compare supervised classification model performances
 #'
 #' @param data Time serie containing one or more input values and one output value. 
 #'    The time serie must be a data.frame or a data.table and must contain at least one time-based column on Date or POSIXct format.
@@ -19,17 +19,17 @@
 #'\dontrun{
 #' library(shinyML)
 #' # Classical regression analysis 
-#' shinyML_regression(data = iris,y = "Petal.Width",framework = "h2o")
+#' shinyML_classification(data = iris,y = "Petal.Width",framework = "h2o")
 #' 
 #' # Time series analysis
 #' longley2 <- longley %>% mutate(Year = as.Date(as.character(Year),format = "%Y"))
-#' shinyML_regression(data = longley2,y = "Population",framework = "h2o")
+#' shinyML_classification(data = longley2,y = "Population",framework = "h2o")
 #'}
 #' @import shiny argonDash argonR dygraphs data.table ggplot2 shinycssloaders sparklyr
 #' @importFrom dplyr %>% select mutate group_by summarise arrange rename select_if row_number sample_frac anti_join
 #' @importFrom tidyr gather everything
 #' @importFrom DT renderDT DTOutput datatable
-#' @importFrom h2o h2o.init as.h2o h2o.deeplearning h2o.varimp h2o.predict h2o.gbm h2o.glm h2o.randomForest h2o.automl h2o.clusterStatus
+#' @importFrom h2o h2o.init as.h2o h2o.deeplearning h2o.varimp h2o.predict h2o.gbm h2o.naiveBayes h2o.randomForest h2o.automl h2o.clusterStatus
 #' @importFrom plotly plotlyOutput renderPlotly ggplotly plot_ly layout add_trace
 #' @importFrom shinyWidgets materialSwitch switchInput sendSweetAlert knobInput awesomeCheckbox actionBttn
 #' @importFrom shinyjs useShinyjs hideElement
@@ -41,13 +41,32 @@
 #' 
 #' 
 
-shinyML_regression <- function(data = data,y,framework = "h2o", share_app = FALSE,port = NULL){
+
+library(h2o)
+library(data.table)
+library(dplyr)
+library(tidyr)
+library(dygraphs)
+library(plotly)
+library(shiny)
+library(shinydashboard)
+library(shinyWidgets)
+library(shinycssloaders)
+library(DT)
+library(sparklyr)
+library(argonDash)
+library(argonR)
+library(shinyjs)
+library(lubridate)
+library(timeDate)
+
+shinyML_classification <- function(data = data,y,framework = "h2o", share_app = FALSE,port = NULL){
   
   ## ---------------------------------------------------------------------------- INITIALISATION  -----------------------------------
   
   # Return an error if framework is not h2o or spark 
   if(!(framework %in% c("h2o","spark"))){stop("framework must be selected between h2o or spark")}
-
+  
   # Convert input dataset a data.table object
   data <- data.table(data) 
   
@@ -63,8 +82,8 @@ shinyML_regression <- function(data = data,y,framework = "h2o", share_app = FALS
   }
   
   # Return an error if y class is not numeric
-  if (!(eval(parse(text = paste0("class(data$",y,")"))) == "numeric")){
-    stop("y column class must be numeric")
+  if ((eval(parse(text = paste0("class(data$",y,")"))) %in% "numeric")){
+    stop("y column class must not be numeric")
   }
   
   # Assign x as explanatory variables (x does not include output variable) 
@@ -82,7 +101,7 @@ shinyML_regression <- function(data = data,y,framework = "h2o", share_app = FALS
   test_2 <- reactiveValues()
   v_neural <- reactiveValues(type_model = NA)
   v_grad <- reactiveValues(type_model = NA)
-  v_glm <- reactiveValues(type_model = NA)
+  v_naiveBayes <- reactiveValues(type_model = NA)
   v_decision_tree <- reactiveValues(type_model = NA)
   v_random <- reactiveValues(type_model = NA)
   v_auto_ml <- reactiveValues(type_model = NA)
@@ -91,7 +110,7 @@ shinyML_regression <- function(data = data,y,framework = "h2o", share_app = FALS
   # Initialize tables for model calculation times 
   time_gbm <- data.table()
   time_random_forest <- data.table()
-  time_glm <- data.table()
+  time_naiveBayes <- data.table()
   time_decision_tree <- data.table()
   time_neural_network <- data.table()
   time_auto_ml <- data.table()
@@ -139,7 +158,7 @@ shinyML_regression <- function(data = data,y,framework = "h2o", share_app = FALS
   # Define DashHeader for Info Cards 
   dashheader_framework <- argonDashHeader(
     gradient = TRUE,
-    color = "danger",
+    color = "success",
     separator = FALSE,
     argonRow(
       argonColumn(width = "25%",uiOutput("framework_used")),
@@ -158,49 +177,49 @@ shinyML_regression <- function(data = data,y,framework = "h2o", share_app = FALS
     br(),
     argonRow(
       argonColumn(width = 9,
-        argonCard(width = 12,
-                  hover_lift = TRUE,
-                  shadow = TRUE,
-                  argonTabSet(width = 12,
-                              id = "tab_input_data",
-                              card_wrapper = TRUE,
-                              horizontal = TRUE,
-                              circle = FALSE,
-                              size = "sm",
-                              iconList = list(argonIcon("cloud-upload-96"), argonIcon("bell-55"), argonIcon("calendar-grid-58"),argonIcon("calendar-grid-58")),
-                              argonTab(tabName = "Explore dataset",
-                                       active = TRUE,
-                                       argonRow(
-                                         argonColumn(width = 6,div(align = "center",uiOutput("X_axis_explore_dataset"))),
-                                         argonColumn(width = 6,div(align = "center",selectInput(inputId = "y_variable_input_curve",label = "Y-axis variable",choices = colnames(data),selected = y)))
-                                       ), 
-                                       br(),
-                                       br(),
-                                       br(),
-                                       withSpinner(plotlyOutput("explore_dataset_chart",width = "100%",height = "120%"))
-                              ),
-                              argonTab(tabName = "Variables Summary",
-                                active = FALSE,
-                                  fluidRow( 
-                                    argonColumn(width = 6,
-                                                br(),
-                                                br(),
-                                                withSpinner(DTOutput("variables_class_input", height = "100%", width = "100%"))
-                                    ),
-                                    argonColumn(width = 6,
-                                        div(align = "center",
-                                            radioButtons(inputId = "input_var_graph_type",label = "",choices = c("Boxplot","Histogram"),selected = "Boxplot",inline = T)
+                  argonCard(width = 12,
+                            hover_lift = TRUE,
+                            shadow = TRUE,
+                            argonTabSet(width = 12,
+                                        id = "tab_input_data",
+                                        card_wrapper = TRUE,
+                                        horizontal = TRUE,
+                                        circle = FALSE,
+                                        size = "sm",
+                                        iconList = list(argonIcon("cloud-upload-96"), argonIcon("bell-55"), argonIcon("calendar-grid-58"),argonIcon("calendar-grid-58")),
+                                        argonTab(tabName = "Explore dataset",
+                                                 active = TRUE,
+                                                 argonRow(
+                                                   argonColumn(width = 6,div(align = "center",uiOutput("X_axis_explore_dataset"))),
+                                                   argonColumn(width = 6,div(align = "center",selectInput(inputId = "y_variable_input_curve",label = "Y-axis variable",choices = colnames(data),selected = y)))
+                                                 ), 
+                                                 br(),
+                                                 br(),
+                                                 br(),
+                                                 withSpinner(plotlyOutput("explore_dataset_chart",width = "100%",height = "120%"))
                                         ),
-                                        withSpinner(plotlyOutput("variable_boxplot", height = "100%", width = "100%")))
-                                )
-                                       
-                             ),
-                            argonTab(tabName = "Correlation matrix",
-                                     active = FALSE,
-                                     withSpinner(plotlyOutput("correlation_matrix", height = "100%", width = "100%"))
+                                        argonTab(tabName = "Variables Summary",
+                                                 active = FALSE,
+                                                 fluidRow( 
+                                                   argonColumn(width = 6,
+                                                               br(),
+                                                               br(),
+                                                               withSpinner(DTOutput("variables_class_input", height = "100%", width = "100%"))
+                                                   ),
+                                                   argonColumn(width = 6,
+                                                               div(align = "center",
+                                                                   radioButtons(inputId = "input_var_graph_type",label = "",choices = c("Boxplot","Histogram"),selected = "Boxplot",inline = T)
+                                                               ),
+                                                               withSpinner(plotlyOutput("variable_boxplot", height = "100%", width = "100%")))
+                                                 )
+                                                 
+                                        ),
+                                        argonTab(tabName = "Correlation matrix",
+                                                 active = FALSE,
+                                                 withSpinner(plotlyOutput("correlation_matrix", height = "100%", width = "100%"))
+                                        )
                             )
-                    )
-                )
+                  )
       ),
       argonColumn(width = 3,
                   argonCard(width = 12,src = NULL,hover_lift = T,shadow = TRUE,
@@ -216,8 +235,8 @@ shinyML_regression <- function(data = data,y,framework = "h2o", share_app = FALS
       )
     )
   )
- 
-   
+  
+  
   # Define DashHeader for "Explore results" tab 
   dashheader_explore_results <- argonDashHeader(gradient = TRUE,
                                                 color = "primary",
@@ -267,7 +286,7 @@ shinyML_regression <- function(data = data,y,framework = "h2o", share_app = FALS
                                                                            br(),
                                                                            br(),
                                                                            uiOutput("message_feature_importance"),
-                                                                           uiOutput("feature_importance_glm_message")),
+                                                                           uiOutput("feature_importance_naiveBayes_message")),
                                                                        withSpinner(plotlyOutput("feature_importance"))
                                                                        
                                                               ),
@@ -278,9 +297,9 @@ shinyML_regression <- function(data = data,y,framework = "h2o", share_app = FALS
                                                             ),
                                                             br(),
                                                             br()
-                                                   )
+                                                  )
                                                 )
-                                              )
+  )
   
   # Define specific UI section if H2O framework is selected 
   if(framework == "h2o"){
@@ -309,33 +328,25 @@ shinyML_regression <- function(data = data,y,framework = "h2o", share_app = FALS
                                                       argonCard(width = 3,
                                                                 icon = icon("cogs"),
                                                                 status = "success",
-                                                                title = "Generalized linear regression",
+                                                                title = "Naive Bayes",
                                                                 div(align = "center",
-                                                                    argonRow(
-                                                                      argonColumn(width = 6,
-                                                                        radioButtons(label = "Family",inputId = "glm_family",choices = c("gaussian","poisson", "gamma","tweedie"),selected = "gaussian")
-                                                                      ),
-                                                                      argonColumn(width = 6,
-                                                                        radioButtons(label = "Link",inputId = "glm_link",choices = c("identity","log"),selected = "identity"),
-                                                                        switchInput(label = "Intercept term",inputId = "intercept_term_glm",value = TRUE,width = "auto")
-                                                                      )
-                                                                    ),
-                                                              sliderInput(label = "Lambda",inputId = "reg_param_glm",min = 0,max = 10,value = 0),
-                                                              sliderInput(label = "Alpha (0:Ridge <-> 1:Lasso)",inputId = "alpha_param_glm",min = 0,max = 1,value = 0.5),
-                                                              sliderInput(label = "Maximum iteraions",inputId = "max_iter_glm",min = 50,max = 300,value = 100),
-                                                              actionButton("run_glm","Run glm",style = 'color:white; background-color:green; padding:4px; font-size:120%',icon = icon("cogs",lib = "font-awesome"))
-                                                            )
+                                                                    sliderInput(label = "Laplace parameter",inputId = "laplace_param_naiveBayes",min = 0,max = 10,value = 0),
+                                                                    sliderInput(label = "Max after balance",inputId = "max_after_balance_naiveBayes",min = 0,max = 10,value = 5),
+                                                                    sliderInput(label = "Minimum standard deviation",inputId = "min_sdev_naiveBayes",min = 0.01,max = 10,value = 0.01),
+                                                                    sliderInput(label = "Epsilon standard deviation",inputId = "epsilon_iter_naiveBayes",min = 0.01,max = 10,value = 0.01),
+                                                                    actionButton("run_naiveBayes","Run Naive Bayes",style = 'color:white; background-color:green; padding:4px; font-size:120%',icon = icon("cogs",lib = "font-awesome"))
+                                                                )
                                                       ),
                                                       argonCard(width = 3,
                                                                 icon = icon("cogs"),
                                                                 status = "danger",
                                                                 title = "Random Forest",
                                                                 div(align = "center",
-                                                                  sliderInput(label = "Number of trees",min = 1,max = 100, inputId = "num_tree_random_forest",value = 50),
-                                                                  sliderInput(label = "Subsampling rate",min = 0.1,max = 1, inputId = "subsampling_rate_random_forest",value = 0.6),
-                                                                  sliderInput(label = "Max depth",min = 1,max = 50, inputId = "max_depth_random_forest",value = 20),
-                                                                  sliderInput(label = "Number of bins",min = 2,max = 100, inputId = "n_bins_random_forest",value = 20),
-                                                                  actionButton("run_random_forest","Run random forest",style = 'color:white; background-color:red; padding:4px; font-size:120%',icon = icon("cogs",lib = "font-awesome"))
+                                                                    sliderInput(label = "Number of trees",min = 1,max = 100, inputId = "num_tree_random_forest",value = 50),
+                                                                    sliderInput(label = "Subsampling rate",min = 0.1,max = 1, inputId = "subsampling_rate_random_forest",value = 0.6),
+                                                                    sliderInput(label = "Max depth",min = 1,max = 50, inputId = "max_depth_random_forest",value = 20),
+                                                                    sliderInput(label = "Number of bins",min = 2,max = 100, inputId = "n_bins_random_forest",value = 20),
+                                                                    actionButton("run_random_forest","Run random forest",style = 'color:white; background-color:red; padding:4px; font-size:120%',icon = icon("cogs",lib = "font-awesome"))
                                                                 )
                                                       ),
                                                       argonCard(width = 3,
@@ -343,12 +354,12 @@ shinyML_regression <- function(data = data,y,framework = "h2o", share_app = FALS
                                                                 status = "primary",
                                                                 title = "Neural network",
                                                                 div(align = "center",
-                                                                  argonRow(
-                                                                    argonColumn(width = 6,
-                                                                      radioButtons(label = "Activation function",inputId = "activation_neural_net",choices = c( "Rectifier", "Maxout","Tanh", "RectifierWithDropout", "MaxoutWithDropout","TanhWithDropout"),selected = "Rectifier")
+                                                                    argonRow(
+                                                                      argonColumn(width = 6,
+                                                                                  radioButtons(label = "Activation function",inputId = "activation_neural_net",choices = c( "Rectifier", "Maxout","Tanh", "RectifierWithDropout", "MaxoutWithDropout","TanhWithDropout"),selected = "Rectifier")
                                                                       ),
-                                                                    argonColumn(width = 6,
-                                                                      radioButtons(label = "Loss function",inputId = "loss_neural_net",choices = c("Automatic", "Quadratic", "Huber", "Absolute", "Quantile"),selected = "Automatic")
+                                                                      argonColumn(width = 6,
+                                                                                  radioButtons(label = "Loss function",inputId = "loss_neural_net",choices = c("Automatic", "Quadratic", "Huber", "Absolute", "Quantile"),selected = "Automatic")
                                                                       )
                                                                     ),
                                                                     textInput(label = "Hidden layers",inputId = "hidden_neural_net",value = "c(200,200)"),
@@ -356,19 +367,19 @@ shinyML_regression <- function(data = data,y,framework = "h2o", share_app = FALS
                                                                     sliderInput(label = "Learning rate",min = 0.001,max = 0.1, inputId = "rate_neural_net",value = 0.005),
                                                                     actionButton("run_neural_network","Run neural network",style = 'color:white; background-color:darkblue; padding:4px; font-size:120%',icon = icon("cogs",lib = "font-awesome"))
                                                                 )
-                                                        
+                                                                
                                                       ),
                                                       argonCard(width = 3,
                                                                 icon = icon("cogs"),
                                                                 status = "warning",
                                                                 title = "Gradient boosting",
                                                                 div(align = "center",
-                                                                  sliderInput(label = "Max depth",min = 1,max = 20, inputId = "max_depth_gbm",value = 5),
-                                                                  sliderInput(label = "Number of trees",min = 1,max = 100, inputId = "n_trees_gbm",value = 50),
-                                                                  sliderInput(label = "Sample rate",min = 0.1,max = 1, inputId = "sample_rate_gbm",value = 1),
-                                                                  sliderInput(label = "Learn rate",min = 0.1,max = 1, inputId = "learn_rate_gbm",value = 0.1),
-                                                                  actionButton("run_gradient_boosting","Run gradient boosting",style = 'color:white; background-color:orange; padding:4px; font-size:120%',icon = icon("cogs",lib = "font-awesome"))
-                                                        )
+                                                                    sliderInput(label = "Max depth",min = 1,max = 20, inputId = "max_depth_gbm",value = 5),
+                                                                    sliderInput(label = "Number of trees",min = 1,max = 100, inputId = "n_trees_gbm",value = 50),
+                                                                    sliderInput(label = "Sample rate",min = 0.1,max = 1, inputId = "sample_rate_gbm",value = 1),
+                                                                    sliderInput(label = "Learn rate",min = 0.1,max = 1, inputId = "learn_rate_gbm",value = 0.1),
+                                                                    actionButton("run_gradient_boosting","Run gradient boosting",style = 'color:white; background-color:orange; padding:4px; font-size:120%',icon = icon("cogs",lib = "font-awesome"))
+                                                                )
                                                       )
                                                     ),
                                                     argonRow(
@@ -399,9 +410,9 @@ shinyML_regression <- function(data = data,y,framework = "h2o", share_app = FALS
                                                                             )
                                                                   )
                                                       )
-                                                  )
-                                          )
-
+                                                    )
+    )
+    
   }
   
   # Define specific UI section if Spark framework is selected 
@@ -432,20 +443,20 @@ shinyML_regression <- function(data = data,y,framework = "h2o", share_app = FALS
                                                                 status = "success",
                                                                 title = "Generalized linear regression",
                                                                 div(align = "center",
-                                                                  argonRow(
-                                                                    argonColumn(width = 6,
-                                                                                radioButtons(label = "Family",inputId = "glm_family",choices = c("gaussian","Gamma","poisson"),selected = "gaussian")
+                                                                    argonRow(
+                                                                      argonColumn(width = 6,
+                                                                                  radioButtons(label = "Family",inputId = "glm_family",choices = c("gaussian","Gamma","poisson"),selected = "gaussian")
+                                                                      ),
+                                                                      argonColumn(width = 6,
+                                                                                  radioButtons(label = "Link",inputId = "glm_link",choices = c("identity","log"),selected = "identity"),
+                                                                                  switchInput(label = "Intercept term",inputId = "intercept_term_glm",value = TRUE,width = "auto")
+                                                                      )
                                                                     ),
-                                                                    argonColumn(width = 6,
-                                                                                radioButtons(label = "Link",inputId = "glm_link",choices = c("identity","log"),selected = "identity"),
-                                                                                switchInput(label = "Intercept term",inputId = "intercept_term_glm",value = TRUE,width = "auto")
-                                                                    )
-                                                                  ),
-                                                                sliderInput(label = "Lambda",inputId = "reg_param_glm",min = 0,max = 10,value = 0),
-                                                                sliderInput(label = "Alpha (0:Ridge <-> 1:Lasso)",inputId = "alpha_param_glm",min = 0,max = 1,value = 0.5),
-                                                                sliderInput(label = "Maximum iteraions",inputId = "max_iter_glm",min = 50,max = 300,value = 100),
-                                                                actionButton("run_glm","Run glm",style = 'color:white; background-color:green; padding:4px; font-size:120%',icon = icon("cogs",lib = "font-awesome"))
-                                                        )
+                                                                    sliderInput(label = "Lambda",inputId = "reg_param_glm",min = 0,max = 10,value = 0),
+                                                                    sliderInput(label = "Alpha (0:Ridge <-> 1:Lasso)",inputId = "alpha_param_glm",min = 0,max = 1,value = 0.5),
+                                                                    sliderInput(label = "Maximum iteraions",inputId = "max_iter_glm",min = 50,max = 300,value = 100),
+                                                                    actionButton("run_glm","Run glm",style = 'color:white; background-color:green; padding:4px; font-size:120%',icon = icon("cogs",lib = "font-awesome"))
+                                                                )
                                                       ),
                                                       argonCard(width = 3,
                                                                 icon = icon("cogs"),
@@ -464,14 +475,14 @@ shinyML_regression <- function(data = data,y,framework = "h2o", share_app = FALS
                                                                 status = "primary",
                                                                 title = "Decision tree",
                                                                 div(align = "center",
-                                                                  argonRow(
-                                                                    argonColumn(
-                                                                      sliderInput(label = "Max depth",inputId = "max_depth_decision_tree",min = 1,max = 30,value = 20),
-                                                                      sliderInput(label = "Max bins",inputId = "max_bins_decision_tree",min = 2,max = 60,value = 32),
-                                                                      sliderInput(label = "Min instance per node",inputId = "min_instance_decision_tree",min = 1,max = 10,value = 1),
-                                                                      actionButton("run_decision_tree","Run decision tree regression",style = 'color:white; background-color:darkblue; padding:4px; font-size:120%',icon = icon("cogs",lib = "font-awesome"))
+                                                                    argonRow(
+                                                                      argonColumn(
+                                                                        sliderInput(label = "Max depth",inputId = "max_depth_decision_tree",min = 1,max = 30,value = 20),
+                                                                        sliderInput(label = "Max bins",inputId = "max_bins_decision_tree",min = 2,max = 60,value = 32),
+                                                                        sliderInput(label = "Min instance per node",inputId = "min_instance_decision_tree",min = 1,max = 10,value = 1),
+                                                                        actionButton("run_decision_tree","Run decision tree regression",style = 'color:white; background-color:darkblue; padding:4px; font-size:120%',icon = icon("cogs",lib = "font-awesome"))
+                                                                      )
                                                                     )
-                                                                  )
                                                                 )
                                                       ),
                                                       argonCard(width = 3,
@@ -479,10 +490,10 @@ shinyML_regression <- function(data = data,y,framework = "h2o", share_app = FALS
                                                                 status = "warning",
                                                                 title = "Gradient boosting",
                                                                 div(align = "center",
-                                                                  sliderInput(label = "Step size",min = 0,max = 1, inputId = "step_size_gbm",value = 0.1),
-                                                                  sliderInput(label = "Subsampling rate",min = 0.1,max = 1, inputId = "subsampling_rate_gbm",value = 1),
-                                                                  sliderInput(label = "Max depth",min = 1,max = 30, inputId = "max_depth_gbm",value = 20),
-                                                                  actionButton("run_gradient_boosting","Run gradient boosting",style = 'color:white; background-color:orange; padding:4px; font-size:120%',icon = icon("cogs",lib = "font-awesome"))
+                                                                    sliderInput(label = "Step size",min = 0,max = 1, inputId = "step_size_gbm",value = 0.1),
+                                                                    sliderInput(label = "Subsampling rate",min = 0.1,max = 1, inputId = "subsampling_rate_gbm",value = 1),
+                                                                    sliderInput(label = "Max depth",min = 1,max = 30, inputId = "max_depth_gbm",value = 20),
+                                                                    actionButton("run_gradient_boosting","Run gradient boosting",style = 'color:white; background-color:orange; padding:4px; font-size:120%',icon = icon("cogs",lib = "font-awesome"))
                                                                 )
                                                       )
                                                     ),
@@ -500,11 +511,11 @@ shinyML_regression <- function(data = data,y,framework = "h2o", share_app = FALS
                                                                                 br(),
                                                                                 actionBttn(label = "Run all models !",inputId = "train_all",color = "primary", icon = icon("cogs",lib = "font-awesome")),
                                                                                 br()
-                                                                           )
+                                                                            )
                                                                   )
                                                       )
                                                     )
-                                                )
+    )
     
   }
   
@@ -514,11 +525,11 @@ shinyML_regression <- function(data = data,y,framework = "h2o", share_app = FALS
                              dashheader_explore_input ,
                              dashheader_select_parameters,
                              dashheader_explore_results 
-                            )
+  )
   
   ## ---------------------------------------------------------------------------- SERVER -----------------------------------
   server = function(session,input, output) {
-  
+    
     # Build vector resuming which Date or POSIXct columns are contained in input dataset 
     dates_variable_list <- reactive({
       dates_columns_list <- c()
@@ -529,7 +540,7 @@ shinyML_regression <- function(data = data,y,framework = "h2o", share_app = FALS
       }
       dates_columns_list
     })
-
+    
     # Checkbox to consider time serie analysis or not (only possible if input dataset contains at least one Date or POSIXct column)
     output$Time_series_checkbox <- renderUI({
       
@@ -537,7 +548,7 @@ shinyML_regression <- function(data = data,y,framework = "h2o", share_app = FALS
       else {value = FALSE}
       
       awesomeCheckbox("checkbox_time_series", "Time series",status = "primary",value = value)
- 
+      
     })
     
     # Hide checkbox if input dataset does not contain one or more Date or POSIXct column
@@ -546,7 +557,7 @@ shinyML_regression <- function(data = data,y,framework = "h2o", share_app = FALS
         shinyjs::hideElement("Time_series_checkbox")
       }
     })
-  
+    
     # Set test_1 and test_2 parameters (only applicable for time series analysis)
     observe({
       
@@ -572,7 +583,7 @@ shinyML_regression <- function(data = data,y,framework = "h2o", share_app = FALS
         background_color = "lightblue"
       )
       
-      })
+    })
     
     # Define Info Box concerning memory used by framework
     output$framework_memory <- renderUI({
@@ -622,10 +633,11 @@ shinyML_regression <- function(data = data,y,framework = "h2o", share_app = FALS
         icon_background = "blue",
         background_color = "lightblue"
       )
-      })
+    })
+  
     
-    # Make glm parameters correspond to cursors and radiobuttons choices when user click on "Run generalized linear regression" button 
-    observeEvent(input$run_glm,{
+    # Make naive Bayes parameters correspond to cursors and radiobuttons choices when user click on "Run generalized linear regression" button 
+    observeEvent(input$run_naiveBayes,{
       
       train_1$date <- input$train_selector[1]
       test_1$date <- input$test_selector[1]
@@ -636,14 +648,14 @@ shinyML_regression <- function(data = data,y,framework = "h2o", share_app = FALS
       v_random$type_model <- NA
       v_decision_tree$type_model <- NA
       v_auto_ml$type_model <- NA
-      v_glm$type_model <- "ml_generalized_linear_regression"
+      v_naiveBayes$type_model <- "ml_naiveBayes"
       
-      parameter$family_glm <- input$glm_family
-      parameter$glm_link <- input$glm_link
-      parameter$intercept_term_glm <- input$intercept_term_glm
-      parameter$reg_param_glm <- input$reg_param_glm
-      parameter$alpha_param_glm <- input$alpha_param_glm
-      parameter$max_iter_glm <- input$max_iter_glm
+      parameter$laplace_smoothing_naiveBayes <- input$laplace_param_naiveBayes
+      parameter$max_after_balance_naiveBayes <- input$max_after_balance_naiveBayes
+      parameter$min_sdev_naiveBayes <- input$min_sdev_naiveBayes
+      parameter$epsilon_naiveBayes <- input$epsilon_iter_naiveBayes
+      
+
     })
     
     # Make random forest parameters correspond to cursors when user click on "Run random forest model" button (and disable other models)
@@ -656,7 +668,7 @@ shinyML_regression <- function(data = data,y,framework = "h2o", share_app = FALS
       model$train_variables <- input$input_variables
       v_grad$type_model <- NA
       v_neural$type_model <- NA
-      v_glm$type_model <- NA
+      v_naiveBayes$type_model <- NA
       v_auto_ml$type_model <- NA
       v_decision_tree$type_model <- NA
       
@@ -668,7 +680,7 @@ shinyML_regression <- function(data = data,y,framework = "h2o", share_app = FALS
       parameter$subsampling_rate_random_forest <- input$subsampling_rate_random_forest
       parameter$max_depth_random_forest <-  input$max_depth_random_forest
       parameter$n_bins_random_forest <- input$n_bins_random_forest
-
+      
     })
     
     # Make gradient boosting parameters correspond to cursors when user click on "Run gradient boosting model" button (and disable other models)
@@ -680,7 +692,7 @@ shinyML_regression <- function(data = data,y,framework = "h2o", share_app = FALS
       model$train_variables <- input$input_variables
       v_grad$type_model <- "ml_gradient_boosted_trees"
       v_neural$type_model <- NA
-      v_glm$type_model <- NA
+      v_naiveBayes$type_model <- NA
       v_random$type_model <- NA
       v_auto_ml$type_model <- NA
       v_decision_tree$type_model <- NA
@@ -694,7 +706,7 @@ shinyML_regression <- function(data = data,y,framework = "h2o", share_app = FALS
       parameter$subsampling_rate_gbm <- input$subsampling_rate_gbm
       
     })
-
+    
     # Define train slider (only applicable for time series analysis) 
     output$slider_time_series_train <- renderUI({
       
@@ -732,7 +744,7 @@ shinyML_regression <- function(data = data,y,framework = "h2o", share_app = FALS
       if (input$checkbox_time_series == FALSE){
         
         selectInput(label = "Train/ Test splitting",inputId = "percentage_selector",choices = paste0(c(50:99),"%"),selected = 70,multiple = FALSE)
-
+        
       }
     })
     
@@ -825,11 +837,11 @@ shinyML_regression <- function(data = data,y,framework = "h2o", share_app = FALS
               y = eval(parse(text = paste0("data_train_chart$",input$y_variable_input_curve))),
               type = "scatter",mode = "markers",
               name = "Training dataset") %>% 
-          add_trace(x = eval(parse(text = paste0("data_test_chart$",input$x_variable_input_curve))), 
+        add_trace(x = eval(parse(text = paste0("data_test_chart$",input$x_variable_input_curve))), 
                   y = eval(parse(text = paste0("data_test_chart$",input$y_variable_input_curve))),
                   type = "scatter",mode = "markers",
                   name = "Testing dataset") %>% 
-          layout(xaxis = list(title = input$x_variable_input_curve),  yaxis = list(title = input$y_variable_input_curve),legend = list(orientation = "h",xanchor = "center",x = 0.5,y= 1.2))
+        layout(xaxis = list(title = input$x_variable_input_curve),  yaxis = list(title = input$y_variable_input_curve),legend = list(orientation = "h",xanchor = "center",x = 0.5,y= 1.2))
       
     })
     
@@ -857,8 +869,11 @@ shinyML_regression <- function(data = data,y,framework = "h2o", share_app = FALS
           select(-c(setdiff(colnames(data),y))) %>% 
           mutate(Counter = row_number()) %>% 
           select(Counter,everything())
-        
+
       }
+      
+      
+      #plot_ly(data = data_output_curve,x =  data_output_curve$Counter,y = data_output_curve$Species)
       
       output_dygraph <- dygraph(data = data_output_curve ,main = "Prediction results on test period",width = "100%",height = "150%") %>%
         dyAxis("x",valueRange = c(0,nrow(data))) %>% 
@@ -879,7 +894,7 @@ shinyML_regression <- function(data = data,y,framework = "h2o", share_app = FALS
     # Define performance table visible on "Compare models performances" tab
     output$score_table <- renderDT({
       
-
+      
       req(ncol(table_forecast()[['results']]) > ncol(data))
       req(!is.null(input$checkbox_time_series))
       
@@ -973,9 +988,9 @@ shinyML_regression <- function(data = data,y,framework = "h2o", share_app = FALS
                         value= c(input$train_selector[1],input$test_selector[1]) )
     })
     
-    #Message indicating that feature importance is not available for glm model
-    output$feature_importance_glm_message <- renderUI({
-      if (!is.na(v_glm$type_model) & is.na(v_random$type_model) & is.na(v_neural$type_model) &  is.na(v_decision_tree$type_model) & is.na(v_grad$type_model) & is.na(v_auto_ml$type_model)){
+    #Message indicating that feature importance is not available for naive Bayes model
+    output$feature_importance_naiveBayes_message <- renderUI({
+      if (!is.na(v_naiveBayes$type_model) & is.na(v_random$type_model) & is.na(v_neural$type_model) &  is.na(v_decision_tree$type_model) & is.na(v_grad$type_model) & is.na(v_auto_ml$type_model)){
         sendSweetAlert(
           session = session,
           title = "Sorry ...",
@@ -1010,7 +1025,7 @@ shinyML_regression <- function(data = data,y,framework = "h2o", share_app = FALS
     output$message_feature_importance <- renderUI({
       
       if (ncol(table_forecast()[['results']]) <= ncol(data)){  
-          
+        
         sendSweetAlert(
           session = session,
           title = "",
@@ -1040,7 +1055,7 @@ shinyML_regression <- function(data = data,y,framework = "h2o", share_app = FALS
     
     # Define specific sever-side objects is H2O framework is selected
     if(framework == "h2o"){
-
+      
       # Make all parameters correspond to cursors and radiobuttons choices when user click on "Run tuned models!" button
       observeEvent(input$train_all,{
         
@@ -1052,16 +1067,14 @@ shinyML_regression <- function(data = data,y,framework = "h2o", share_app = FALS
         
         v_neural$type_model <- "ml_neural_network"
         v_grad$type_model <- "ml_gradient_boosted_trees"
-        v_glm$type_model <- "ml_generalized_linear_regression"
+        v_naiveBayes$type_model <- "ml_generalized_linear_regression"
         v_random$type_model <- "ml_random_forest"
         v_auto_ml$type_model <- NA
         
-        parameter$family_glm <- input$glm_family
-        parameter$glm_link <- input$glm_link
-        parameter$intercept_term_glm <- input$intercept_term_glm
-        parameter$reg_param_glm <- input$reg_param_glm
-        parameter$alpha_param_glm <- input$alpha_param_glm
-        parameter$max_iter_glm <- input$max_iter_glm
+        parameter$laplace_smoothing_naiveBayes <- input$laplace_param_naiveBaye
+        parameter$max_after_balance_naiveBayes <- input$max_after_balance_naiveBaye
+        parameter$min_sdev_naiveBayes <- input$min_sdev_naiveBaye
+        parameter$epsilon_naiveBayes <- input$epsilon_iter_naiveBaye
         
         
         parameter$num_tree_random_forest <- input$num_tree_random_forest
@@ -1081,7 +1094,7 @@ shinyML_regression <- function(data = data,y,framework = "h2o", share_app = FALS
         parameter$rate_neural_net <- input$rate_neural_net
         
       })
-
+      
       # Make neural network parameters correspond to cursors and radiobuttons choices when user click on "Run neural network regression" button (and disable other models)
       observeEvent(input$run_neural_network,{
         
@@ -1092,7 +1105,7 @@ shinyML_regression <- function(data = data,y,framework = "h2o", share_app = FALS
         
         v_neural$type_model <- "ml_neural_network"
         v_grad$type_model <- NA
-        v_glm$type_model <- NA
+        v_naiveBayes$type_model <- NA
         v_random$type_model <- NA
         v_auto_ml$type_model <- NA
         
@@ -1101,7 +1114,7 @@ shinyML_regression <- function(data = data,y,framework = "h2o", share_app = FALS
         parameter$activation_neural_net <- input$activation_neural_net
         parameter$loss_neural_net <- input$loss_neural_net
         parameter$rate_neural_net <- input$rate_neural_net
-
+        
       })
       
       # Make autoML parameter correspond to knobInput when user click on "Run Auto ML" button 
@@ -1114,12 +1127,12 @@ shinyML_regression <- function(data = data,y,framework = "h2o", share_app = FALS
         
         v_grad$type_model <- NA
         v_neural$type_model <- NA
-        v_glm$type_model <- NA
+        v_naiveBayes$type_model <- NA
         v_random$type_model <- NA
         v_auto_ml$type_model <- "ml_auto"
         
         parameter$run_time_auto_ml <-  input$run_time_auto_ml
-
+        
       })
       
       # Define a list of object related to model results (specific for H2O framework)
@@ -1145,8 +1158,8 @@ shinyML_regression <- function(data = data,y,framework = "h2o", share_app = FALS
           data_train <- data %>% sample_frac(as.numeric(as.character(gsub("%","",input$percentage_selector)))*0.01)
           data_test <- data %>% anti_join(data_train)
           data_results <- data_test
-            
-
+          
+          
         }
         
         
@@ -1174,47 +1187,46 @@ shinyML_regression <- function(data = data,y,framework = "h2o", share_app = FALS
           }
           
           
-          # Calculation of glm predictions and associated calculation time
-          if (!is.na(v_glm$type_model) & v_glm$type_model == "ml_generalized_linear_regression"){
-            
+          # Calculation of naive Baye classifications and associated calculation time
+          if (!is.na(v_naiveBayes$type_model) & v_naiveBayes$type_model == "ml_naiveBayes"){
             t1 <- Sys.time()
-            fit <- h2o.glm(x = as.character(var_input_list),
-                               y = y,
-                               training_frame = data_h2o_train,
-                               family = parameter$family_glm,
-                               link = parameter$glm_link,
-                               intercept = parameter$intercept_term_glm,
-                               lambda = parameter$reg_param_glm,
-                               alpha = parameter$alpha_param_glm,
-                               max_iterations = parameter$max_iter_glm,
-                               seed = 1
-            )
+            
+            
+            fit <- h2o.naiveBayes(x = as.character(var_input_list),
+                                  y = y,
+                                  training_frame = data_h2o_train,
+                                  laplace = parameter$laplace_smoothing_naiveBayes,
+                                  max_after_balance_size = parameter$max_after_balance_naiveBayes,
+                                  min_sdev = parameter$min_sdev_naiveBayes,
+                                  eps_sdev = parameter$epsilon_naiveBayes,
+                                  seed = 1
+                                  )
+            
+
             t2 <- Sys.time()
-            time_glm <- data.frame(`Training time` =  paste0(round(t2 - t1,1)," seconds"), Model = "Generalized linear regression")
-            table_glm <- h2o.predict(fit,data_h2o_test) %>% as.data.table() %>% mutate(predict = round(predict,3)) %>% rename(`Generalized linear regression` = predict)
-            table_results <- cbind(data_results,table_glm)%>% as.data.table()
+            time_naiveBayes <- data.frame(`Training time` =  paste0(round(t2 - t1,1)," seconds"), Model = "Naive Bayes")
+            table_naiveBayes <- h2o.predict(fit,data_h2o_test) %>% as.data.table() %>% rename(`Naive Bayes` = predict)
+            table_results <- cbind(data_results,table_naiveBayes)%>% as.data.table()
             
           }
           
           # Calculation of random forest predictions and associated calculation time
           if (!is.na(v_random$type_model) & v_random$type_model == "ml_random_forest"){
             
-            
-            
             t1 <- Sys.time()
             fit <- h2o.randomForest(x = as.character(var_input_list),
-                                        y = y,
-                                        training_frame = data_h2o_train,
-                                        ntrees = parameter$num_tree_random_forest,
-                                        sample_rate = parameter$subsampling_rate_random_forest,
-                                        max_depth = parameter$max_depth_random_forest,
-                                        nbins = parameter$n_bins_random_forest,
-                                        seed = 1
+                                    y = y,
+                                    training_frame = data_h2o_train,
+                                    ntrees = parameter$num_tree_random_forest,
+                                    sample_rate = parameter$subsampling_rate_random_forest,
+                                    max_depth = parameter$max_depth_random_forest,
+                                    nbins = parameter$n_bins_random_forest,
+                                    seed = 1
             )
             t2 <- Sys.time()
             time_random_forest <- data.frame(`Training time` =  paste0(round(t2 - t1,1)," seconds"), Model = "Random forest")
             importance_random_forest <- h2o.varimp(fit) %>% as.data.table() %>% select(`variable`,scaled_importance) %>% mutate(model = "Random forest")
-            table_random_forest<- h2o.predict(fit,data_h2o_test) %>% as.data.table() %>% mutate(predict = round(predict,3))  %>% rename(`Random forest` = predict)
+            table_random_forest<- h2o.predict(fit,data_h2o_test) %>% as.data.table() %>% rename(`Random forest` = predict)
             table_results <- cbind(data_results,table_random_forest)%>% as.data.table()
             
           }
@@ -1224,21 +1236,21 @@ shinyML_regression <- function(data = data,y,framework = "h2o", share_app = FALS
             
             t1 <- Sys.time()
             fit <- h2o.deeplearning(x = as.character(var_input_list),
-                                        y = y,
-                                        training_frame = data_h2o_train,
-                                        activation = parameter$activation_neural_net,
-                                        loss = parameter$loss_neural_net,
-                                        hidden = eval(parse(text = parameter$hidden_neural_net)) ,
-                                        epochs = parameter$epochs_neural_net,
-                                        rate = parameter$rate_neural_net,
-                                        reproducible = T,
-                                        seed = 1
+                                    y = y,
+                                    training_frame = data_h2o_train,
+                                    activation = parameter$activation_neural_net,
+                                    loss = parameter$loss_neural_net,
+                                    hidden = eval(parse(text = parameter$hidden_neural_net)) ,
+                                    epochs = parameter$epochs_neural_net,
+                                    rate = parameter$rate_neural_net,
+                                    reproducible = T,
+                                    seed = 1
             )
             t2 <- Sys.time()
             
             time_neural_network <- data.frame(`Training time` =  paste0(round(t2 - t1,1)," seconds"), Model = "Neural network")
             importance_neural_network <- h2o.varimp(fit) %>% as.data.table() %>% select(`variable`,scaled_importance) %>% mutate(model = "Neural network")
-            table_neural_network <- h2o.predict(fit,data_h2o_test) %>% as.data.table() %>% mutate(predict = round(predict,3)) %>% rename(`Neural network` = predict)
+            table_neural_network <- h2o.predict(fit,data_h2o_test) %>% as.data.table() %>% rename(`Neural network` = predict)
             table_results <- cbind(data_results,table_neural_network)%>% as.data.table()
             
           }
@@ -1248,19 +1260,19 @@ shinyML_regression <- function(data = data,y,framework = "h2o", share_app = FALS
             
             t1 <- Sys.time()
             fit <- h2o.gbm(x = as.character(var_input_list),
-                               y = y,
-                               training_frame = data_h2o_train,
-                               sample_rate = parameter$sample_rate_gbm,
-                               ntrees = parameter$n_trees_gbm,
-                               max_depth = parameter$max_depth_gbm,
-                               learn_rate = parameter$learn_rate_gbm,
-                               min_rows = 2,
-                               seed = 1
+                           y = y,
+                           training_frame = data_h2o_train,
+                           sample_rate = parameter$sample_rate_gbm,
+                           ntrees = parameter$n_trees_gbm,
+                           max_depth = parameter$max_depth_gbm,
+                           learn_rate = parameter$learn_rate_gbm,
+                           min_rows = 2,
+                           seed = 1
             )
             t2 <- Sys.time()
             time_gbm <- data.frame(`Training time` =  paste0(round(t2 - t1,1)," seconds"), Model = "Gradient boosted trees")
             importance_gbm <- h2o.varimp(fit) %>% as.data.table() %>% select(`variable`,scaled_importance) %>% mutate(model = "Gradient boosted trees")
-            table_gradient_boosting <- h2o.predict(fit,data_h2o_test) %>% as.data.table() %>% mutate(predict = round(predict,3)) %>% rename(`Gradient boosted trees` = predict)
+            table_gradient_boosting <- h2o.predict(fit,data_h2o_test) %>% as.data.table()  %>% rename(`Gradient boosted trees` = predict)
             table_results <- cbind(data_results,table_gradient_boosting)%>% as.data.table()
             
           }
@@ -1289,14 +1301,14 @@ shinyML_regression <- function(data = data,y,framework = "h2o", share_app = FALS
           }
           
           # Assembly results of all models (some column might remain empty)
-          if (!is.na(v_neural$type_model) & !is.na(v_grad$type_model) & !is.na(v_glm$type_model) & !is.na(v_random$type_model)){
+          if (!is.na(v_neural$type_model) & !is.na(v_grad$type_model) & !is.na(v_naiveBayes$type_model) & !is.na(v_random$type_model)){
             
-            table_results <- cbind(data_results,table_glm,table_random_forest,table_neural_network,table_gradient_boosting)%>% as.data.table()
+            table_results <- cbind(data_results,table_naiveBayes,table_random_forest,table_neural_network,table_gradient_boosting)%>% as.data.table()
           }
           
         }
         
-        table_training_time <- rbind(time_gbm,time_random_forest,time_glm,time_neural_network,time_auto_ml)
+        table_training_time <- rbind(time_gbm,time_random_forest,time_naiveBayes,time_neural_network,time_auto_ml)
         table_importance <- rbind(importance_gbm,importance_random_forest,importance_neural_network) %>% as.data.table()
         
         # Used a list to access to different tables from only on one reactive objet
@@ -1535,9 +1547,9 @@ shinyML_regression <- function(data = data,y,framework = "h2o", share_app = FALS
         
         
       })
-
+      
     }
-
+    
   }
   
   ## ---------------------------------------------------------------------------- LAUNCH APP  -----------------------------------
@@ -1568,3 +1580,7 @@ shinyML_regression <- function(data = data,y,framework = "h2o", share_app = FALS
   }
   else {runApp(app)}
 }
+
+
+
+shinyML_classification(data = iris,y = "Species",framework = "h2o")
