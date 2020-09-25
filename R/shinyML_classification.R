@@ -994,13 +994,13 @@ shinyML_classification <- function(data = data,y,framework = "h2o", share_app = 
         sendSweetAlert(
           session = session,
           title = "Sorry ...",
-          text = "Feature importance not available for generalized regression method !",
+          text = "Feature importance not available for naive Bayes classification method !",
           type = "error"
           
           
         )
         
-        argonH1("Feature importance not available for generalized regression method",display = 4)
+        argonH1("Feature importance not available for naive Bayes classification method",display = 4)
       }
     })
     
@@ -1190,8 +1190,7 @@ shinyML_classification <- function(data = data,y,framework = "h2o", share_app = 
           # Calculation of naive Baye classifications and associated calculation time
           if (!is.na(v_naiveBayes$type_model) & v_naiveBayes$type_model == "ml_naiveBayes"){
             t1 <- Sys.time()
-            
-            
+
             fit <- h2o.naiveBayes(x = as.character(var_input_list),
                                   y = y,
                                   training_frame = data_h2o_train,
@@ -1201,6 +1200,9 @@ shinyML_classification <- function(data = data,y,framework = "h2o", share_app = 
                                   eps_sdev = parameter$epsilon_naiveBayes,
                                   seed = 1
                                   )
+            
+            #browser()
+            #h2o.confusionMatrix(fit) à tracer
             
 
             t2 <- Sys.time()
