@@ -919,25 +919,23 @@ shinyML_classification <- function(data = data,y,framework = "h2o", share_app = 
       }
       
       else if (input$checkbox_time_series == FALSE){
-        
         performance_table <-  table_forecast()[['results']] %>%
           select(-c(setdiff(colnames(data),y))) %>% 
-          gather(key = Model,value = Predicted_value,-y) %>%
+          gather(key = Model,value = Prediction,-y) %>% 
+          group_by(Model) %>% 
+          summarise(Error = paste0(round(sum(ifelse(Prediction != eval(parse(text = y)),1,0),na.rm = T)/length(Model)*100,1),
+                                   " % (",sum(ifelse(Prediction != eval(parse(text = y)),1,0),na.rm = T),"/",length(Model),")")) %>% 
+          ungroup() %>% 
           as.data.table()
-      }
-      
-      performance_table <- performance_table %>% 
-        group_by(Model) %>%
-        summarise(`MAPE(%)` = round(100 * mean(abs((Predicted_value - eval(parse(text = y)))/eval(parse(text = y))),na.rm = TRUE),1),
-                  RMSE = round(sqrt(mean((Predicted_value - eval(parse(text = y)))**2)),2))
-      
+         }
+
       
       if (nrow(table_forecast()[['traning_time']]) != 0){
         performance_table <- performance_table %>% merge(.,table_forecast()[['traning_time']],by = "Model")
       }
       
       datatable(
-        performance_table %>% arrange(`MAPE(%)`) %>% as.data.table()
+        performance_table %>% arrange(`Error`) %>% as.data.table()
         , extensions = 'Buttons', options = list(dom = 'Bfrtip',buttons = c('csv', 'excel', 'pdf', 'print'))
       )
     })
@@ -1222,7 +1220,6 @@ shinyML_classification <- function(data = data,y,framework = "h2o", share_app = 
                                   eps_sdev = parameter$epsilon_naiveBayes,
                                   seed = 1
                                   )
-            #browser()
             t2 <- Sys.time()
             time_naiveBayes <- data.frame(`Training time` =  paste0(round(t2 - t1,1)," seconds"), Model = "Naive Bayes")
             confusion_matrix_naiveBayes <- h2o.confusionMatrix(fit,newdata =data_h2o_test)%>%  mutate(Model = "Naive Bayes") %>% slice(-n()) %>% as.data.table()
@@ -1314,7 +1311,7 @@ shinyML_classification <- function(data = data,y,framework = "h2o", share_app = 
                                      seed = 1
                                      
             )
-            
+            browser()
             time_auto_ml <- data.frame(`Training time` =  paste0(parameter$run_time_auto_ml," seconds"), Model = "Auto ML")
             confusion_matrix_auto_ml <- h2o.confusionMatrix(fit@leader,newdata =data_h2o_test)%>%  mutate(Model = "Auto ML") %>% slice(-n()) %>% as.data.table()
             table_auto_ml<- h2o.predict(fit,data_h2o_test) %>% as.data.table() %>% select(predict) %>% rename(`Auto ML` = predict)
@@ -1324,10 +1321,10 @@ shinyML_classification <- function(data = data,y,framework = "h2o", share_app = 
           
           # Assembly results of all models (some column might remain empty)
           if (!is.na(v_neural$type_model) & !is.na(v_grad$type_model) & !is.na(v_naiveBayes$type_model) & !is.na(v_random$type_model)){
-            
+
             table_results <- cbind(data_results,table_naiveBayes,table_random_forest,table_neural_network,table_gradient_boosting)%>% as.data.table()
           }
-          
+
         }
         
         confusion_matrix <- rbind(confusion_matrix_naiveBayes,confusion_matrix_random_forest,confusion_matrix_neural_network,confusion_matrix_gbm,confusion_matrix_auto_ml)
