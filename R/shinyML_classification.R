@@ -272,6 +272,11 @@ shinyML_classification <- function(data = data,y,framework = "h2o", share_app = 
                                                               argonTab(
                                                                 tabName = "Confusion matrix",
                                                                 active = TRUE,
+                                                                div(align = "center",
+                                                                    br(),
+                                                                    br(),
+                                                                    uiOutput("message_confusion_matrix")
+                                                                ),
                                                                 withSpinner(plotlyOutput("confusion_matrix_chart",height = "100%"))
                               
                                                               ),
@@ -292,7 +297,7 @@ shinyML_classification <- function(data = data,y,framework = "h2o", share_app = 
                                                                            br(),
                                                                            uiOutput("message_feature_importance"),
                                                                            uiOutput("feature_importance_naiveBayes_message")),
-                                                                       withSpinner(plotlyOutput("feature_importance"))
+                                                                       withSpinner(plotlyOutput("feature_importance",height = "100%"))
                                                                        
                                                               ),
                                                               argonTab(tabName = "Table of results",
@@ -874,14 +879,13 @@ shinyML_classification <- function(data = data,y,framework = "h2o", share_app = 
         matrix_confusion <- table_forecast()[['confusion_matrix']] %>% select(-Error,-Rate)
         
         table_matrix_confusion_chart <- matrix_confusion %>%
-          mutate(Actual = rep(setdiff(colnames(matrix_confusion),"Model"),length(unique(matrix_confusion$Model)))) %>% 
-          gather(key = Predicted , value = Freq,-Actual,-Model) %>% 
-          arrange(Model,Actual, Predicted)
-        
+          mutate(ACTUAL = rep(setdiff(colnames(matrix_confusion),"Model"),length(unique(matrix_confusion$Model)))) %>% 
+          gather(key = PREDICTED , value = Freq,-ACTUAL,-Model) %>% 
+          arrange(Model,ACTUAL, PREDICTED)
         
       ggplotly(
           
-          ggplot(data = table_matrix_confusion_chart,mapping = aes(x = Predicted,y = Actual,fill = Freq))+
+          ggplot(data = table_matrix_confusion_chart,mapping = aes(x = PREDICTED,y = ACTUAL,fill = Freq))+
             geom_tile()+
             geom_text(aes(label = Freq, size = 8), color = 'Blue')+
             facet_wrap(~ Model)+
@@ -995,21 +999,15 @@ shinyML_classification <- function(data = data,y,framework = "h2o", share_app = 
                         value= c(input$train_selector[1],input$test_selector[1]) )
     })
     
-    #Message indicating that feature importance is not available for naive Bayes model
-    output$feature_importance_naiveBayes_message <- renderUI({
-      if (!is.na(v_naiveBayes$type_model) & is.na(v_random$type_model) & is.na(v_neural$type_model) &  is.na(v_decision_tree$type_model) & is.na(v_grad$type_model) & is.na(v_auto_ml$type_model)){
-        sendSweetAlert(
-          session = session,
-          title = "Sorry ...",
-          text = "Feature importance not available for naive Bayes classification method !",
-          type = "error"
-          
-          
-        )
-        
-        argonH1("Feature importance not available for naive Bayes classification method",display = 4)
+
+    # Message indicating that results are not available if no model has been running
+    output$message_confusion_matrix <- renderUI({
+      
+      if (ncol(table_forecast()[['results']]) <= ncol(data)){  
+        argonH1("Please run at least one algorithm to check confusion matrix !",display = 4)
       }
     })
+    
     
     # Message indicating that results are not available if no model has been running
     output$message_compare_models_performances <- renderUI({
@@ -1027,6 +1025,23 @@ shinyML_classification <- function(data = data,y,framework = "h2o", share_app = 
         argonH1("Please run at least one algorithm to check model performances !",display = 4)
       }
     })
+    
+    #Message indicating that feature importance is not available for naive Bayes model
+    output$feature_importance_naiveBayes_message <- renderUI({
+      if (!is.na(v_naiveBayes$type_model) & is.na(v_random$type_model) & is.na(v_neural$type_model) &  is.na(v_decision_tree$type_model) & is.na(v_grad$type_model) & is.na(v_auto_ml$type_model)){
+        sendSweetAlert(
+          session = session,
+          title = "Sorry ...",
+          text = "Feature importance not available for naive Bayes classification method !",
+          type = "error"
+          
+          
+        )
+        
+        argonH1("Feature importance not available for naive Bayes classification method",display = 4)
+      }
+    })
+    
     
     # Message indicating that results are not available if no model has been running
     output$message_feature_importance <- renderUI({
@@ -1207,11 +1222,11 @@ shinyML_classification <- function(data = data,y,framework = "h2o", share_app = 
                                   eps_sdev = parameter$epsilon_naiveBayes,
                                   seed = 1
                                   )
-            
+            #browser()
             t2 <- Sys.time()
             time_naiveBayes <- data.frame(`Training time` =  paste0(round(t2 - t1,1)," seconds"), Model = "Naive Bayes")
-            confusion_matrix_naiveBayes <- h2o.confusionMatrix(fit)%>%  mutate(Model = "Naive Bayes") %>% slice(-n()) %>% as.data.table()
-            table_naiveBayes <- h2o.predict(fit,data_h2o_test) %>% as.data.table() %>% rename(`Naive Bayes` = predict)
+            confusion_matrix_naiveBayes <- h2o.confusionMatrix(fit,newdata =data_h2o_test)%>%  mutate(Model = "Naive Bayes") %>% slice(-n()) %>% as.data.table()
+            table_naiveBayes <- h2o.predict(fit,data_h2o_test) %>% as.data.table() %>% select(predict) %>% rename(`Naive Bayes` = predict)
             table_results <- cbind(data_results,table_naiveBayes)%>% as.data.table()
             
           }
@@ -1231,11 +1246,10 @@ shinyML_classification <- function(data = data,y,framework = "h2o", share_app = 
             )
             t2 <- Sys.time()
             time_random_forest <- data.frame(`Training time` =  paste0(round(t2 - t1,1)," seconds"), Model = "Random forest")
-            confusion_matrix_random_forest <- h2o.confusionMatrix(fit)%>%  mutate(Model = "Random forest") %>% slice(-n()) %>% as.data.table()
+            confusion_matrix_random_forest <- h2o.confusionMatrix(fit,newdata =data_h2o_test)%>%  mutate(Model = "Random forest") %>% slice(-n()) %>% as.data.table()
             importance_random_forest <- h2o.varimp(fit) %>% as.data.table() %>% select(`variable`,scaled_importance) %>% mutate(model = "Random forest")
-            table_random_forest<- h2o.predict(fit,data_h2o_test) %>% as.data.table() %>% rename(`Random forest` = predict)
+            table_random_forest<- h2o.predict(fit,data_h2o_test) %>% as.data.table() %>% select(predict) %>% rename(`Random forest` = predict)
             table_results <- cbind(data_results,table_random_forest)%>% as.data.table()
-            
           }
           
           # Calculation of neural network predictions and associated calculation time
@@ -1256,9 +1270,9 @@ shinyML_classification <- function(data = data,y,framework = "h2o", share_app = 
             t2 <- Sys.time()
             
             time_neural_network <- data.frame(`Training time` =  paste0(round(t2 - t1,1)," seconds"), Model = "Neural network")
-            confusion_matrix_neural_network <- h2o.confusionMatrix(fit)%>%  mutate(Model = "Neural network") %>% slice(-n()) %>% as.data.table()
+            confusion_matrix_neural_network <- h2o.confusionMatrix(fit,newdata =data_h2o_test)%>%  mutate(Model = "Neural network") %>% slice(-n()) %>% as.data.table()
             importance_neural_network <- h2o.varimp(fit) %>% as.data.table() %>% select(`variable`,scaled_importance) %>% mutate(model = "Neural network")
-            table_neural_network <- h2o.predict(fit,data_h2o_test) %>% as.data.table() %>% rename(`Neural network` = predict)
+            table_neural_network <- h2o.predict(fit,data_h2o_test) %>% as.data.table() %>% select(predict) %>% rename(`Neural network` = predict)
             table_results <- cbind(data_results,table_neural_network)%>% as.data.table()
             
           }
@@ -1279,9 +1293,9 @@ shinyML_classification <- function(data = data,y,framework = "h2o", share_app = 
             )
             t2 <- Sys.time()
             time_gbm <- data.frame(`Training time` =  paste0(round(t2 - t1,1)," seconds"), Model = "Gradient boosted trees")
-            confusion_matrix_gbm <- h2o.confusionMatrix(fit)%>%  mutate(Model = "Gradient boosted trees") %>% slice(-n()) %>% as.data.table()
+            confusion_matrix_gbm <- h2o.confusionMatrix(fit,newdata =data_h2o_test)%>%  mutate(Model = "Gradient boosted trees") %>% slice(-n()) %>% as.data.table()
             importance_gbm <- h2o.varimp(fit) %>% as.data.table() %>% select(`variable`,scaled_importance) %>% mutate(model = "Gradient boosted trees")
-            table_gradient_boosting <- h2o.predict(fit,data_h2o_test) %>% as.data.table()  %>% rename(`Gradient boosted trees` = predict)
+            table_gradient_boosting <- h2o.predict(fit,data_h2o_test) %>% as.data.table() %>% select(predict)  %>% rename(`Gradient boosted trees` = predict)
             table_results <- cbind(data_results,table_gradient_boosting)%>% as.data.table()
             
           }
@@ -1302,8 +1316,8 @@ shinyML_classification <- function(data = data,y,framework = "h2o", share_app = 
             )
             
             time_auto_ml <- data.frame(`Training time` =  paste0(parameter$run_time_auto_ml," seconds"), Model = "Auto ML")
-            confusion_matrix_auto_ml <- h2o.confusionMatrix(fit@leader)%>%  mutate(Model = "Auto ML") %>% slice(-n()) %>% as.data.table()
-            table_auto_ml<- h2o.predict(fit,data_h2o_test) %>% as.data.table()  %>% rename(`Auto ML` = predict)
+            confusion_matrix_auto_ml <- h2o.confusionMatrix(fit@leader,newdata =data_h2o_test)%>%  mutate(Model = "Auto ML") %>% slice(-n()) %>% as.data.table()
+            table_auto_ml<- h2o.predict(fit,data_h2o_test) %>% as.data.table() %>% select(predict) %>% rename(`Auto ML` = predict)
             table_results <- cbind(data_results,table_auto_ml)%>% as.data.table()
             
           }
@@ -1566,9 +1580,9 @@ shinyML_classification <- function(data = data,y,framework = "h2o", share_app = 
   app <- shiny::shinyApp(
     ui = argonDashPage(
       useShinyjs(),  
-      title = "shinyML_regression",
+      title = "shinyML_classification",
       author = "Jean",
-      description = "Use of shinyML_regression function",
+      description = "Use of shinyML_classification function",
       navbar = argonNav,
       header = argonHeader,
       footer = argonFooter

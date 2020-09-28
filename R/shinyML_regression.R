@@ -268,7 +268,7 @@ shinyML_regression <- function(data = data,y,framework = "h2o", share_app = FALS
                                                                            br(),
                                                                            uiOutput("message_feature_importance"),
                                                                            uiOutput("feature_importance_glm_message")),
-                                                                       withSpinner(plotlyOutput("feature_importance"))
+                                                                       withSpinner(plotlyOutput("feature_importance",height = "100%"))
                                                                        
                                                               ),
                                                               argonTab(tabName = "Table of results",
