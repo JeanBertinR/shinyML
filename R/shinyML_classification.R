@@ -237,7 +237,8 @@ shinyML_classification <- function(data = data,y,framework = "h2o", share_app = 
                                 uiOutput("Variables_input_selection"),
                                 uiOutput("slider_time_series_train"),
                                 uiOutput("slider_time_series_test"),
-                                uiOutput("slider_percentage")
+                                uiOutput("slider_percentage"),
+                                uiOutput("message_nrow_test_dataset")
                             )
                   )
       )
@@ -645,6 +646,21 @@ shinyML_classification <- function(data = data,y,framework = "h2o", share_app = 
       )
     })
   
+    # Define indicating number of rows contained in testing dataset
+    output$message_nrow_test_dataset <- renderUI({
+      
+      req(!is.null(input$checkbox_time_series))
+      req(!is.null(table_forecast()[["data_train"]]))
+      
+      if (input$checkbox_time_series == TRUE){
+        number_rows_datatest <- nrow(eval(parse(text = paste0("data[",input$time_serie_select_column," >= input$test_selector[1],]"))))
+      }
+      
+      else if (input$checkbox_time_series == FALSE){
+        number_rows_datatest <- nrow(table_forecast()[["data_test"]])
+      }
+      argonH1(HTML(paste0("<small>Testing dataset contains <b>",number_rows_datatest,"</b> rows</small>")),display = 4)
+    })
     
     # Make naive Bayes parameters correspond to cursors and radiobuttons choices when user click on "Run generalized linear regression" button 
     observeEvent(input$run_naiveBayes,{
@@ -753,7 +769,7 @@ shinyML_classification <- function(data = data,y,framework = "h2o", share_app = 
       
       if (input$checkbox_time_series == FALSE){
         
-        selectInput(label = "Train/ Test splitting",inputId = "percentage_selector",choices = paste0(c(50:99),"%"),selected = 70,multiple = FALSE)
+        selectInput(label = "Train/Test splitting",inputId = "percentage_selector",choices = paste0(c(50:99),"%"),selected = 70,multiple = FALSE)
         
       }
     })
@@ -843,6 +859,7 @@ shinyML_classification <- function(data = data,y,framework = "h2o", share_app = 
         
       }
       
+     
       plot_ly(data = data_train_chart, x = eval(parse(text = paste0("data_train_chart$",input$x_variable_input_curve))), 
               y = eval(parse(text = paste0("data_train_chart$",input$y_variable_input_curve))),
               type = "scatter",mode = "markers",
@@ -1172,13 +1189,11 @@ shinyML_classification <- function(data = data,y,framework = "h2o", share_app = 
         
         else if (input$checkbox_time_series == FALSE){
           
-          
           req(!is.null(input$percentage_selector))
           
           data_train <- data %>% sample_frac(as.numeric(as.character(gsub("%","",input$percentage_selector)))*0.01)
           data_test <- data %>% anti_join(data_train)
           data_results <- data_test
-          
           
         }
         
