@@ -272,7 +272,7 @@ shinyML_classification <- function(data = data,y,framework = "h2o", share_app = 
                                                               argonTab(
                                                                 tabName = "Confusion matrix",
                                                                 active = TRUE,
-                                                                withSpinner(plotlyOutput("confusion_matrix_chart",  width = "100%"))
+                                                                withSpinner(plotlyOutput("confusion_matrix_chart",height = "100%"))
                               
                                                               ),
                                                               argonTab(
@@ -878,19 +878,20 @@ shinyML_classification <- function(data = data,y,framework = "h2o", share_app = 
           gather(key = Predicted , value = Freq,-Actual,-Model) %>% 
           arrange(Model,Actual, Predicted)
         
+        
       ggplotly(
           
           ggplot(data = table_matrix_confusion_chart,mapping = aes(x = Predicted,y = Actual,fill = Freq))+
             geom_tile()+
-            geom_text(aes(label = paste(Freq), color = 'red', size = 8))+
+            geom_text(aes(label = Freq, size = 8), color = 'Blue')+
             facet_wrap(~ Model)+
             theme_light()+
-            guides(fill=FALSE) 
+            scale_fill_gradientn(colours = c("#FFFFFF","#FFFF00","#FF0000","#FF0000", "#FF0000"))+
+            guides(fill=FALSE) ,height = 800
           
+   
         )
         
-        
-
       }
       
 
