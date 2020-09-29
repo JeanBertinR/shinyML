@@ -121,13 +121,13 @@ shinyML_classification <- function(data = data,y,framework = "h2o", share_app = 
   confusion_matrix_neural_network <- data.table()
   confusion_matrix_gbm <- data.table()
   confusion_matrix_auto_ml <- data.table()
-
+  
   # Initialize tables for model variable importance (not available for generalized linear regression)
   importance_gbm <- data.table()
   importance_decision_tree <- data.table()
   importance_random_forest <- data.table()
   importance_neural_network <- data.table()
-
+  
   
   # Initialize scalar values
   scaled_importance <- NULL
@@ -238,7 +238,7 @@ shinyML_classification <- function(data = data,y,framework = "h2o", share_app = 
                                 uiOutput("slider_time_series_train"),
                                 uiOutput("slider_time_series_test"),
                                 uiOutput("slider_percentage"),
-                                uiOutput("message_nrow_test_dataset")
+                                uiOutput("message_nrow_train_dataset")
                             )
                   )
       )
@@ -279,7 +279,7 @@ shinyML_classification <- function(data = data,y,framework = "h2o", share_app = 
                                                                     uiOutput("message_confusion_matrix")
                                                                 ),
                                                                 withSpinner(plotlyOutput("confusion_matrix_chart",height = "100%"))
-                              
+                                                                
                                                               ),
                                                               argonTab(
                                                                 tabName = "Compare models performances",
@@ -410,28 +410,28 @@ shinyML_classification <- function(data = data,y,framework = "h2o", share_app = 
                                                                   )
                                                       ),
                                                       argonColumn(width = 6,
-                                                        argonCard(width = 12,icon = icon("cogs"),status = "warning", title = "Auto Machine Learning",
-                                                          div(align = "center",
-                                                            prettyCheckboxGroup(
-                                                              inputId = "auto_ml_autorized_models",
-                                                              label = HTML("<b>Authorized searching</b>"), 
-                                                              choices = c("DRF", "GLM", "XGBoost", "GBM", "DeepLearning"),
-                                                              selected = c("DRF", "GLM", "XGBoost", "GBM", "DeepLearning"),
-                                                              icon = icon("check-square-o"), 
-                                                              status = "primary",
-                                                              inline = TRUE,
-                                                              outline = TRUE,
-                                                              animation = "jelly"
-                                                            ),
-                                                            br(),
-                                                            knobInput(inputId = "run_time_auto_ml",label = HTML("<b>Max running time (in seconds)</b>"),value = 15,min = 10,max = 60,
-                                                                      displayPrevious = TRUE, lineCap = "round",fgColor = "#428BCA",inputColor = "#428BCA"
-                                                            ),
-                                                            actionButton("run_auto_ml","Run auto ML",style = 'color:white; background-color:red; padding:4px; font-size:120%',icon = icon("cogs",lib = "font-awesome"))
-                                                          )
+                                                                  argonCard(width = 12,icon = icon("cogs"),status = "warning", title = "Auto Machine Learning",
+                                                                            div(align = "center",
+                                                                                prettyCheckboxGroup(
+                                                                                  inputId = "auto_ml_autorized_models",
+                                                                                  label = HTML("<b>Authorized searching</b>"), 
+                                                                                  choices = c("DRF", "GLM", "XGBoost", "GBM", "DeepLearning"),
+                                                                                  selected = c("DRF", "GLM", "XGBoost", "GBM", "DeepLearning"),
+                                                                                  icon = icon("check-square-o"), 
+                                                                                  status = "primary",
+                                                                                  inline = TRUE,
+                                                                                  outline = TRUE,
+                                                                                  animation = "jelly"
+                                                                                ),
+                                                                                br(),
+                                                                                knobInput(inputId = "run_time_auto_ml",label = HTML("<b>Max running time (in seconds)</b>"),value = 15,min = 10,max = 60,
+                                                                                          displayPrevious = TRUE, lineCap = "round",fgColor = "#428BCA",inputColor = "#428BCA"
+                                                                                ),
+                                                                                actionButton("run_auto_ml","Run auto ML",style = 'color:white; background-color:red; padding:4px; font-size:120%',icon = icon("cogs",lib = "font-awesome"))
+                                                                            )
+                                                                  )
                                                       )
                                                     )
-                                                  )
     )
   }
   
@@ -654,21 +654,21 @@ shinyML_classification <- function(data = data,y,framework = "h2o", share_app = 
         background_color = "lightblue"
       )
     })
-  
+    
     # Define indicating number of rows contained in testing dataset
-    output$message_nrow_test_dataset <- renderUI({
+    output$message_nrow_train_dataset <- renderUI({
       
       req(!is.null(input$checkbox_time_series))
       req(!is.null(table_forecast()[["data_train"]]))
       
       if (input$checkbox_time_series == TRUE){
-        number_rows_datatest <- nrow(eval(parse(text = paste0("data[",input$time_serie_select_column," >= input$test_selector[1],]"))))
+        number_rows_datatest <- nrow(eval(parse(text = paste0("data[",input$time_serie_select_column," >= input$train_selector[1],][",input$time_serie_select_column," <= input$train_selector[2],]"))))
       }
       
       else if (input$checkbox_time_series == FALSE){
-        number_rows_datatest <- nrow(table_forecast()[["data_test"]])
+        number_rows_datatest <- nrow(table_forecast()[["data_train"]])
       }
-      argonH1(HTML(paste0("<small><font color = 'darkblue'>Testing dataset contains <b>",number_rows_datatest,"</b> rows</font></small>")),display = 4)
+      argonH1(HTML(paste0("<small><font color = 'darkblue'>Training dataset contains <b>",number_rows_datatest,"</b> rows</font></small>")),display = 4)
     })
     
     # Make naive Bayes parameters correspond to cursors and radiobuttons choices when user click on "Run generalized linear regression" button 
@@ -690,7 +690,7 @@ shinyML_classification <- function(data = data,y,framework = "h2o", share_app = 
       parameter$min_sdev_naiveBayes <- input$min_sdev_naiveBayes
       parameter$epsilon_naiveBayes <- input$epsilon_iter_naiveBayes
       
-
+      
     })
     
     # Make random forest parameters correspond to cursors when user click on "Run random forest model" button (and disable other models)
@@ -868,7 +868,7 @@ shinyML_classification <- function(data = data,y,framework = "h2o", share_app = 
         
       }
       
-     
+      
       plot_ly(data = data_train_chart, x = eval(parse(text = paste0("data_train_chart$",input$x_variable_input_curve))), 
               y = eval(parse(text = paste0("data_train_chart$",input$y_variable_input_curve))),
               type = "scatter",mode = "markers",
@@ -909,7 +909,7 @@ shinyML_classification <- function(data = data,y,framework = "h2o", share_app = 
           gather(key = PREDICTED , value = Freq,-ACTUAL,-Model) %>% 
           arrange(Model,ACTUAL, PREDICTED)
         
-      ggplotly(
+        ggplotly(
           
           ggplot(data = table_matrix_confusion_chart,mapping = aes(x = PREDICTED,y = ACTUAL,fill = Freq))+
             geom_tile()+
@@ -919,12 +919,12 @@ shinyML_classification <- function(data = data,y,framework = "h2o", share_app = 
             scale_fill_gradientn(colours = c("#FFFFFF","#FFFF00","#FF0000","#FF0000", "#FF0000"))+
             guides(fill=FALSE) ,height = 800
           
-   
+          
         )
         
       }
       
-
+      
       
     })
     
@@ -953,8 +953,8 @@ shinyML_classification <- function(data = data,y,framework = "h2o", share_app = 
                                    " % (",sum(ifelse(Prediction != eval(parse(text = y)),1,0),na.rm = T),"/",length(Model),")")) %>% 
           ungroup() %>% 
           as.data.table()
-         }
-
+      }
+      
       
       if (nrow(table_forecast()[['traning_time']]) != 0){
         performance_table <- performance_table %>% merge(.,table_forecast()[['traning_time']],by = "Model")
@@ -1023,7 +1023,7 @@ shinyML_classification <- function(data = data,y,framework = "h2o", share_app = 
                         value= c(input$train_selector[1],input$test_selector[1]) )
     })
     
-
+    
     # Message indicating that results are not available if no model has been running
     output$message_confusion_matrix <- renderUI({
       
@@ -1235,7 +1235,7 @@ shinyML_classification <- function(data = data,y,framework = "h2o", share_app = 
           # Calculation of naive Baye classifications and associated calculation time
           if (!is.na(v_naiveBayes$type_model) & v_naiveBayes$type_model == "ml_naiveBayes"){
             t1 <- Sys.time()
-
+            
             fit <- h2o.naiveBayes(x = as.character(var_input_list),
                                   y = y,
                                   training_frame = data_h2o_train,
@@ -1244,7 +1244,7 @@ shinyML_classification <- function(data = data,y,framework = "h2o", share_app = 
                                   min_sdev = parameter$min_sdev_naiveBayes,
                                   eps_sdev = parameter$epsilon_naiveBayes,
                                   seed = 1
-                                  )
+            )
             t2 <- Sys.time()
             time_naiveBayes <- data.frame(`Training time` =  paste0(round(t2 - t1,1)," seconds"), Model = "Naive Bayes")
             confusion_matrix_naiveBayes <- h2o.confusionMatrix(fit,newdata =data_h2o_test)%>%  mutate(Model = "Naive Bayes") %>% slice(-n()) %>% as.data.table()
@@ -1337,7 +1337,7 @@ shinyML_classification <- function(data = data,y,framework = "h2o", share_app = 
                                      seed = 1
                                      
             )
-
+            
             time_auto_ml <- data.frame(`Training time` =  paste0(parameter$run_time_auto_ml," seconds"), Model = "Auto ML")
             confusion_matrix_auto_ml <- h2o.confusionMatrix(dl_auto_ml@leader,newdata =data_h2o_test)%>%  mutate(Model = "Auto ML") %>% slice(-n()) %>% as.data.table()
             table_auto_ml<- h2o.predict(dl_auto_ml,data_h2o_test) %>% as.data.table() %>% select(predict) %>% rename(`Auto ML` = predict)
@@ -1348,10 +1348,10 @@ shinyML_classification <- function(data = data,y,framework = "h2o", share_app = 
           
           # Assembly results of all models (some column might remain empty)
           if (!is.na(v_neural$type_model) & !is.na(v_grad$type_model) & !is.na(v_naiveBayes$type_model) & !is.na(v_random$type_model)){
-
+            
             table_results <- cbind(data_results,table_naiveBayes,table_random_forest,table_neural_network,table_gradient_boosting)%>% as.data.table()
           }
-
+          
         }
         
         confusion_matrix <- rbind(confusion_matrix_naiveBayes,confusion_matrix_random_forest,confusion_matrix_neural_network,confusion_matrix_gbm,confusion_matrix_auto_ml)
@@ -1369,8 +1369,8 @@ shinyML_classification <- function(data = data,y,framework = "h2o", share_app = 
       observeEvent(input$run_auto_ml,{
         if (is.null(parameter$auto_ml_autorized_models)){
           sendSweetAlert(session = session, title = "Warning !",
-            text = "Please authorize at least one model family to perform auto ML",
-            type = "warning"
+                         text = "Please authorize at least one model family to perform auto ML",
+                         type = "warning"
           )
         }
       })
@@ -1488,8 +1488,8 @@ shinyML_classification <- function(data = data,y,framework = "h2o", share_app = 
         if (var_input_list != "+"){  
           
           if (input$checkbox_time_series == TRUE){
-            
-            data_spark_train <- eval(parse(text = paste0("data[",input$time_serie_select_column,"<='",test_1$date,"',]")))
+            req(!is.null(train_1$date))
+            data_spark_train <- eval(parse(text = paste0("data[",input$time_serie_select_column,">='",train_1$date,"',][",input$time_serie_select_column,"<='",test_1$date,"',]")))
             data_spark_test <- eval(parse(text = paste0("data[",input$time_serie_select_column,">'",test_1$date,"',][",input$time_serie_select_column,"< '",test_2$date,"',]")))
             
           }
