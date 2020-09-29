@@ -210,7 +210,8 @@ shinyML_regression <- function(data = data,y,framework = "h2o", share_app = FALS
                                 uiOutput("Variables_input_selection"),
                                 uiOutput("slider_time_series_train"),
                                 uiOutput("slider_time_series_test"),
-                                uiOutput("slider_percentage")
+                                uiOutput("slider_percentage"),
+                                uiOutput("message_nrow_test_dataset")
                             )
                   )
       )
@@ -622,6 +623,22 @@ shinyML_regression <- function(data = data,y,framework = "h2o", share_app = FALS
         icon_background = "blue",
         background_color = "lightblue"
       )
+    })
+    
+    # Define indicating number of rows contained in testing dataset
+    output$message_nrow_test_dataset <- renderUI({
+      
+      req(!is.null(input$checkbox_time_series))
+      req(!is.null(table_forecast()[["data_train"]]))
+      
+      if (input$checkbox_time_series == TRUE){
+        number_rows_datatest <- nrow(eval(parse(text = paste0("data[",input$time_serie_select_column," >= input$test_selector[1],]"))))
+      }
+      
+      else if (input$checkbox_time_series == FALSE){
+        number_rows_datatest <- nrow(table_forecast()[["data_test"]])
+      }
+      argonH1(HTML(paste0("<small><font color = 'darkblue'>Testing dataset contains <b>",number_rows_datatest,"</b> rows</font></small>")),display = 4)
     })
     
     # Make glm parameters correspond to cursors and radiobuttons choices when user click on "Run generalized linear regression" button 

@@ -659,7 +659,7 @@ shinyML_classification <- function(data = data,y,framework = "h2o", share_app = 
       else if (input$checkbox_time_series == FALSE){
         number_rows_datatest <- nrow(table_forecast()[["data_test"]])
       }
-      argonH1(HTML(paste0("<small>Testing dataset contains <b>",number_rows_datatest,"</b> rows</small>")),display = 4)
+      argonH1(HTML(paste0("<small><font color = 'darkblue'>Testing dataset contains <b>",number_rows_datatest,"</b> rows</font></small>")),display = 4)
     })
     
     # Make naive Bayes parameters correspond to cursors and radiobuttons choices when user click on "Run generalized linear regression" button 
