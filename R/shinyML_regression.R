@@ -391,11 +391,21 @@ shinyML_regression <- function(data = data,y,framework = "h2o", share_app = FALS
                                                       argonColumn(width = 6,
                                                                   argonCard(width = 12,icon = icon("cogs"),status = "warning", title = "Auto Machine Learning",
                                                                             div(align = "center",
-                                                                                knobInput(inputId = "run_time_auto_ml",label = "Max running time (in seconds)",value = 15,min = 10,max = 60,
-                                                                                          displayPrevious = TRUE, lineCap = "round",fgColor = "#428BCA",inputColor = "#428BCA"
-                                                                                          
+                                                                                prettyCheckboxGroup(
+                                                                                  inputId = "auto_ml_autorized_models",
+                                                                                  label = HTML("<b>Authorized searching</b>"), 
+                                                                                  choices = c("DRF", "GLM", "XGBoost", "GBM", "DeepLearning"),
+                                                                                  selected = c("DRF", "GLM", "XGBoost", "GBM", "DeepLearning"),
+                                                                                  icon = icon("check-square-o"), 
+                                                                                  status = "primary",
+                                                                                  inline = TRUE,
+                                                                                  outline = TRUE,
+                                                                                  animation = "jelly"
                                                                                 ),
                                                                                 br(),
+                                                                                knobInput(inputId = "run_time_auto_ml",label = HTML("<b>Max running time (in seconds)</b>"),value = 15,min = 10,max = 60,
+                                                                                          displayPrevious = TRUE, lineCap = "round",fgColor = "#428BCA",inputColor = "#428BCA"
+                                                                                ),
                                                                                 actionButton("run_auto_ml","Run auto ML",style = 'color:white; background-color:red; padding:4px; font-size:120%',icon = icon("cogs",lib = "font-awesome"))
                                                                             )
                                                                   )
@@ -1136,6 +1146,7 @@ shinyML_regression <- function(data = data,y,framework = "h2o", share_app = FALS
         v_auto_ml$type_model <- "ml_auto"
         
         parameter$run_time_auto_ml <-  input$run_time_auto_ml
+        parameter$auto_ml_autorized_models <- input$auto_ml_autorized_models
         
       })
       
@@ -1287,9 +1298,10 @@ shinyML_regression <- function(data = data,y,framework = "h2o", share_app = FALS
           # Calculation of autoML predictions (max calculation time has been set to 60 seconds)
           if (!is.na(v_auto_ml$type_model) & v_auto_ml$type_model == "ml_auto"){
             
-            
+            req(!is.null(parameter$auto_ml_autorized_models))
             
             dl_auto_ml <- h2o.automl(x = as.character(var_input_list),
+                                     include_algos = parameter$auto_ml_autorized_models,
                                      y = y,
                                      training_frame = data_h2o_train,
                                      max_runtime_secs = parameter$run_time_auto_ml,
@@ -1320,6 +1332,16 @@ shinyML_regression <- function(data = data,y,framework = "h2o", share_app = FALS
         list(data_train = data_train, data_test = data_test, traning_time = table_training_time, table_importance = table_importance, results = table_results,auto_ml_model = dl_auto_ml)
         
         
+      })
+      
+      # Send WarningBox if Run auto ML" button is clicked and no model searching is authorized
+      observeEvent(input$run_auto_ml,{
+        if (is.null(parameter$auto_ml_autorized_models)){
+          sendSweetAlert(session = session, title = "Warning !",
+                         text = "Please authorize at least one model family to perform auto ML",
+                         type = "warning"
+          )
+        }
       })
       
       # When "Run auto ML" button is clicked, send messageBox once searching time is reached
