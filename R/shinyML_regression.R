@@ -308,7 +308,7 @@ shinyML_regression <- function(data = data,y,framework = "h2o", share_app = FALS
                                                     ),
                                                     argonRow(
                                                       argonCard(width = 3,
-                                                                icon = icon("cogs"),
+                                                                icon = icon("sliders"),
                                                                 status = "success",
                                                                 title = "Generalized linear regression",
                                                                 div(align = "center",
@@ -328,7 +328,7 @@ shinyML_regression <- function(data = data,y,framework = "h2o", share_app = FALS
                                                                 )
                                                       ),
                                                       argonCard(width = 3,
-                                                                icon = icon("cogs"),
+                                                                icon = icon("sliders"),
                                                                 status = "danger",
                                                                 title = "Random Forest",
                                                                 div(align = "center",
@@ -340,7 +340,7 @@ shinyML_regression <- function(data = data,y,framework = "h2o", share_app = FALS
                                                                 )
                                                       ),
                                                       argonCard(width = 3,
-                                                                icon = icon("cogs"),
+                                                                icon = icon("sliders"),
                                                                 status = "primary",
                                                                 title = "Neural network",
                                                                 div(align = "center",
@@ -360,7 +360,7 @@ shinyML_regression <- function(data = data,y,framework = "h2o", share_app = FALS
                                                                 
                                                       ),
                                                       argonCard(width = 3,
-                                                                icon = icon("cogs"),
+                                                                icon = icon("sliders"),
                                                                 status = "warning",
                                                                 title = "Gradient boosting",
                                                                 div(align = "center",
@@ -439,7 +439,7 @@ shinyML_regression <- function(data = data,y,framework = "h2o", share_app = FALS
                                                     ),
                                                     argonRow(
                                                       argonCard(width = 3,
-                                                                icon = icon("cogs"),
+                                                                icon = icon("sliders"),
                                                                 status = "success",
                                                                 title = "Generalized linear regression",
                                                                 div(align = "center",
@@ -459,7 +459,7 @@ shinyML_regression <- function(data = data,y,framework = "h2o", share_app = FALS
                                                                 )
                                                       ),
                                                       argonCard(width = 3,
-                                                                icon = icon("cogs"),
+                                                                icon = icon("sliders"),
                                                                 status = "danger",
                                                                 title = "Random Forest",
                                                                 div(align = "center",
@@ -471,7 +471,7 @@ shinyML_regression <- function(data = data,y,framework = "h2o", share_app = FALS
                                                                 )
                                                       ),
                                                       argonCard(width = 3,
-                                                                icon = icon("cogs"),
+                                                                icon = icon("sliders"),
                                                                 status = "primary",
                                                                 title = "Decision tree",
                                                                 div(align = "center",
@@ -486,7 +486,7 @@ shinyML_regression <- function(data = data,y,framework = "h2o", share_app = FALS
                                                                 )
                                                       ),
                                                       argonCard(width = 3,
-                                                                icon = icon("cogs"),
+                                                                icon = icon("sliders"),
                                                                 status = "warning",
                                                                 title = "Gradient boosting",
                                                                 div(align = "center",
