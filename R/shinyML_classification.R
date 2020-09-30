@@ -103,6 +103,7 @@ shinyML_classification <- function(data = data,y,framework = "h2o", share_app = 
   v_grad <- reactiveValues(type_model = NA)
   v_naiveBayes <- reactiveValues(type_model = NA)
   v_decision_tree <- reactiveValues(type_model = NA)
+  v_logistic_regression <- reactiveValues(type_model = NA)
   v_random <- reactiveValues(type_model = NA)
   v_auto_ml <- reactiveValues(type_model = NA)
   parameter <- reactiveValues()
@@ -110,6 +111,7 @@ shinyML_classification <- function(data = data,y,framework = "h2o", share_app = 
   # Initialize tables for model calculation times 
   time_naiveBayes <- data.table()
   time_gbm <- data.table()
+  time_logistic_regression <- data.table()
   time_random_forest <- data.table()
   time_decision_tree <- data.table()
   time_neural_network <- data.table()
@@ -500,10 +502,11 @@ shinyML_classification <- function(data = data,y,framework = "h2o", share_app = 
                                                                 status = "warning",
                                                                 title = "Gradient boosting",
                                                                 div(align = "center",
-                                                                    sliderInput(label = "Step size",min = 0,max = 1, inputId = "step_size_gbm",value = 0.1),
-                                                                    sliderInput(label = "Subsampling rate",min = 0.1,max = 1, inputId = "subsampling_rate_gbm",value = 1),
-                                                                    sliderInput(label = "Max depth",min = 1,max = 30, inputId = "max_depth_gbm",value = 20),
-                                                                    actionButton("run_gradient_boosting","Run gradient boosting",style = 'color:white; background-color:orange; padding:4px; font-size:120%',icon = icon("cogs",lib = "font-awesome"))
+                                                                    switchInput(label = "Intercept term",inputId = "fit_intercept_logistic_regression",value = TRUE,width = "auto"),
+                                                                    sliderInput(label = "Lambda parameter",min = 0,max = 10, inputId = "reg_param_logistic_regression",value = 0),
+                                                                    sliderInput(label = "ElasticNet Mixing parameter ",min = 0,max = 1, inputId = "elastic_net_param_logistic_regression",value = 0),
+                                                                    sliderInput(label = "Max iterations",min = 1,max = 30, inputId = "max_iter_logistic_regression",value = 20),
+                                                                    actionButton("run_logistic_regression","Run logistic regression",style = 'color:white; background-color:orange; padding:4px; font-size:120%',icon = icon("cogs",lib = "font-awesome"))
                                                                 )
                                                       )
                                                     ),
@@ -668,6 +671,8 @@ shinyML_classification <- function(data = data,y,framework = "h2o", share_app = 
       test_1$date <- input$test_selector[1]
       test_2$date <- input$test_selector[2]
       model$train_variables <- input$input_variables
+      
+      v_logistic_regression$type_model <- NA
       v_grad$type_model <- NA
       v_neural$type_model <- NA
       v_random$type_model <- NA
@@ -692,6 +697,8 @@ shinyML_classification <- function(data = data,y,framework = "h2o", share_app = 
       test_1$date <- input$test_selector[1]
       test_2$date <- input$test_selector[2]
       model$train_variables <- input$input_variables
+      
+      v_logistic_regression$type_model <- NA
       v_grad$type_model <- NA
       v_neural$type_model <- NA
       v_naiveBayes$type_model <- NA
@@ -709,30 +716,7 @@ shinyML_classification <- function(data = data,y,framework = "h2o", share_app = 
       
     })
     
-    # Make gradient boosting parameters correspond to cursors when user click on "Run gradient boosting model" button (and disable other models)
-    observeEvent(input$run_gradient_boosting,{
-      
-      train_1$date <- input$train_selector[1]
-      test_1$date <- input$test_selector[1]
-      test_2$date <- input$test_selector[2]
-      model$train_variables <- input$input_variables
-      v_grad$type_model <- "ml_gradient_boosted_trees"
-      v_neural$type_model <- NA
-      v_naiveBayes$type_model <- NA
-      v_random$type_model <- NA
-      v_auto_ml$type_model <- NA
-      v_decision_tree$type_model <- NA
-      
-      
-      parameter$sample_rate_gbm <- input$sample_rate_gbm
-      parameter$n_trees_gbm <- input$n_trees_gbm
-      parameter$max_depth_gbm <- input$max_depth_gbm
-      parameter$learn_rate_gbm <- input$learn_rate_gbm
-      parameter$step_size_gbm <- input$step_size_gbm
-      parameter$subsampling_rate_gbm <- input$subsampling_rate_gbm
-      
-    })
-    
+
     # Define train slider (only applicable for time series analysis) 
     output$slider_time_series_train <- renderUI({
       
@@ -1132,6 +1116,31 @@ shinyML_classification <- function(data = data,y,framework = "h2o", share_app = 
         
       })
       
+      
+      # Make gradient boosting parameters correspond to cursors when user click on "Run gradient boosting model" button (and disable other models)
+      observeEvent(input$run_gradient_boosting,{
+        
+        train_1$date <- input$train_selector[1]
+        test_1$date <- input$test_selector[1]
+        test_2$date <- input$test_selector[2]
+        model$train_variables <- input$input_variables
+        v_grad$type_model <- "ml_gradient_boosted_trees"
+        v_neural$type_model <- NA
+        v_naiveBayes$type_model <- NA
+        v_random$type_model <- NA
+        v_auto_ml$type_model <- NA
+        v_decision_tree$type_model <- NA
+        
+        
+        parameter$sample_rate_gbm <- input$sample_rate_gbm
+        parameter$n_trees_gbm <- input$n_trees_gbm
+        parameter$max_depth_gbm <- input$max_depth_gbm
+        parameter$learn_rate_gbm <- input$learn_rate_gbm
+        parameter$step_size_gbm <- input$step_size_gbm
+        parameter$subsampling_rate_gbm <- input$subsampling_rate_gbm
+        
+      })
+      
       # Make neural network parameters correspond to cursors and radiobuttons choices when user click on "Run neural network regression" button (and disable other models)
       observeEvent(input$run_neural_network,{
         
@@ -1401,9 +1410,11 @@ shinyML_classification <- function(data = data,y,framework = "h2o", share_app = 
         test_1$date <- input$test_selector[1]
         test_2$date <- input$test_selector[2]
         model$train_variables <- input$input_variables
+        
+        
         v_decision_tree$type_model <- "ml_decision_tree"
         v_naiveBayes$type_model <- "ml_naiveBayes"
-        v_grad$type_model <- "ml_gradient_boosted_trees"
+        v_logistic_regression$type_model <- "ml_logistic_regression"
         v_random$type_model <- "ml_random_forest"
         
         parameter$step_size_gbm <- input$step_size_gbm
@@ -1424,6 +1435,32 @@ shinyML_classification <- function(data = data,y,framework = "h2o", share_app = 
         
       })
       
+      
+      # Make gradient boosting parameters correspond to cursors when user click on "Run gradient boosting model" button (and disable other models)
+      observeEvent(input$run_logistic_regression,{
+        
+        train_1$date <- input$train_selector[1]
+        test_1$date <- input$test_selector[1]
+        test_2$date <- input$test_selector[2]
+        model$train_variables <- input$input_variables
+        
+        v_logistic_regression$type_model <- "ml_logistic_regression"
+        v_neural$type_model <- NA
+        v_naiveBayes$type_model <- NA
+        v_random$type_model <- NA
+        v_decision_tree$type_model <- NA
+        
+        
+        parameter$fit_intercept_logistic_regression <- input$fit_intercept_logistic_regression
+        parameter$reg_param_logistic_regression <- input$reg_param_logistic_regression
+        parameter$elastic_net_param_logistic_regression <- input$elastic_net_param_logistic_regression
+        parameter$max_iter_logistic_regression <- input$max_iter_logistic_regression
+
+      })
+      
+      
+      
+      
       # Make decision tree parameters correspond to cursors when user click on "Run decision tree" button (and disable other models)
       observeEvent(input$run_decision_tree,{
         
@@ -1435,9 +1472,8 @@ shinyML_classification <- function(data = data,y,framework = "h2o", share_app = 
         parameter$min_instance_decision_tree <- input$min_instance_decision_tree
         
         v_decision_tree$type_model <- "ml_decision_tree"
-        
         v_naiveBayes$type_model <- NA
-        v_grad$type_model <- NA
+        v_logistic_regression$type_model <- NA
         v_random$type_model <- NA
         
       })
@@ -1447,9 +1483,6 @@ shinyML_classification <- function(data = data,y,framework = "h2o", share_app = 
         
         # Make sure a value is set to checkbox_time_series checkbox 
         req(!is.null(input$checkbox_time_series))
-        
-        
-        
         
         if (input$checkbox_time_series == TRUE){
           req(!is.null(test_1$date))
@@ -1512,9 +1545,8 @@ shinyML_classification <- function(data = data,y,framework = "h2o", share_app = 
           }
           
           # Calculation of gradient boosting trees predictions and associated calculation time 
-          if (!is.na(v_grad$type_model) & v_grad$type_model == "ml_logistic_regression"){
+          if (!is.na(v_logistic_regression$type_model) & v_logistic_regression$type_model == "ml_logistic_regression"){
             
-            browser()
             t1 <- Sys.time()
             eval(parse(text = paste0("fit <- data_spark_train %>% ml_logistic_regression(", y ," ~ " ,var_input_list ,
                                      ",elastic_net_param =",parameter$elastic_net_param_logistic_regression,
@@ -1525,7 +1557,6 @@ shinyML_classification <- function(data = data,y,framework = "h2o", share_app = 
             t2 <- Sys.time()
             
             time_logistic_regression <- data.frame(`Training time` =  paste0(round(t2 - t1,1)," seconds"), Model = "Logistic regression") 
-            importance_logistic_regression <- ml_feature_importances(fit) %>% mutate(model = "Logistic regression")
             table_ml_logistic_regression <- sdf_predict(data_spark_test, fit) %>% collect %>% as.data.frame() %>% select(predicted_label) %>% rename(`Logistic regression` = prediction)
             table_results <- cbind(data_results,table_ml_logistic_regression) %>% as.data.table()
             
@@ -1562,7 +1593,6 @@ shinyML_classification <- function(data = data,y,framework = "h2o", share_app = 
             t2 <- Sys.time()
             time_decision_tree <- data.frame(`Training time` =  paste0(round(t2 - t1,1)," seconds"), Model = "Decision tree")
             importance_decision_tree <- ml_feature_importances(fit) %>% mutate(model = "Decision tree")
-            
             table_ml_decision_tree <- sdf_predict(data_spark_test, fit) %>% collect %>% as.data.frame() %>% select(predicted_label)%>% rename(`Decision tree` = prediction)
             table_results <- cbind(data_results,table_ml_decision_tree) %>% as.data.table()
             
@@ -1577,7 +1607,7 @@ shinyML_classification <- function(data = data,y,framework = "h2o", share_app = 
         }
         
         table_training_time <- rbind(time_logistic_regression,time_random_forest,time_naiveBayes,time_decision_tree)
-        table_importance <- rbind(importance_logistic_regression,importance_random_forest,importance_decision_tree) %>% as.data.table()
+        table_importance <- rbind(importance_random_forest,importance_decision_tree) %>% as.data.table()
         
         
         # Used a list to access to different tables from only on one reactive objet 
