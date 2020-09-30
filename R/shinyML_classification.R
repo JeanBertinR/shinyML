@@ -108,9 +108,9 @@ shinyML_classification <- function(data = data,y,framework = "h2o", share_app = 
   parameter <- reactiveValues()
   
   # Initialize tables for model calculation times 
+  time_naiveBayes <- data.table()
   time_gbm <- data.table()
   time_random_forest <- data.table()
-  time_naiveBayes <- data.table()
   time_decision_tree <- data.table()
   time_neural_network <- data.table()
   time_auto_ml <- data.table()
@@ -127,6 +127,7 @@ shinyML_classification <- function(data = data,y,framework = "h2o", share_app = 
   importance_decision_tree <- data.table()
   importance_random_forest <- data.table()
   importance_neural_network <- data.table()
+  importance_auto_ml <- data.table()
   
   
   # Initialize scalar values
@@ -341,7 +342,7 @@ shinyML_classification <- function(data = data,y,framework = "h2o", share_app = 
                                                                 status = "success",
                                                                 title = "Naive Bayes",
                                                                 div(align = "center",
-                                                                    sliderInput(label = "Laplace parameter",inputId = "laplace_param_naiveBayes",min = 0,max = 10,value = 0),
+                                                                    sliderInput(label = "Laplace smoothing parameter",inputId = "laplace_param_naiveBayes",min = 0,max = 10,value = 0),
                                                                     sliderInput(label = "Max after balance",inputId = "max_after_balance_naiveBayes",min = 0,max = 10,value = 5),
                                                                     sliderInput(label = "Minimum standard deviation",inputId = "min_sdev_naiveBayes",min = 0.01,max = 10,value = 0.01),
                                                                     sliderInput(label = "Epsilon standard deviation",inputId = "epsilon_iter_naiveBayes",min = 0.01,max = 10,value = 0.01),
@@ -461,21 +462,10 @@ shinyML_classification <- function(data = data,y,framework = "h2o", share_app = 
                                                       argonCard(width = 3,
                                                                 icon = icon("cogs"),
                                                                 status = "success",
-                                                                title = "Generalized linear regression",
+                                                                title = "Naive Bayes",
                                                                 div(align = "center",
-                                                                    argonRow(
-                                                                      argonColumn(width = 6,
-                                                                                  radioButtons(label = "Family",inputId = "glm_family",choices = c("gaussian","Gamma","poisson"),selected = "gaussian")
-                                                                      ),
-                                                                      argonColumn(width = 6,
-                                                                                  radioButtons(label = "Link",inputId = "glm_link",choices = c("identity","log"),selected = "identity"),
-                                                                                  switchInput(label = "Intercept term",inputId = "intercept_term_glm",value = TRUE,width = "auto")
-                                                                      )
-                                                                    ),
-                                                                    sliderInput(label = "Lambda",inputId = "reg_param_glm",min = 0,max = 10,value = 0),
-                                                                    sliderInput(label = "Alpha (0:Ridge <-> 1:Lasso)",inputId = "alpha_param_glm",min = 0,max = 1,value = 0.5),
-                                                                    sliderInput(label = "Maximum iteraions",inputId = "max_iter_glm",min = 50,max = 300,value = 100),
-                                                                    actionButton("run_glm","Run glm",style = 'color:white; background-color:green; padding:4px; font-size:120%',icon = icon("cogs",lib = "font-awesome"))
+                                                                    sliderInput(label = "Laplace smoothing parameter",inputId = "laplace_param_naiveBayes",min = 0,max = 10,value = 0),
+                                                                    actionButton("run_naiveBayes","Run Naive Bayes",style = 'color:white; background-color:green; padding:4px; font-size:120%',icon = icon("cogs",lib = "font-awesome"))
                                                                 )
                                                       ),
                                                       argonCard(width = 3,
@@ -685,11 +675,12 @@ shinyML_classification <- function(data = data,y,framework = "h2o", share_app = 
       v_auto_ml$type_model <- NA
       v_naiveBayes$type_model <- "ml_naiveBayes"
       
-      parameter$laplace_smoothing_naiveBayes <- input$laplace_param_naiveBayes
+      parameter$laplace_param_naiveBayes <- input$laplace_param_naiveBayes
       parameter$max_after_balance_naiveBayes <- input$max_after_balance_naiveBayes
       parameter$min_sdev_naiveBayes <- input$min_sdev_naiveBayes
       parameter$epsilon_naiveBayes <- input$epsilon_iter_naiveBayes
       
+      parameter$model_type_naiveBayes <- input$model_type_naiveBayes
       
     })
     
@@ -1117,10 +1108,10 @@ shinyML_classification <- function(data = data,y,framework = "h2o", share_app = 
         v_random$type_model <- "ml_random_forest"
         v_auto_ml$type_model <- NA
         
-        parameter$laplace_smoothing_naiveBayes <- input$laplace_param_naiveBaye
-        parameter$max_after_balance_naiveBayes <- input$max_after_balance_naiveBaye
-        parameter$min_sdev_naiveBayes <- input$min_sdev_naiveBaye
-        parameter$epsilon_naiveBayes <- input$epsilon_iter_naiveBaye
+        parameter$laplace_param_naiveBayes <- input$laplace_param_naiveBayes
+        parameter$max_after_balance_naiveBayes <- input$max_after_balance_naiveBayes
+        parameter$min_sdev_naiveBayes <- input$min_sdev_naiveBayes
+        parameter$epsilon_naiveBayes <- input$epsilon_iter_naiveBayes
         
         
         parameter$num_tree_random_forest <- input$num_tree_random_forest
@@ -1190,9 +1181,10 @@ shinyML_classification <- function(data = data,y,framework = "h2o", share_app = 
         
         if (input$checkbox_time_series == TRUE){
           req(!is.null(test_1$date))
+          req(!is.null(test_2$date))
           data_train <- data.table()
           data_test <- data.table()
-          data_results <- eval(parse(text = paste0("data[",input$time_serie_select_column,">'",test_1$date,"',][",input$time_serie_select_column,"< '",test_2$date,"',]")))
+          data_results <- eval(parse(text = paste0("data[",input$time_serie_select_column,">'",test_1$date,"',][",input$time_serie_select_column,"<= '",test_2$date,"',]")))
           
           
         }
@@ -1222,7 +1214,7 @@ shinyML_classification <- function(data = data,y,framework = "h2o", share_app = 
           
           if (input$checkbox_time_series == TRUE){
             data_h2o_train <- as.h2o(eval(parse(text = paste0("data[",input$time_serie_select_column,"<='",test_1$date,"',][",input$time_serie_select_column,">='",train_1$date,"',]"))))
-            data_h2o_test <- as.h2o(eval(parse(text = paste0("data[",input$time_serie_select_column,">'",test_1$date,"',][",input$time_serie_select_column,"< '",test_2$date,"',]"))))
+            data_h2o_test <- as.h2o(eval(parse(text = paste0("data[",input$time_serie_select_column,">'",test_1$date,"',][",input$time_serie_select_column,"<= '",test_2$date,"',]"))))
             
           }
           
@@ -1239,7 +1231,7 @@ shinyML_classification <- function(data = data,y,framework = "h2o", share_app = 
             fit <- h2o.naiveBayes(x = as.character(var_input_list),
                                   y = y,
                                   training_frame = data_h2o_train,
-                                  laplace = parameter$laplace_smoothing_naiveBayes,
+                                  laplace = parameter$laplace_param_naiveBayes,
                                   max_after_balance_size = parameter$max_after_balance_naiveBayes,
                                   min_sdev = parameter$min_sdev_naiveBayes,
                                   eps_sdev = parameter$epsilon_naiveBayes,
@@ -1340,6 +1332,7 @@ shinyML_classification <- function(data = data,y,framework = "h2o", share_app = 
             
             time_auto_ml <- data.frame(`Training time` =  paste0(parameter$run_time_auto_ml," seconds"), Model = "Auto ML")
             confusion_matrix_auto_ml <- h2o.confusionMatrix(dl_auto_ml@leader,newdata =data_h2o_test)%>%  mutate(Model = "Auto ML") %>% slice(-n()) %>% as.data.table()
+            importance_auto_ml <- h2o.varimp(dl_auto_ml@leader) %>% as.data.table() %>% select(`variable`,scaled_importance) %>% mutate(model = "Auto ML")
             table_auto_ml<- h2o.predict(dl_auto_ml,data_h2o_test) %>% as.data.table() %>% select(predict) %>% rename(`Auto ML` = predict)
             table_results <- cbind(data_results,table_auto_ml)%>% as.data.table()
             
@@ -1356,7 +1349,7 @@ shinyML_classification <- function(data = data,y,framework = "h2o", share_app = 
         
         confusion_matrix <- rbind(confusion_matrix_naiveBayes,confusion_matrix_random_forest,confusion_matrix_neural_network,confusion_matrix_gbm,confusion_matrix_auto_ml)
         table_training_time <- rbind(time_gbm,time_random_forest,time_naiveBayes,time_neural_network,time_auto_ml)
-        table_importance <- rbind(importance_gbm,importance_random_forest,importance_neural_network) %>% as.data.table()
+        table_importance <- rbind(importance_gbm,importance_random_forest,importance_neural_network,importance_auto_ml) %>% as.data.table()
         
         # Used a list to access to different tables from only on one reactive objet
         list(data_train = data_train, data_test = data_test, traning_time = table_training_time,confusion_matrix = confusion_matrix, table_importance = table_importance, results = table_results,auto_ml_model = dl_auto_ml)
@@ -1409,7 +1402,7 @@ shinyML_classification <- function(data = data,y,framework = "h2o", share_app = 
         test_2$date <- input$test_selector[2]
         model$train_variables <- input$input_variables
         v_decision_tree$type_model <- "ml_decision_tree"
-        v_glm$type_model <- "ml_generalized_linear_regression"
+        v_naiveBayes$type_model <- "ml_naiveBayes"
         v_grad$type_model <- "ml_gradient_boosted_trees"
         v_random$type_model <- "ml_random_forest"
         
@@ -1422,11 +1415,8 @@ shinyML_classification <- function(data = data,y,framework = "h2o", share_app = 
         parameter$max_depth_random_forest <-  input$max_depth_random_forest
         
         
-        parameter$family_glm <- input$glm_family
-        parameter$link_glm <- input$glm_link
-        parameter$intercept_term_glm <- input$intercept_term_glm
-        parameter$reg_param_glm <- input$reg_param_glm
-        parameter$max_iter_glm <- input$max_iter_glm
+        parameter$model_type_naiveBayes <- input$model_type_naiveBayes
+        parameter$laplace_param_naiveBayes <- input$laplace_param_naiveBayes
         
         parameter$max_depth_decision_tree <- input$max_depth_decision_tree
         parameter$max_bins_decision_tree <- input$max_bins_decision_tree
@@ -1446,7 +1436,7 @@ shinyML_classification <- function(data = data,y,framework = "h2o", share_app = 
         
         v_decision_tree$type_model <- "ml_decision_tree"
         
-        v_glm$type_model <- NA
+        v_naiveBayes$type_model <- NA
         v_grad$type_model <- NA
         v_random$type_model <- NA
         
@@ -1458,18 +1448,21 @@ shinyML_classification <- function(data = data,y,framework = "h2o", share_app = 
         # Make sure a value is set to checkbox_time_series checkbox 
         req(!is.null(input$checkbox_time_series))
         
+        
+        
+        
         if (input$checkbox_time_series == TRUE){
           req(!is.null(test_1$date))
           req(!is.null(test_2$date))
-          
-          data_results <- eval(parse(text = paste0("data[",input$time_serie_select_column,">'",test_1$date,"',][",input$time_serie_select_column,"< '",test_2$date,"',]")))
+          data_train <- data.table()
+          data_test <- data.table()
+          data_results <- eval(parse(text = paste0("data[",input$time_serie_select_column,">'",test_1$date,"',][",input$time_serie_select_column,"<= '",test_2$date,"',]")))
           
         }
         
         else if (input$checkbox_time_series == FALSE){
           
           req(!is.null(input$percentage_selector))
-          
           data_train <- data %>% sample_frac(as.numeric(as.character(gsub("%","",input$percentage_selector)))*0.01)
           data_test <- data %>% anti_join(data_train)
           data_results <- data_test
@@ -1490,12 +1483,11 @@ shinyML_classification <- function(data = data,y,framework = "h2o", share_app = 
           if (input$checkbox_time_series == TRUE){
             req(!is.null(train_1$date))
             data_spark_train <- eval(parse(text = paste0("data[",input$time_serie_select_column,">='",train_1$date,"',][",input$time_serie_select_column,"<='",test_1$date,"',]")))
-            data_spark_test <- eval(parse(text = paste0("data[",input$time_serie_select_column,">'",test_1$date,"',][",input$time_serie_select_column,"< '",test_2$date,"',]")))
+            data_spark_test <- eval(parse(text = paste0("data[",input$time_serie_select_column,">'",test_1$date,"',][",input$time_serie_select_column,"<= '",test_2$date,"',]")))
             
           }
           
           else if (input$checkbox_time_series == FALSE){
-            
             data_spark_train <- data_train
             data_spark_test <- data_test
           }
@@ -1505,46 +1497,37 @@ shinyML_classification <- function(data = data,y,framework = "h2o", share_app = 
           
           
           
-          # Calculation of glm predictions and associated calculation time ml
-          if (!is.na(v_glm$type_model) & v_glm$type_model == "ml_generalized_linear_regression"){
-            
+          # Calculation of Naive Bayes predictions and associated calculation time ml
+          if (!is.na(v_naiveBayes$type_model) & v_naiveBayes$type_model == "ml_naiveBayes"){
             t1 <- Sys.time()
-            eval(parse(text = paste0("fit <- data_spark_train %>% ml_generalized_linear_regression(", y ," ~ " ,var_input_list ,
-                                     ",family  = ", parameter$family_glm,
-                                     ",link =",parameter$link_glm,
-                                     ",fit_intercept =",parameter$intercept_term_glm,
-                                     ",reg_param =",parameter$reg_param_glm,
-                                     ",max_iter =",parameter$max_iter_glm,
+            eval(parse(text = paste0("fit <- data_spark_train %>% ml_naive_bayes(", y ," ~ " ,var_input_list ,
+                                     ",smoothing =",parameter$laplace_param_naiveBaye,
                                      ")")))
             t2 <- Sys.time()
-            time_glm <- data.frame(`Training time` =  paste0(round(t2 - t1,1)," seconds"), Model = "Generalized linear regression")
-            
-            table_ml_glm <- sdf_predict(data_spark_test, fit) %>% collect %>% as.data.frame() %>% select(prediction)%>% mutate(prediction = round(prediction,3)) %>% 
-              rename(`Generalized linear regression` = prediction)
-            table_results <- cbind(data_results,table_ml_glm) %>% as.data.table()
+            time_naiveBayes <- data.frame(`Training time` =  paste0(round(t2 - t1,1)," seconds"), Model = "Naive Bayes")
+            table_ml_naiveBayes <- sdf_predict(data_spark_test, fit) %>% collect %>% as.data.frame() %>% select(predicted_label) %>% rename(`Naive Bayes` = prediction)
+            table_results <- cbind(data_results,table_ml_naiveBayes) %>% as.data.table()
             
             
           }
           
           # Calculation of gradient boosting trees predictions and associated calculation time 
-          if (!is.na(v_grad$type_model) & v_grad$type_model == "ml_gradient_boosted_trees"){
+          if (!is.na(v_grad$type_model) & v_grad$type_model == "ml_logistic_regression"){
             
-            
+            browser()
             t1 <- Sys.time()
-            
-            eval(parse(text = paste0("fit <- data_spark_train %>% ml_gradient_boosted_trees(", y ," ~ " ,var_input_list ,
-                                     ",step_size =",parameter$step_size_gbm,
-                                     ",subsampling_rate =",parameter$subsampling_rate_gbm,
-                                     ",max_depth =",parameter$max_depth_gbm,
+            eval(parse(text = paste0("fit <- data_spark_train %>% ml_logistic_regression(", y ," ~ " ,var_input_list ,
+                                     ",elastic_net_param =",parameter$elastic_net_param_logistic_regression,
+                                     ",fit_intercept =",parameter$fit_intercept_logistic_regression,
+                                     ",reg_param =",parameter$reg_param_logistic_regression,
+                                     ",max_iter =",parameter$max_iter_logistic_regression,
                                      " )")))
             t2 <- Sys.time()
             
-            time_gbm <- data.frame(`Training time` =  paste0(round(t2 - t1,1)," seconds"), Model = "Gradient boosted trees") 
-            importance_gbm <- ml_feature_importances(fit) %>% mutate(model = "Gradient boosted trees")
-            
-            table_ml_gradient_boosted <- sdf_predict(data_spark_test, fit) %>% collect %>% as.data.frame() %>% select(prediction) %>% mutate(prediction = round(prediction,3)) %>% 
-              rename(`Gradient boosted trees` = prediction)
-            table_results <- cbind(data_results,table_ml_gradient_boosted) %>% as.data.table()
+            time_logistic_regression <- data.frame(`Training time` =  paste0(round(t2 - t1,1)," seconds"), Model = "Logistic regression") 
+            importance_logistic_regression <- ml_feature_importances(fit) %>% mutate(model = "Logistic regression")
+            table_ml_logistic_regression <- sdf_predict(data_spark_test, fit) %>% collect %>% as.data.frame() %>% select(predicted_label) %>% rename(`Logistic regression` = prediction)
+            table_results <- cbind(data_results,table_ml_logistic_regression) %>% as.data.table()
             
           }
           
@@ -1561,8 +1544,7 @@ shinyML_classification <- function(data = data,y,framework = "h2o", share_app = 
             time_random_forest <- data.frame(`Training time` =  paste0(round(t2 - t1,1)," seconds"), Model = "Random forest")
             importance_random_forest <- ml_feature_importances(fit) %>% mutate(model = "Random forest")
             
-            table_ml_random_forest <- sdf_predict(data_spark_test, fit) %>% collect %>% as.data.frame() %>% select(prediction)%>% mutate(prediction = round(prediction,3)) %>% 
-              rename(`Random forest` = prediction)
+            table_ml_random_forest <- sdf_predict(data_spark_test, fit) %>% collect %>% as.data.frame() %>% select(predicted_label)%>% rename(`Random forest` = prediction)
             table_results <- cbind(data_results,table_ml_random_forest) %>% as.data.table()
             
           }
@@ -1581,22 +1563,21 @@ shinyML_classification <- function(data = data,y,framework = "h2o", share_app = 
             time_decision_tree <- data.frame(`Training time` =  paste0(round(t2 - t1,1)," seconds"), Model = "Decision tree")
             importance_decision_tree <- ml_feature_importances(fit) %>% mutate(model = "Decision tree")
             
-            table_ml_decision_tree <- sdf_predict(data_spark_test, fit) %>% collect %>% as.data.frame() %>% select(prediction)%>% mutate(prediction = round(prediction,3)) %>% 
-              rename(`Decision tree` = prediction)
+            table_ml_decision_tree <- sdf_predict(data_spark_test, fit) %>% collect %>% as.data.frame() %>% select(predicted_label)%>% rename(`Decision tree` = prediction)
             table_results <- cbind(data_results,table_ml_decision_tree) %>% as.data.table()
             
           }
           
           # Assembly results of all models (some column might remain empty)
-          if (!is.na(v_decision_tree$type_model) & !is.na(v_grad$type_model) & !is.na(v_glm$type_model) & !is.na(v_random$type_model))
+          if (!is.na(v_decision_tree$type_model) & !is.na(v_grad$type_model) & !is.na(v_naiveBayes$type_model) & !is.na(v_random$type_model))
             
-            table_results <- cbind(data_results,table_ml_gradient_boosted,table_ml_random_forest,table_ml_glm,table_ml_decision_tree) %>% 
+            table_results <- cbind(data_results,table_ml_gradient_boosted,table_ml_random_forest,table_ml_naiveBayes,table_ml_decision_tree) %>% 
             as.data.table()
           
         }
         
-        table_training_time <- rbind(time_gbm,time_random_forest,time_glm,time_decision_tree)
-        table_importance <- rbind(importance_gbm,importance_random_forest,importance_decision_tree) %>% as.data.table()
+        table_training_time <- rbind(time_logistic_regression,time_random_forest,time_naiveBayes,time_decision_tree)
+        table_importance <- rbind(importance_logistic_regression,importance_random_forest,importance_decision_tree) %>% as.data.table()
         
         
         # Used a list to access to different tables from only on one reactive objet 
@@ -1641,4 +1622,4 @@ shinyML_classification <- function(data = data,y,framework = "h2o", share_app = 
 
 
 
-shinyML_classification(data = iris,y = "Species",framework = "h2o")
+shinyML_classification(data = iris,y = "Species",framework = "spark")
