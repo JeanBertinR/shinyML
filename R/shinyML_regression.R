@@ -31,15 +31,13 @@
 #' @importFrom DT renderDT DTOutput datatable
 #' @importFrom h2o h2o.init as.h2o h2o.deeplearning h2o.varimp h2o.predict h2o.gbm h2o.glm h2o.randomForest h2o.automl h2o.clusterStatus
 #' @importFrom plotly plotlyOutput renderPlotly ggplotly plot_ly layout add_trace
-#' @importFrom shinyWidgets materialSwitch switchInput sendSweetAlert knobInput awesomeCheckbox actionBttn
+#' @importFrom shinyWidgets materialSwitch switchInput sendSweetAlert knobInput awesomeCheckbox actionBttn prettyCheckboxGroup
 #' @importFrom shinyjs useShinyjs hideElement
 #' @importFrom stats predict reorder cor
 #' @importFrom lubridate is.Date is.POSIXct
 #' @author Jean Bertin, \email{jean.bertin@gadz.org}
 #' @export
-#' 
-#' 
-#' 
+
 
 shinyML_regression <- function(data = data,y,framework = "h2o", share_app = FALSE,port = NULL){
   
@@ -145,19 +143,49 @@ shinyML_regression <- function(data = data,y,framework = "h2o", share_app = FALS
     color = "danger",
     separator = FALSE,
     argonRow(
-      argonColumn(width = "25%",uiOutput("framework_used")),
-      argonColumn(width = "25%",uiOutput("framework_memory")),
-      argonColumn(width = "25%",uiOutput("framework_cpu")),
-      argonColumn(width = "25%",uiOutput("dataset_infoCard"))
+      argonColumn(width = "20%",
+                  argonInfoCard(value = "Regression",gradient = TRUE,width = 12,
+                                title = "Machine learning task",
+                                icon = icon("chart-bar"), 
+                                icon_background = "red",
+                                background_color = "lightblue"
+                  )
+      ),
+      argonColumn(width = "20%",uiOutput("framework_used")),
+      argonColumn(width = "20%",uiOutput("framework_memory")),
+      argonColumn(width = "20%",uiOutput("framework_cpu")),
+      argonColumn(width = "20%",uiOutput("dataset_infoCard"))
     )
   )
   
   # Define DashHeader for "Explore input data" tab 
   dashheader_explore_input <-  argonDashHeader(
-    gradient = TRUE,
+    gradient = FALSE,
     color = "info",
     separator = FALSE,
-    div(align = "center",argonH1(HTML("<font color='white'> Explore input data</font>"),display = 4)),
+    div(align = "center",
+        argonButton(
+          name = HTML("<font size='+1'>&nbsp;  Explore input data </font>"),
+          status = "info",
+          icon = icon("chart-area"),
+          size = "lg",
+          toggle_modal = TRUE,
+          modal_id = "modal_exlore_input_data"
+        ),
+        argonModal(
+          id = "modal_exlore_input_data",
+          title = HTML("<b>EXPLORE INPUT DATA</b>"),
+          status = "info",
+          gradient = TRUE,
+          br(),
+          HTML("<b>Before running machine learning models, it can be useful to inspect each variable distribution and have an insight of dependencies between explicative variables.</b>"),
+          br(),br(),
+          icon("tools"),icon("tools"),icon("tools"),
+          br(),br(),
+          HTML("This section allows to plot variation of each variable as a function of another, to check classes of explicative variables, to plot histograms of each distribution and show correlation matrix between all variables.<br><br> 
+          Please note that this section can be used to determine if some variable are strongly correlated to another and eventually removed from the training phase.")
+        )
+        ),
     br(),
     argonRow(
       argonColumn(width = 9,
@@ -214,7 +242,7 @@ shinyML_regression <- function(data = data,y,framework = "h2o", share_app = FALS
                                 uiOutput("slider_time_series_train"),
                                 uiOutput("slider_time_series_test"),
                                 uiOutput("slider_percentage"),
-                                uiOutput("message_nrow_test_dataset")
+                                uiOutput("message_nrow_train_dataset")
                             )
                   )
       )
@@ -227,7 +255,27 @@ shinyML_regression <- function(data = data,y,framework = "h2o", share_app = FALS
                                                 color = "primary",
                                                 separator = FALSE,
                                                 div(align = "center",
-                                                    argonH1(HTML("<font color='white'> Explore results </font>"),display = 4)
+                                                    argonButton(
+                                                      name = HTML("<font size='+1'>&nbsp; Explore results</font>"),
+                                                      status = "primary",
+                                                      icon = icon("list-ol"),
+                                                      size = "lg",
+                                                      toggle_modal = TRUE,
+                                                      modal_id = "modal_explore_results"
+                                                    ),
+                                                    argonModal(
+                                                      id = "modal_explore_results",
+                                                      title = HTML("<b>EXPLORE RESULTS</b>"),
+                                                      status = "primary",
+                                                      gradient = TRUE,
+                                                      br(),
+                                                      HTML("<b>Once machine learning models have been lauched, this section can be used to compare their performances on the testing dataset</b>"),
+                                                      br(),br(),
+                                                      icon("tools"),icon("tools"),icon("tools"),
+                                                      br(),br(),
+                                                      HTML("You can check confusion matrices to get classification results for each model or have an overview of error metric in 'Compare models performances' tab.<br><br>
+                                                           Please note that feature importances of each model are available in the corresponding tab.")
+                                                    )
                                                 ),
                                                 br(),
                                                 argonRow(
@@ -302,7 +350,30 @@ shinyML_regression <- function(data = data,y,framework = "h2o", share_app = FALS
                                                     color = "default",
                                                     separator = FALSE,
                                                     div(align = "center",
-                                                        argonH1(HTML("<font color='white'> Configure parameters and run models </font>"),display = 4)
+                                                        argonButton(
+                                                          name = HTML("<font size='+1'>&nbsp; Configure parameters and run models</font>"),
+                                                          status = "default",
+                                                          icon = icon("tools"),
+                                                          size = "lg",
+                                                          toggle_modal = TRUE,
+                                                          modal_id = "modal_configure_parameters"
+                                                        ),
+                                                        argonModal(
+                                                          id = "modal_configure_parameters",
+                                                          title = HTML("<b>CONFIGURE PARAMETERS</b>"),
+                                                          status = "default",
+                                                          gradient = TRUE,
+                                                          br(),
+                                                          HTML("<b>Compare different machine learning techniques with your own hyper-parameters configuration.</b>"),
+                                                          br(),br(),
+                                                          icon("tools"),icon("tools"),icon("tools"),
+                                                          br(),br(),
+                                                          HTML("You are free to select hyper-parameters configuration for each machine learning model using different cursors.<br><br> 
+                                                               Each model can be lauched separately by cliking to the corresponding button; you can also launch all models simultaneously using 'Run all models!'button<br><br>
+                                                               Please note that autoML algorithm will automatically find the best algorithm to suit your regression task: 
+                                                               the user will be informed of the machine learning technique used and know which hyper-parameters should be configured.
+                                                               ")
+                                                        )
                                                     ),
                                                     br(),
                                                     argonRow(
@@ -430,10 +501,33 @@ shinyML_regression <- function(data = data,y,framework = "h2o", share_app = FALS
     
     # Define DashHeader for "Configure parameters and run models" tab (specific for Spark framework)
     dashheader_select_parameters <- argonDashHeader(gradient = TRUE,
-                                                    color = "warning",
+                                                    color = "default",
                                                     separator = FALSE,
                                                     div(align = "center",
-                                                        argonH1(HTML("<font color='white'> Configure parameters and run models </font>"),display = 4)
+                                                        argonButton(
+                                                          name = HTML("<font size='+1'>&nbsp; Configure parameters and run models</font>"),
+                                                          status = "default",
+                                                          icon = icon("tools"),
+                                                          size = "lg",
+                                                          toggle_modal = TRUE,
+                                                          modal_id = "modal_configure_parameters"
+                                                        ),
+                                                        argonModal(
+                                                          id = "modal_configure_parameters",
+                                                          title = HTML("<b>CONFIGURE PARAMETERS</b>"),
+                                                          status = "default",
+                                                          gradient = TRUE,
+                                                          br(),
+                                                          HTML("<b>Compare different machine learning techniques with your own hyper-parameters configuration.</b>"),
+                                                          br(),br(),
+                                                          icon("tools"),icon("tools"),icon("tools"),
+                                                          br(),br(),
+                                                          HTML("You are free to select hyper-parameters configuration for each machine learning model using different cursors.<br><br> 
+                                                               Each model can be lauched separately by cliking to the corresponding button; you can also launch all models simultaneously using 'Run all models!'button<br><br>
+                                                               Please note that autoML algorithm will automatically find the best algorithm to suit your regression task: 
+                                                               the user will be informed of the machine learning technique used and know which hyper-parameters should be configured.
+                                                               ")
+                                                        )
                                                     ),
                                                     br(),
                                                     argonRow(
@@ -582,7 +676,7 @@ shinyML_regression <- function(data = data,y,framework = "h2o", share_app = FALS
         value = selected_framework,gradient = TRUE,width = 12,
         title = "Selected framework",
         icon = icon("atom"), 
-        icon_background = "red",
+        icon_background = "orange",
         background_color = "lightblue"
       )
       
@@ -639,19 +733,21 @@ shinyML_regression <- function(data = data,y,framework = "h2o", share_app = FALS
     })
     
     # Define indicating number of rows contained in testing dataset
-    output$message_nrow_test_dataset <- renderUI({
+    output$message_nrow_train_dataset <- renderUI({
       
       req(!is.null(input$checkbox_time_series))
       req(!is.null(table_forecast()[["data_train"]]))
       
       if (input$checkbox_time_series == TRUE){
-        number_rows_datatest <- nrow(eval(parse(text = paste0("data[",input$time_serie_select_column," >= input$test_selector[1],]"))))
+        number_rows_datatest <- nrow(eval(parse(text = paste0("data[",input$time_serie_select_column," >= input$train_selector[1],][",input$time_serie_select_column," <= input$train_selector[2],]"))))
       }
       
       else if (input$checkbox_time_series == FALSE){
-        number_rows_datatest <- nrow(table_forecast()[["data_test"]])
+        number_rows_datatest <- nrow(table_forecast()[["data_train"]])
       }
-      argonH1(HTML(paste0("<small><font color = 'darkblue'>Testing dataset contains <b>",number_rows_datatest,"</b> rows</font></small>")),display = 4)
+      
+      argonBadge(text = HTML(paste0("<big><big>Training dataset contains <b>",number_rows_datatest,"</b> rows</big></big>")),status = "success")
+      
     })
     
     # Make glm parameters correspond to cursors and radiobuttons choices when user click on "Run generalized linear regression" button 
@@ -1443,7 +1539,7 @@ shinyML_regression <- function(data = data,y,framework = "h2o", share_app = FALS
           req(!is.null(input$percentage_selector))
           
           data_train <- data %>% sample_frac(as.numeric(as.character(gsub("%","",input$percentage_selector)))*0.01)
-          data_test <- data %>% anti_join(data_train)
+          data_test <- data %>% anti_join(data_train, by = colnames(data))
           data_results <- data_test
           
         }
@@ -1574,12 +1670,8 @@ shinyML_regression <- function(data = data,y,framework = "h2o", share_app = FALS
         # Used a list to access to different tables from only on one reactive objet 
         list(data_train = data_train, data_test = data_test, traning_time = table_training_time, table_importance = table_importance, results = table_results)
         
-        
-        
       })
-      
     }
-    
   }
   
   ## ---------------------------------------------------------------------------- LAUNCH APP  -----------------------------------

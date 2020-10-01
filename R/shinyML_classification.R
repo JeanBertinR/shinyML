@@ -18,47 +18,21 @@
 #' @examples
 #'\dontrun{
 #' library(shinyML)
-#' # Classical regression analysis 
-#' shinyML_classification(data = iris,y = "Petal.Width",framework = "h2o")
-#' 
-#' # Time series analysis
-#' longley2 <- longley %>% mutate(Year = as.Date(as.character(Year),format = "%Y"))
-#' shinyML_classification(data = longley2,y = "Population",framework = "h2o")
+#' shinyML_classification(data = iris,y = "Species",framework = "h2o")
 #'}
 #' @import shiny argonDash argonR dygraphs data.table ggplot2 shinycssloaders sparklyr
-#' @importFrom dplyr %>% select mutate group_by summarise arrange rename select_if row_number sample_frac anti_join
+#' @importFrom dplyr %>% select mutate group_by ungroup summarise arrange rename select_if row_number sample_frac anti_join n
 #' @importFrom tidyr gather everything
 #' @importFrom DT renderDT DTOutput datatable
 #' @importFrom h2o h2o.init as.h2o h2o.deeplearning h2o.varimp h2o.predict h2o.gbm h2o.naiveBayes h2o.randomForest h2o.automl h2o.clusterStatus
 #' @importFrom plotly plotlyOutput renderPlotly ggplotly plot_ly layout add_trace
-#' @importFrom shinyWidgets materialSwitch switchInput sendSweetAlert knobInput awesomeCheckbox actionBttn
+#' @importFrom shinyWidgets materialSwitch switchInput sendSweetAlert knobInput awesomeCheckbox actionBttn prettyCheckboxGroup
 #' @importFrom shinyjs useShinyjs hideElement
 #' @importFrom stats predict reorder cor
 #' @importFrom lubridate is.Date is.POSIXct
 #' @author Jean Bertin, \email{jean.bertin@gadz.org}
 #' @export
-#' 
-#' 
-#' 
 
-
-library(h2o)
-library(data.table)
-library(dplyr)
-library(tidyr)
-library(dygraphs)
-library(plotly)
-library(shiny)
-library(shinydashboard)
-library(shinyWidgets)
-library(shinycssloaders)
-library(DT)
-library(sparklyr)
-library(argonDash)
-library(argonR)
-library(shinyjs)
-library(lubridate)
-library(timeDate)
 
 shinyML_classification <- function(data = data,y,framework = "h2o", share_app = FALSE,port = NULL){
   
@@ -147,7 +121,12 @@ shinyML_classification <- function(data = data,y,framework = "h2o", share_app = 
   feature <- NULL
   importance <- NULL
   fit <- NULL
-  prediction <- NULL
+  Prediction <- NULL
+  PREDICTED <- NULL
+  ACTUAL <- NULL
+  Freq <- NULL 
+  Error <- NULL 
+  predicted_label <- NULL 
   
   ## ---------------------------------------------------------------------------- UI  -----------------------------------
   
@@ -176,7 +155,7 @@ shinyML_classification <- function(data = data,y,framework = "h2o", share_app = 
     color = "warning",
     separator = FALSE,
     argonRow(
-      argonColumn(width = "25%",
+      argonColumn(width = "20%",
         argonInfoCard(value = "Classification",gradient = TRUE,width = 12,
                       title = "Machine learning task",
                       icon = icon("sitemap"), 
@@ -184,10 +163,10 @@ shinyML_classification <- function(data = data,y,framework = "h2o", share_app = 
                       background_color = "lightblue"
        )
       ),
-      argonColumn(width = "25%",uiOutput("framework_used")),
-      argonColumn(width = "25%",uiOutput("framework_memory")),
-      argonColumn(width = "25%",uiOutput("framework_cpu")),
-      argonColumn(width = "25%",uiOutput("dataset_infoCard"))
+      argonColumn(width = "20%",uiOutput("framework_used")),
+      argonColumn(width = "20%",uiOutput("framework_memory")),
+      argonColumn(width = "20%",uiOutput("framework_cpu")),
+      argonColumn(width = "20%",uiOutput("dataset_infoCard"))
     )
   )
   
@@ -207,12 +186,16 @@ shinyML_classification <- function(data = data,y,framework = "h2o", share_app = 
         ),
         argonModal(
           id = "modal_exlore_input_data",
-          title = ("EXPLORE INPUT DATA"),
+          title = HTML("<b>EXPLORE INPUT DATA</b>"),
           status = "info",
           gradient = TRUE,
-          "YOU SHOULD READ THIS!",
           br(),
-          "This section allows you to explore input data. "
+          HTML("<b>Before running machine learning models, it can be useful to inspect each variable distribution and have an insight of dependencies between explicative variables.</b>"),
+          br(),br(),
+          icon("tools"),icon("tools"),icon("tools"),
+          br(),br(),
+          HTML("This section allows to plot variation of each variable as a function of another, to check classes of explicative variables, to plot histograms of each distribution and show correlation matrix between all variables.<br><br> 
+          Please note that this section can be used to determine if some variable are strongly correlated to another and eventually removed from the training phase.")
         )
         ),
     br(),
@@ -294,12 +277,16 @@ shinyML_classification <- function(data = data,y,framework = "h2o", share_app = 
                                                     ),
                                                     argonModal(
                                                       id = "modal_explore_results",
-                                                      title = ("EXPLORE RESULTS"),
+                                                      title = HTML("<b>EXPLORE RESULTS</b>"),
                                                       status = "primary",
                                                       gradient = TRUE,
-                                                      "YOU SHOULD READ THIS!",
                                                       br(),
-                                                      "This section allows you to explore results. "
+                                                      HTML("<b>Once machine learning models have been lauched, this section can be used to compare their performances on the testing dataset</b>"),
+                                                      br(),br(),
+                                                      icon("tools"),icon("tools"),icon("tools"),
+                                                      br(),br(),
+                                                      HTML("You can check confusion matrices to get classification results for each model or have an overview of error metric in 'Compare models performances' tab.<br><br>
+                                                           Please note that feature importances of each model are available in the corresponding tab.")
                                                     )
                                                 ),
                                                 br(),
@@ -387,12 +374,19 @@ shinyML_classification <- function(data = data,y,framework = "h2o", share_app = 
                                                         ),
                                                         argonModal(
                                                           id = "modal_configure_parameters",
-                                                          title = ("CONFIGURE PARAMETERS"),
+                                                          title = HTML("<b>CONFIGURE PARAMETERS</b>"),
                                                           status = "default",
                                                           gradient = TRUE,
-                                                          "YOU SHOULD READ THIS!",
                                                           br(),
-                                                          "This section allows you to configure model parameters. "
+                                                          HTML("<b>Compare different machine learning techniques with your own hyper-parameters configuration.</b>"),
+                                                          br(),br(),
+                                                          icon("tools"),icon("tools"),icon("tools"),
+                                                          br(),br(),
+                                                          HTML("You are free to select hyper-parameters configuration for each machine learning model using different cursors.<br><br> 
+                                                               Each model can be lauched separately by cliking to the corresponding button; you can also launch all models simultaneously using 'Run all models!'button<br><br>
+                                                               Please note that autoML algorithm will automatically find the best algorithm to suit your regression task: 
+                                                               the user will be informed of the machine learning technique used and know which hyper-parameters should be configured.
+                                                               ")
                                                         )
                                                     ),
                                                     br(),
@@ -525,12 +519,19 @@ shinyML_classification <- function(data = data,y,framework = "h2o", share_app = 
                                                         ),
                                                         argonModal(
                                                           id = "modal_configure_parameters",
-                                                          title = ("CONFIGURE PARAMETERS"),
+                                                          title = HTML("<b>CONFIGURE PARAMETERS</b>"),
                                                           status = "default",
                                                           gradient = TRUE,
-                                                          "YOU SHOULD READ THIS!",
                                                           br(),
-                                                          "This section allows you to configure model parameters. "
+                                                          HTML("<b>Compare different machine learning techniques with your own hyper-parameters configuration.</b>"),
+                                                          br(),br(),
+                                                          icon("tools"),icon("tools"),icon("tools"),
+                                                          br(),br(),
+                                                          HTML("You are free to select hyper-parameters configuration for each machine learning model using different cursors.<br><br> 
+                                                               Each model can be lauched separately by cliking to the corresponding button; you can also launch all models simultaneously using 'Run all models!'button<br><br>
+                                                               Please note that autoML algorithm will automatically find the best algorithm to suit your regression task: 
+                                                               the user will be informed of the machine learning technique used and know which hyper-parameters should be configured.
+                                                               ")
                                                         )
                                                     ),
                                                     br(),
@@ -1479,22 +1480,23 @@ shinyML_classification <- function(data = data,y,framework = "h2o", share_app = 
       # Make all parameters correspond to cursors and radiobuttons choices when user click on "Run all models!" button
       observeEvent(input$train_all,{
         
+        train_1$date <- input$train_selector[1]
         test_1$date <- input$test_selector[1]
         test_2$date <- input$test_selector[2]
+        
         model$train_variables <- input$input_variables
         
-        
-        v_decision_tree$type_model <- "ml_decision_tree"
-        v_naiveBayes$type_model <- "ml_naiveBayes"
         v_logistic_regression$type_model <- "ml_logistic_regression"
+        v_naiveBayes$type_model <- "ml_naiveBayes"
         v_random$type_model <- "ml_random_forest"
-        
-        parameter$laplace_param_naiveBayes <- input$laplace_param_naiveBayes
+        v_decision_tree$type_model <- "ml_decision_tree"
         
         parameter$fit_intercept_logistic_regression <- input$fit_intercept_logistic_regression
         parameter$reg_param_logistic_regression <- input$reg_param_logistic_regression
         parameter$elastic_net_param_logistic_regression <- input$elastic_net_param_logistic_regression
         parameter$max_iter_logistic_regression <- input$max_iter_logistic_regression
+        
+        parameter$laplace_param_naiveBayes <- input$laplace_param_naiveBayes
         
         parameter$num_tree_random_forest <- input$num_tree_random_forest
         parameter$subsampling_rate_random_forest <- input$subsampling_rate_random_forest
@@ -1669,7 +1671,6 @@ shinyML_classification <- function(data = data,y,framework = "h2o", share_app = 
           
           # Assembly results of all models (some column might remain empty)
           if (!is.na(v_logistic_regression$type_model) & !is.na(v_naiveBayes$type_model) & !is.na(v_random$type_model) & !is.na(v_decision_tree$type_model))
-            
             table_results <- cbind(data_results,table_ml_logistic_regression,table_ml_naiveBayes,table_ml_random_forest,table_ml_decision_tree) %>% 
             as.data.table()
           
@@ -1718,16 +1719,3 @@ shinyML_classification <- function(data = data,y,framework = "h2o", share_app = 
   }
   else {runApp(app,quiet = TRUE,launch.browser = TRUE)}
 }
-
-
-
-shinyML_classification(data = iris,y = "Species",framework = "h2o")
-
-
-# iris2 <- iris %>% mutate(Date = as.Date("2015-01-01")+row_number())
-# shinyML_classification(data = iris2,y = "Species",framework = "spark")
-
-
-
-
-
