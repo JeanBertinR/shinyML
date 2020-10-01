@@ -79,6 +79,11 @@ shinyML_classification <- function(data = data,y,framework = "h2o", share_app = 
   # Force output variable to be categorical 
   eval(parse(text = paste0("data$",y," <- as.factor(data$",y,")")))
   
+  # Return an error if y output variable doesn't have at least two different values
+  if (eval(parse(text = paste0("length(unique(data$",y,"))")))< 2){
+    stop("y must have at least two different values")
+  }
+  
   # Return an error if y is not contained in dataset colnames
   if (!(y %in% colnames(data))){
     stop("y must match one data input variable")
@@ -96,6 +101,9 @@ shinyML_classification <- function(data = data,y,framework = "h2o", share_app = 
   if (nrow(data) > 1000000) {
     stop("Input dataset must not exceed one million rows")
   }
+  
+  # Don't print summarize() regrouping message 
+  options(dplyr.summarise.inform=F)
   
   # Initialize all reactive variables
   model <- reactiveValues()
@@ -168,10 +176,32 @@ shinyML_classification <- function(data = data,y,framework = "h2o", share_app = 
     color = "success",
     separator = FALSE,
     argonRow(
-      argonColumn(width = "25%",uiOutput("framework_used")),
-      argonColumn(width = "25%",uiOutput("framework_memory")),
-      argonColumn(width = "25%",uiOutput("framework_cpu")),
-      argonColumn(width = "25%",uiOutput("dataset_infoCard"))
+      argonColumn(width = "20%",uiOutput("framework_used")),
+      argonColumn(width = "20%",uiOutput("framework_memory")),
+      argonColumn(width = "20%",
+        div(align = "center",
+          br(),
+          argonButton(
+            name = "shinyML for classification tasks",
+            status = "danger",
+            icon = argonIcon("atom"),
+            size = "lg",
+            toggle_modal = TRUE,
+            modal_id = "modal1"
+          ),
+          argonModal(
+            id = "modal1",
+            title = "This is a modal",
+            status = "danger",
+            gradient = TRUE,
+            "YOU SHOULD READ THIS!",
+            br(),
+            "A small river named Duden flows by their place and supplies it with the necessary regelialia."
+          )
+        )
+      ),
+      argonColumn(width = "20%",uiOutput("framework_cpu")),
+      argonColumn(width = "20%",uiOutput("dataset_infoCard"))
     )
   )
   
@@ -341,7 +371,7 @@ shinyML_classification <- function(data = data,y,framework = "h2o", share_app = 
                                                                 title = "Naive Bayes",
                                                                 div(align = "center",
                                                                     sliderInput(label = "Laplace smoothing parameter",inputId = "laplace_param_naiveBayes",min = 0,max = 10,value = 0),
-                                                                    sliderInput(label = "Max after balance",inputId = "max_after_balance_naiveBayes",min = 0,max = 10,value = 5),
+                                                                    sliderInput(label = "Max after balance",inputId = "max_after_balance_naiveBayes",min = 0.1,max = 10,value = 5),
                                                                     sliderInput(label = "Minimum standard deviation",inputId = "min_sdev_naiveBayes",min = 0.01,max = 10,value = 0.01),
                                                                     sliderInput(label = "Epsilon standard deviation",inputId = "epsilon_iter_naiveBayes",min = 0.01,max = 10,value = 0.01),
                                                                     actionButton("run_naiveBayes","Run Naive Bayes",style = 'color:white; background-color:green; padding:4px; font-size:120%',icon = icon("cogs",lib = "font-awesome"))
@@ -810,7 +840,6 @@ shinyML_classification <- function(data = data,y,framework = "h2o", share_app = 
       
       if (input$input_var_graph_type == "Histogram"){chart_type <- "histogram"}
       else if (input$input_var_graph_type == "Boxplot"){chart_type <- "box"}
-      
       plot_ly(x = eval(parse(text = paste0("data[,",column_name,"]"))),
               type = chart_type,
               name = column_name
@@ -827,8 +856,8 @@ shinyML_classification <- function(data = data,y,framework = "h2o", share_app = 
       req(!is.null(input$y_variable_input_curve))
       
       if (input$checkbox_time_series == TRUE){
-        data_train_chart <- eval(parse(text = paste0("data[",input$time_serie_select_column," <= input$train_selector[2],]")))
-        data_test_chart <- eval(parse(text = paste0("data[",input$time_serie_select_column," >= input$test_selector[1],]")))
+        data_train_chart <- eval(parse(text = paste0("data[",input$time_serie_select_column," >= input$train_selector[1],][",input$time_serie_select_column," <= input$train_selector[2],]")))
+        data_test_chart <- eval(parse(text = paste0("data[",input$time_serie_select_column," > input$test_selector[1],][",input$time_serie_select_column," <= input$test_selector[2],]")))
         
       }
       
@@ -866,7 +895,7 @@ shinyML_classification <- function(data = data,y,framework = "h2o", share_app = 
       
       req(!is.null(input$checkbox_time_series))
       req(ncol(table_forecast()[['results']]) > ncol(data))
-      
+
       table_matrix_confusion_chart <- table_forecast()[['results']] %>% 
             select(-c(setdiff(colnames(data),y))) %>% 
             rename(ACTUAL  = y) %>% 
@@ -901,25 +930,15 @@ shinyML_classification <- function(data = data,y,framework = "h2o", share_app = 
       req(ncol(table_forecast()[['results']]) > ncol(data))
       req(!is.null(input$checkbox_time_series))
       
-      if (input$checkbox_time_series == TRUE){
-        
-        req(!is.null(input$time_serie_select_column))
-        
-        performance_table <-  eval(parse(text = paste0("table_forecast()[['results']] %>% 
-                                                         gather(key = Model,value = Predicted_value,-",input$time_serie_select_column,",-y) %>% 
-                                                         as.data.table()")))
-      }
-      
-      else if (input$checkbox_time_series == FALSE){
-        performance_table <-  table_forecast()[['results']] %>%
-          select(-c(setdiff(colnames(data),y))) %>% 
-          gather(key = Model,value = Prediction,-y) %>% 
-          group_by(Model) %>% 
-          summarise(Error = paste0(round(sum(ifelse(Prediction != eval(parse(text = y)),1,0),na.rm = T)/length(Model)*100,1),
+      performance_table <-  table_forecast()[['results']] %>%
+        select(-c(setdiff(colnames(data),y))) %>% 
+        gather(key = Model,value = Prediction,-y) %>% 
+        group_by(Model) %>% 
+        summarise(Error = paste0(round(sum(ifelse(Prediction != eval(parse(text = y)),1,0),na.rm = T)/length(Model)*100,1),
                                    " % (",sum(ifelse(Prediction != eval(parse(text = y)),1,0),na.rm = T),"/",length(Model),")")) %>% 
-          ungroup() %>% 
-          as.data.table()
-      }
+        ungroup() %>% 
+        as.data.table()
+      
       
       
       if (nrow(table_forecast()[['traning_time']]) != 0){
@@ -1209,7 +1228,7 @@ shinyML_classification <- function(data = data,y,framework = "h2o", share_app = 
           req(!is.null(input$percentage_selector))
           
           data_train <- data %>% sample_frac(as.numeric(as.character(gsub("%","",input$percentage_selector)))*0.01)
-          data_test <- data %>% anti_join(data_train)
+          data_test <- data %>% anti_join(data_train ,by = colnames(data))
           data_results <- data_test
           
         }
@@ -1497,7 +1516,7 @@ shinyML_classification <- function(data = data,y,framework = "h2o", share_app = 
           
           req(!is.null(input$percentage_selector))
           data_train <- data %>% sample_frac(as.numeric(as.character(gsub("%","",input$percentage_selector)))*0.01)
-          data_test <- data %>% anti_join(data_train)
+          data_test <- data %>% anti_join(data_train ,by = colnames(data))
           data_results <- data_test
           
         }
@@ -1541,7 +1560,7 @@ shinyML_classification <- function(data = data,y,framework = "h2o", share_app = 
                                      " )")))
             t2 <- Sys.time()
             time_logistic_regression <- data.frame(`Training time` =  paste0(round(t2 - t1,1)," seconds"), Model = "Logistic regression") 
-            table_ml_logistic_regression <- sdf_predict(data_spark_test, fit) %>% collect %>% as.data.frame() %>% select(predicted_label) %>% rename(`Logistic regression` = predicted_label)
+            table_ml_logistic_regression <- ml_predict(fit,data_spark_test)  %>% select(predicted_label) %>% rename(`Logistic regression` = predicted_label) %>% as.data.table()
             table_results <- cbind(data_results,table_ml_logistic_regression) %>% as.data.table()
             
           }
@@ -1555,7 +1574,7 @@ shinyML_classification <- function(data = data,y,framework = "h2o", share_app = 
                                      ")")))
             t2 <- Sys.time()
             time_naiveBayes <- data.frame(`Training time` =  paste0(round(t2 - t1,1)," seconds"), Model = "Naive Bayes")
-            table_ml_naiveBayes <- sdf_predict(data_spark_test, fit) %>% collect %>% as.data.frame() %>% select(predicted_label) %>% rename(`Naive Bayes` = predicted_label)
+            table_ml_naiveBayes <- ml_predict(fit,data_spark_test) %>% select(predicted_label) %>% rename(`Naive Bayes` = predicted_label) %>% as.data.table()
             table_results <- cbind(data_results,table_ml_naiveBayes) %>% as.data.table()
             
             
@@ -1573,8 +1592,7 @@ shinyML_classification <- function(data = data,y,framework = "h2o", share_app = 
             t2 <- Sys.time()
             time_random_forest <- data.frame(`Training time` =  paste0(round(t2 - t1,1)," seconds"), Model = "Random forest")
             importance_random_forest <- ml_feature_importances(fit) %>% mutate(model = "Random forest")
-            
-            table_ml_random_forest <- sdf_predict(data_spark_test, fit) %>% collect %>% as.data.frame() %>% select(predicted_label)%>% rename(`Random forest` = predicted_label)
+            table_ml_random_forest <- ml_predict(fit,data_spark_test)  %>% select(predicted_label)%>% rename(`Random forest` = predicted_label) %>% as.data.table()
             table_results <- cbind(data_results,table_ml_random_forest) %>% as.data.table()
             
           }
@@ -1592,7 +1610,7 @@ shinyML_classification <- function(data = data,y,framework = "h2o", share_app = 
             t2 <- Sys.time()
             time_decision_tree <- data.frame(`Training time` =  paste0(round(t2 - t1,1)," seconds"), Model = "Decision tree")
             importance_decision_tree <- ml_feature_importances(fit) %>% mutate(model = "Decision tree")
-            table_ml_decision_tree <- sdf_predict(data_spark_test, fit) %>% collect %>% as.data.frame() %>% select(predicted_label)%>% rename(`Decision tree` = predicted_label)
+            table_ml_decision_tree <- ml_predict(fit,data_spark_test)  %>% select(predicted_label)%>% rename(`Decision tree` = predicted_label) %>% as.data.table()
             table_results <- cbind(data_results,table_ml_decision_tree) %>% as.data.table()
             
           }
@@ -1643,20 +1661,19 @@ shinyML_classification <- function(data = data,y,framework = "h2o", share_app = 
     else if (nchar(port) == 4){
       ip_adress <- gsub(".*? ([[:digit:]])", "\\1", system("ipconfig", intern=TRUE)[grep("IPv4", system("ipconfig", intern=TRUE))])[2]
       message("Forecast dashboard shared on LAN at ",ip_adress,":",port)
-      runApp(app,host = "0.0.0.0",port = port,quiet = TRUE)
+      runApp(app,host = "0.0.0.0",port = port,quiet = TRUE,launch.browser = TRUE)
     }
   }
-  else {runApp(app)}
+  else {runApp(app,quiet = TRUE,launch.browser = TRUE)}
 }
 
 
 
-#shinyML_classification(data = iris,y = "Species",framework = "h2o")
+#shinyML_classification(data = iris,y = "Species",framework = "spark")
+
+
 iris2 <- iris %>% mutate(Date = as.Date("2015-01-01")+row_number())
-
-
-
-shinyML_classification(data = iris2,y = "Species",framework = "h2o")
+shinyML_classification(data = iris2,y = "Species",framework = "spark")
 
 
 

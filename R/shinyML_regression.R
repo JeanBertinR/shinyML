@@ -75,6 +75,9 @@ shinyML_regression <- function(data = data,y,framework = "h2o", share_app = FALS
     stop("Input dataset must not exceed one million rows")
   }
   
+  # Don't print summarize() regrouping message 
+  options(dplyr.summarise.inform=F)
+  
   # Initialize all reactive variables
   model <- reactiveValues()
   train_1 <- reactiveValues()
@@ -835,8 +838,8 @@ shinyML_regression <- function(data = data,y,framework = "h2o", share_app = FALS
       req(!is.null(input$y_variable_input_curve))
       
       if (input$checkbox_time_series == TRUE){
-        data_train_chart <- eval(parse(text = paste0("data[",input$time_serie_select_column," <= input$train_selector[2],]")))
-        data_test_chart <- eval(parse(text = paste0("data[",input$time_serie_select_column," >= input$test_selector[1],]")))
+        data_train_chart <- eval(parse(text = paste0("data[",input$time_serie_select_column," >= input$train_selector[2],][",input$time_serie_select_column," <= input$train_selector[2],]")))
+        data_test_chart <- eval(parse(text = paste0("data[",input$time_serie_select_column," > input$test_selector[1],][",input$time_serie_select_column," <= input$test_selector[2],]")))
         
       }
       
@@ -1171,7 +1174,7 @@ shinyML_regression <- function(data = data,y,framework = "h2o", share_app = FALS
           req(!is.null(input$percentage_selector))
           
           data_train <- data %>% sample_frac(as.numeric(as.character(gsub("%","",input$percentage_selector)))*0.01)
-          data_test <- data %>% anti_join(data_train)
+          data_test <- data %>% anti_join(data_train,by = colnames(data))
           data_results <- data_test
           
           
@@ -1488,8 +1491,8 @@ shinyML_regression <- function(data = data,y,framework = "h2o", share_app = FALS
             t2 <- Sys.time()
             time_glm <- data.frame(`Training time` =  paste0(round(t2 - t1,1)," seconds"), Model = "Generalized linear regression")
             
-            table_ml_glm <- sdf_predict(data_spark_test, fit) %>% collect %>% as.data.frame() %>% select(prediction)%>% mutate(prediction = round(prediction,3)) %>% 
-              rename(`Generalized linear regression` = prediction)
+            table_ml_glm <- ml_predict(fit,data_spark_test) %>% select(prediction)%>% mutate(prediction = round(prediction,3)) %>% 
+              rename(`Generalized linear regression` = prediction) %>% as.data.table()
             table_results <- cbind(data_results,table_ml_glm) %>% as.data.table()
             
             
@@ -1511,8 +1514,8 @@ shinyML_regression <- function(data = data,y,framework = "h2o", share_app = FALS
             time_gbm <- data.frame(`Training time` =  paste0(round(t2 - t1,1)," seconds"), Model = "Gradient boosted trees") 
             importance_gbm <- ml_feature_importances(fit) %>% mutate(model = "Gradient boosted trees")
             
-            table_ml_gradient_boosted <- sdf_predict(data_spark_test, fit) %>% collect %>% as.data.frame() %>% select(prediction) %>% mutate(prediction = round(prediction,3)) %>% 
-              rename(`Gradient boosted trees` = prediction)
+            table_ml_gradient_boosted <- ml_predict(fit,data_spark_test) %>% select(prediction) %>% mutate(prediction = round(prediction,3)) %>% 
+              rename(`Gradient boosted trees` = prediction) %>% as.data.table()
             table_results <- cbind(data_results,table_ml_gradient_boosted) %>% as.data.table()
             
           }
@@ -1530,8 +1533,8 @@ shinyML_regression <- function(data = data,y,framework = "h2o", share_app = FALS
             time_random_forest <- data.frame(`Training time` =  paste0(round(t2 - t1,1)," seconds"), Model = "Random forest")
             importance_random_forest <- ml_feature_importances(fit) %>% mutate(model = "Random forest")
             
-            table_ml_random_forest <- sdf_predict(data_spark_test, fit) %>% collect %>% as.data.frame() %>% select(prediction)%>% mutate(prediction = round(prediction,3)) %>% 
-              rename(`Random forest` = prediction)
+            table_ml_random_forest <- ml_predict(fit,data_spark_test) %>% select(prediction)%>% mutate(prediction = round(prediction,3)) %>% 
+              rename(`Random forest` = prediction) %>% as.data.table()
             table_results <- cbind(data_results,table_ml_random_forest) %>% as.data.table()
             
           }
@@ -1550,8 +1553,8 @@ shinyML_regression <- function(data = data,y,framework = "h2o", share_app = FALS
             time_decision_tree <- data.frame(`Training time` =  paste0(round(t2 - t1,1)," seconds"), Model = "Decision tree")
             importance_decision_tree <- ml_feature_importances(fit) %>% mutate(model = "Decision tree")
             
-            table_ml_decision_tree <- sdf_predict(data_spark_test, fit) %>% collect %>% as.data.frame() %>% select(prediction)%>% mutate(prediction = round(prediction,3)) %>% 
-              rename(`Decision tree` = prediction)
+            table_ml_decision_tree <- ml_predict(fit,data_spark_test) %>% select(prediction)%>% mutate(prediction = round(prediction,3)) %>% 
+              rename(`Decision tree` = prediction) %>% as.data.table()
             table_results <- cbind(data_results,table_ml_decision_tree) %>% as.data.table()
             
           }
@@ -1602,8 +1605,8 @@ shinyML_regression <- function(data = data,y,framework = "h2o", share_app = FALS
     else if (nchar(port) == 4){
       ip_adress <- gsub(".*? ([[:digit:]])", "\\1", system("ipconfig", intern=TRUE)[grep("IPv4", system("ipconfig", intern=TRUE))])[2]
       message("Forecast dashboard shared on LAN at ",ip_adress,":",port)
-      runApp(app,host = "0.0.0.0",port = port,quiet = TRUE)
+      runApp(app,host = "0.0.0.0",port = port,quiet = TRUE,launch.browser = TRUE)
     }
   }
-  else {runApp(app)}
+  else {runApp(app,quiet = TRUE,launch.browser = TRUE)}
 }
