@@ -2,12 +2,12 @@
 #'
 #' @description This function creates in one line of code a shareable web app to compare supervised regression model performances
 #'
-#' @param data Time serie containing one or more input values and one output value. 
-#'    The time serie must be a data.frame or a data.table and must contain at least one time-based column on Date or POSIXct format.
+#' @param data dataset containing one or more explanatory variables and one numeric variable to forecast.
+#'    The dataset must be a data.frame or a data.table and can contain time-based column on Date or POSIXct format
 #' 
 #' @param y the numerical output variable to forecast (must correspond to one data column)
 #' 
-#' @param framework the machine learning framework choosed to train and test models (either h2o or Spark). h2o by default.
+#' @param framework the machine learning framework choosed to train and test models (either h2o or Spark). h2o by default
 #' 
 #' @param share_app a logical value indicating whether the app must be shared on local LAN 
 #' 
@@ -35,7 +35,7 @@
 #' @importFrom shinyjs useShinyjs hideElement
 #' @importFrom stats predict reorder cor
 #' @importFrom lubridate is.Date is.POSIXct
-#' @author Jean Bertin, \email{jean.bertin@gadz.org}
+#' @author Jean Bertin, \email{jean.bertin@mines-paris.org}
 #' @export
 
 

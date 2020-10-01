@@ -13,12 +13,12 @@ shinyML_classification(
 )
 }
 \arguments{
-\item{data}{Time serie containing one or more input values and one output value. 
-The time serie must be a data.frame or a data.table and must contain at least one time-based column on Date or POSIXct format.}
+\item{data}{dataset containing one or more explanatory variables and one categorical variable to predict. 
+The dataset must be a data.frame or a data.table and can contain time-based column on Date or POSIXct format}
 
-\item{y}{the numerical output variable to forecast (must correspond to one data column)}
+\item{y}{the categorical output variable to predict (must correspond to one data column)}
 
-\item{framework}{the machine learning framework choosed to train and test models (either h2o or Spark). h2o by default.}
+\item{framework}{the machine learning framework choosed to train and test models (either h2o or Spark). h2o by default}
 
 \item{share_app}{a logical value indicating whether the app must be shared on local LAN}
 
@@ -34,5 +34,5 @@ shinyML_classification(data = iris,y = "Species",framework = "h2o")
 }
 }
 \author{
-Jean Bertin, \email{jean.bertin@gadz.org}
+Jean Bertin, \email{jean.bertin@mines-paris.org}
 }
