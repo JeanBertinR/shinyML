@@ -173,44 +173,48 @@ shinyML_classification <- function(data = data,y,framework = "h2o", share_app = 
   # Define DashHeader for Info Cards 
   dashheader_framework <- argonDashHeader(
     gradient = TRUE,
-    color = "success",
+    color = "warning",
     separator = FALSE,
     argonRow(
-      argonColumn(width = "20%",uiOutput("framework_used")),
-      argonColumn(width = "20%",uiOutput("framework_memory")),
-      argonColumn(width = "20%",
-        div(align = "center",
-          br(),
-          argonButton(
-            name = "shinyML for classification tasks",
-            status = "danger",
-            icon = argonIcon("atom"),
-            size = "lg",
-            toggle_modal = TRUE,
-            modal_id = "modal1"
-          ),
-          argonModal(
-            id = "modal1",
-            title = "This is a modal",
-            status = "danger",
-            gradient = TRUE,
-            "YOU SHOULD READ THIS!",
-            br(),
-            "A small river named Duden flows by their place and supplies it with the necessary regelialia."
-          )
-        )
+      argonColumn(width = "25%",
+        argonInfoCard(value = "Classification",gradient = TRUE,width = 12,
+                      title = "Machine learning task",
+                      icon = icon("sitemap"), 
+                      icon_background = "red",
+                      background_color = "lightblue"
+       )
       ),
-      argonColumn(width = "20%",uiOutput("framework_cpu")),
-      argonColumn(width = "20%",uiOutput("dataset_infoCard"))
+      argonColumn(width = "25%",uiOutput("framework_used")),
+      argonColumn(width = "25%",uiOutput("framework_memory")),
+      argonColumn(width = "25%",uiOutput("framework_cpu")),
+      argonColumn(width = "25%",uiOutput("dataset_infoCard"))
     )
   )
   
   # Define DashHeader for "Explore input data" tab 
   dashheader_explore_input <-  argonDashHeader(
-    gradient = TRUE,
+    gradient = FALSE,
     color = "info",
     separator = FALSE,
-    div(align = "center",argonH1(HTML("<font color='white'> Explore input data</font>"),display = 4)),
+    div(align = "center",
+        argonButton(
+          name = HTML("<font size='+1'>&nbsp;  Explore input data </font>"),
+          status = "info",
+          icon = icon("chart-area"),
+          size = "lg",
+          toggle_modal = TRUE,
+          modal_id = "modal_exlore_input_data"
+        ),
+        argonModal(
+          id = "modal_exlore_input_data",
+          title = ("EXPLORE INPUT DATA"),
+          status = "info",
+          gradient = TRUE,
+          "YOU SHOULD READ THIS!",
+          br(),
+          "This section allows you to explore input data. "
+        )
+        ),
     br(),
     argonRow(
       argonColumn(width = 9,
@@ -280,7 +284,23 @@ shinyML_classification <- function(data = data,y,framework = "h2o", share_app = 
                                                 color = "primary",
                                                 separator = FALSE,
                                                 div(align = "center",
-                                                    argonH1(HTML("<font color='white'> Explore results </font>"),display = 4)
+                                                    argonButton(
+                                                      name = HTML("<font size='+1'>&nbsp; Explore results</font>"),
+                                                      status = "primary",
+                                                      icon = icon("list-ol"),
+                                                      size = "lg",
+                                                      toggle_modal = TRUE,
+                                                      modal_id = "modal_explore_results"
+                                                    ),
+                                                    argonModal(
+                                                      id = "modal_explore_results",
+                                                      title = ("EXPLORE RESULTS"),
+                                                      status = "primary",
+                                                      gradient = TRUE,
+                                                      "YOU SHOULD READ THIS!",
+                                                      br(),
+                                                      "This section allows you to explore results. "
+                                                    )
                                                 ),
                                                 br(),
                                                 argonRow(
@@ -357,7 +377,23 @@ shinyML_classification <- function(data = data,y,framework = "h2o", share_app = 
                                                     color = "default",
                                                     separator = FALSE,
                                                     div(align = "center",
-                                                        argonH1(HTML("<font color='white'> Configure parameters and run models </font>"),display = 4)
+                                                        argonButton(
+                                                          name = HTML("<font size='+1'>&nbsp; Configure parameters and run models</font>"),
+                                                          status = "default",
+                                                          icon = icon("tools"),
+                                                          size = "lg",
+                                                          toggle_modal = TRUE,
+                                                          modal_id = "modal_configure_parameters"
+                                                        ),
+                                                        argonModal(
+                                                          id = "modal_configure_parameters",
+                                                          title = ("CONFIGURE PARAMETERS"),
+                                                          status = "default",
+                                                          gradient = TRUE,
+                                                          "YOU SHOULD READ THIS!",
+                                                          br(),
+                                                          "This section allows you to configure model parameters. "
+                                                        )
                                                     ),
                                                     br(),
                                                     argonRow(
@@ -476,10 +512,26 @@ shinyML_classification <- function(data = data,y,framework = "h2o", share_app = 
     
     # Define DashHeader for "Configure parameters and run models" tab (specific for Spark framework)
     dashheader_select_parameters <- argonDashHeader(gradient = TRUE,
-                                                    color = "warning",
+                                                    color = "default",
                                                     separator = FALSE,
                                                     div(align = "center",
-                                                        argonH1(HTML("<font color='white'> Configure parameters and run models </font>"),display = 4)
+                                                        argonButton(
+                                                          name = HTML("<font size='+1'>&nbsp; Configure parameters and run models</font>"),
+                                                          status = "default",
+                                                          icon = icon("tools"),
+                                                          size = "lg",
+                                                          toggle_modal = TRUE,
+                                                          modal_id = "modal_configure_parameters"
+                                                        ),
+                                                        argonModal(
+                                                          id = "modal_configure_parameters",
+                                                          title = ("CONFIGURE PARAMETERS"),
+                                                          status = "default",
+                                                          gradient = TRUE,
+                                                          "YOU SHOULD READ THIS!",
+                                                          br(),
+                                                          "This section allows you to configure model parameters. "
+                                                        )
                                                     ),
                                                     br(),
                                                     argonRow(
@@ -619,7 +671,7 @@ shinyML_classification <- function(data = data,y,framework = "h2o", share_app = 
         value = selected_framework,gradient = TRUE,width = 12,
         title = "Selected framework",
         icon = icon("atom"), 
-        icon_background = "red",
+        icon_background = "orange",
         background_color = "lightblue"
       )
       
@@ -669,7 +721,7 @@ shinyML_classification <- function(data = data,y,framework = "h2o", share_app = 
         value = paste0(nrow(data)," rows x ",ncol(data)," columns"),
         gradient = TRUE,width = 12,
         title = "Your dataset",
-        icon = icon("image"), 
+        icon = icon("database"), 
         icon_background = "blue",
         background_color = "lightblue"
       )
@@ -688,7 +740,7 @@ shinyML_classification <- function(data = data,y,framework = "h2o", share_app = 
       else if (input$checkbox_time_series == FALSE){
         number_rows_datatest <- nrow(table_forecast()[["data_train"]])
       }
-      argonH1(HTML(paste0("<small><font color = 'darkblue'>Training dataset contains <b>",number_rows_datatest,"</b> rows</font></small>")),display = 4)
+      argonBadge(text = HTML(paste0("<big><big>Training dataset contains <b>",number_rows_datatest,"</b> rows</big></big>")),status = "success")
     })
     
     # Make naive Bayes parameters correspond to cursors and radiobuttons choices when user click on "Run generalized linear regression" button 
@@ -1669,11 +1721,11 @@ shinyML_classification <- function(data = data,y,framework = "h2o", share_app = 
 
 
 
-#shinyML_classification(data = iris,y = "Species",framework = "spark")
+shinyML_classification(data = iris,y = "Species",framework = "h2o")
 
 
-iris2 <- iris %>% mutate(Date = as.Date("2015-01-01")+row_number())
-shinyML_classification(data = iris2,y = "Species",framework = "spark")
+# iris2 <- iris %>% mutate(Date = as.Date("2015-01-01")+row_number())
+# shinyML_classification(data = iris2,y = "Species",framework = "spark")
 
 
 
