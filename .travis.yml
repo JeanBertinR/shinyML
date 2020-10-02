@@ -8,6 +8,7 @@ warnings_are_errors: true
 os:
   - linux
   - osx
+  - windows
   
 r:
   - oldrel

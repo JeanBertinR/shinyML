@@ -1,31 +1,32 @@
 Package: shinyML
 Type: Package
-Title: Compare H20 or Spark Supervised Regression Models Using Shiny App
-Version: 0.2.0
+Title: Compare H20 or Spark Supervised Regression and Classification Models Using Shiny App
+Version: 1.0.0
 Author: Jean Bertin
-Maintainer: Jean Bertin <jean.bertin@gadz.org>
+Maintainer: Jean Bertin <jean.bertin@mines-paris.org>
 Description: Implementation of a shiny app to easily compare supervised machine learning model performances. 
     You provide the data and configure each model parameter directly on the shiny app.  
-    Four main supervised learning algorithms can be tested either on Spark or H2O frameworks to suit your regression task.
-    Implementation of available time series forecasting methods on R has been done by Shmueli and Lichtendahl (2015, ISBN:0991576632).
+    Different supervised learning algorithms can be tested either on Spark or H2O frameworks to suit your regression and classification tasks.
+    Implementation of available machine learning models on R has been done by Brett Lantz (2013, ISBN:9781782162148).
 License: GPL-3
 Encoding: UTF-8
 Imports:
- shiny(>= 1.0.3),
- argonDash,
- argonR,
- shinyjs,
- shinydashboard,
- h2o,
- shinyWidgets,
- dygraphs,
- plotly,
- sparklyr,
- tidyr,
- DT,
- ggplot2,
- shinycssloaders,
- lubridate
+    shiny (>= 1.0.3),
+    argonDash,
+    argonR,
+    shinyjs,
+    shinydashboard,
+    h2o,
+    shinyWidgets,
+    dygraphs,
+    plotly,
+    sparklyr,
+    tidyr,
+    DT,
+    ggplot2,
+    shinycssloaders,
+    lubridate,
+    lifecycle
 Suggests: 
     knitr,
     rmarkdown,
@@ -37,3 +38,4 @@ Depends:
 LazyData: True
 RoxygenNote: 7.1.1
 VignetteBuilder: knitr
+RdMacros: lifecycle

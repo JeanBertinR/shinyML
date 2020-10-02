@@ -15,6 +15,8 @@ v3](https://img.shields.io/badge/License-GPL%20v3-red.svg)](https://www.gnu.org/
 Status](https://travis-ci.org/JeanBertinR/shinyML.svg?branch=master)](https://travis-ci.org/JeanBertinR/shinyML)
 [![AppVeyor build
 status](https://ci.appveyor.com/api/projects/status/github/JeanBertinR/shinyML?branch=master&svg=true)](https://ci.appveyor.com/project/JeanBertinR/shinyML)
+[![Lifecycle
+Status](https://img.shields.io/badge/lifecycle-maturing-blue.svg)](https://www.tidyverse.org/lifecycle/)
 
 # shinyML
 
