@@ -9,7 +9,7 @@ knitr::opts_chunk$set(echo = TRUE)
 
 ```
 
-# argonDash <img src="vignettes/logo_shinyML.jpg" width=200 align="right" />
+<img src="vignettes/logo_shinyML.jpg" width=200 align="right" />
 
 [![CRAN Status Badge](http://www.r-pkg.org/badges/version/shinyML)](https://CRAN.R-project.org/package=shinyML)
 [![CRAN Downloads Badge](https://cranlogs.r-pkg.org/badges/shinyML)](https://CRAN.R-project.org/package=shinyML)
@@ -49,17 +49,29 @@ devtools::install_github("JeanBertinR/shinyML", ref="develop")
 
 ### Getting started: create the shinyML web app in just one list of code
 
-  This is a basic example which shows you how to run the app:
+  This is a basic examples which shows you how to run the app:
 
 ```{r example, eval=FALSE, message=FALSE, out.width=600, out.height=400}
 
 library(shinyML)
-longley2 <- longley %>% mutate(Year = as.Date(as.character(Year),format = "%Y"))
-shiny_h2o(data =longley2,y = "GNP",date_column = "Year",share_app = FALSE)
+
+# An example of regression task 
+shinyML_regression(data = iris,y = "Petal.Width",framework = "h2o")
+
+# An example of classification task  
+shinyML_classification(data = iris,y = "Species",framework = "h2o")
+```
+
+  Please note that `shinyML_regression` and `shinyML_classification` will automatically detect if you input dataset contains time-based column: train/test splitting will be adapted to time-serie forecasting. 
+  
+```{r example, eval=FALSE, message=FALSE, out.width=600, out.height=400}
+# An example of time-serie forecasting
+shinyML_regression(data = longley2,y = "Population",framework = "h2o")
+
 ```
 
 ### Explore input dataset before running the models...
-  Before running machine learning models, it can be useful to inspect the distribution of each variable and to have an insight of dependencies between explicative variables. Both`shiny_h2o` and `shiny_spark` functions allows to check classes of explicative variables, plot histograms of each distribution and show correlation matrix between all variables. This tabs can be used to determine if some variable are strongly correlated to another and eventually removed from the training phase.You can also plot variation of every variable as a function of another using the "Explore dataset" tab. 
+  Before running machine learning models, it can be useful to inspect the distribution of each variable and to have an insight of dependencies between explanatory variables. Both`shinyML_regression` and `shinyML_classification` functions allows to check classes of explanatory variables, plot histograms of each distribution and show correlation matrix between all variables. This tabs can be used to determine if some variable are strongly correlated to another and eventually removed from the training phase.You can also plot variation of every variable as a function of another using the "Explore dataset" tab. 
 
 <p align="center">
   <img src="vignettes/explore_data.gif">
@@ -69,7 +81,7 @@ shiny_h2o(data =longley2,y = "GNP",date_column = "Year",share_app = FALSE)
 
 ### Test different machine learning techiques and hyper-parameters configurations with just a few clicks
 
-  To test machine learning models on `shinyML` package, the first step consist in choosing separating train and test period from your dataset: this can be done in one second using slider button on the right of your shinyML app. 
+  To test supervised machine learning models on `shinyML` package, the first step consist in choosing separating train and test period from your dataset: this can be done in one second using slider button on the right of your shinyML app. 
   You can also remove variables from your initial selection directly from app just simply using "Input variable" textbox. 
 You are then free to select hyper-parameters configuration for your favorite machine learning model.  
 Note that hidden layers of deep learning technique can be set inside the corresponding text box: the default c(200,200) configuration corresponds to a two hiden-layers neural network, with neurons for each layers. 
