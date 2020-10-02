@@ -51,7 +51,7 @@ devtools::install_github("JeanBertinR/shinyML", ref="develop")
 
   This is a basic examples which shows you how to run the app:
 
-```{r example, eval=FALSE, message=FALSE, out.width=600, out.height=400}
+```{r classic example, eval=FALSE, message=FALSE, out.width=600, out.height=400}
 
 library(shinyML)
 
@@ -64,8 +64,8 @@ shinyML_classification(data = iris,y = "Species",framework = "h2o")
 
   Please note that `shinyML_regression` and `shinyML_classification` will automatically detect if you input dataset contains time-based column: train/test splitting will be adapted to time-serie forecasting. 
   
-```{r example, eval=FALSE, message=FALSE, out.width=600, out.height=400}
-# An example of time-serie forecasting
+```{r time-series example, eval=FALSE, message=FALSE, out.width=600, out.height=400}
+# An example of time-series forecasting
 shinyML_regression(data = longley2,y = "Population",framework = "h2o")
 
 ```
