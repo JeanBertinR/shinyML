@@ -1,3 +1,23 @@
+## New major version of shinyML package
+This is a new major version (1.0.0) of the shinyML package. 
+In this new version I have:
+
+* Merged `shiny_h2o` and `shiny_spark` functions to one unique function `shinyML_regression`: framework can now be chosen using the **framework** parameter.
+
+* Added a new function `shinyML_classification` to train and test machine learning model on **classification tasks**. This function uses the same arguments as `shinyML_regression` function, specifying however that y output variable class must be categorical.
+
+* Added checkboxes to choose which machine learning models are authorized during the **autoML** searching phase.
+
+* Changed user interfaces on shiny apps for both `shinyML_regression` and `shinyML_classification` functions : `argonDash` and `argonR` shiny API have been used to make user experience even more friendly.
+
+* Added an automatic detection of time-based columns on the input dataset to consequently adapt training and testing dataset splitting.
+
+* Added two new **info cards** on the app upper part to precise which machine learning task is running (regression or classification) and the dimension of input dataset. 
+
+* Added **autocorrelation plots** for numerical variables on **Variable summary** tab.
+
+
+
 ## New minor version of shinyML package
 This is a new minor version (0.2.0) of the shinyML package. 
 In this new version I have:

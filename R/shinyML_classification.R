@@ -28,8 +28,9 @@
 #' @importFrom plotly plotlyOutput renderPlotly ggplotly plot_ly layout add_trace
 #' @importFrom shinyWidgets materialSwitch switchInput sendSweetAlert knobInput awesomeCheckbox actionBttn prettyCheckboxGroup
 #' @importFrom shinyjs useShinyjs hideElement
-#' @importFrom stats predict reorder cor
+#' @importFrom stats predict reorder cor acf
 #' @importFrom lubridate is.Date is.POSIXct
+#' @importFrom graphics par
 #' @author Jean Bertin, \email{jean.bertin@mines-paris.org}
 #' @export
 
@@ -232,8 +233,9 @@ shinyML_classification <- function(data = data,y,framework = "h2o", share_app = 
                                                    ),
                                                    argonColumn(width = 6,
                                                                div(align = "center",
-                                                                   radioButtons(inputId = "input_var_graph_type",label = "",choices = c("Boxplot","Histogram"),selected = "Boxplot",inline = T)
+                                                                   radioButtons(inputId = "input_var_graph_type",label = "",choices = c("Boxplot","Histogram","Autocorrelation"),selected = "Boxplot",inline = T)
                                                                ),
+                                                               div(align = "center",uiOutput("message_autocorrelation")),
                                                                withSpinner(plotlyOutput("variable_boxplot", height = "100%", width = "100%")))
                                                  )
                                                  
@@ -744,6 +746,15 @@ shinyML_classification <- function(data = data,y,framework = "h2o", share_app = 
       argonBadge(text = HTML(paste0("<big><big>Training dataset contains <b>",number_rows_datatest,"</b> rows</big></big>")),status = "success")
     })
     
+    # Define indicating that autocorrelation plot is only available for time series
+    output$message_autocorrelation <- renderUI({
+      
+      points_serie <-eval(parse(text = paste0("data[,",colnames(data)[input$variables_class_input_rows_selected],"]"))) 
+      if (input$input_var_graph_type == "Autocorrelation" & !is.numeric(points_serie)){
+        argonH1("Only available for numerical variables",display = 4)
+      }
+    })
+    
     # Make naive Bayes parameters correspond to cursors and radiobuttons choices when user click on "Run generalized linear regression" button 
     observeEvent(input$run_naiveBayes,{
       
@@ -889,15 +900,25 @@ shinyML_classification <- function(data = data,y,framework = "h2o", share_app = 
     # Define boxplot corresponding to  selected variable in variables_class_input 
     output$variable_boxplot <- renderPlotly({
       
+      par("mar")
+      par(mar=c(1,1,1,1))
+      
       column_name <- colnames(data)[input$variables_class_input_rows_selected]
+      points_serie <-eval(parse(text = paste0("data[,",column_name,"]"))) 
       
-      if (input$input_var_graph_type == "Histogram"){chart_type <- "histogram"}
-      else if (input$input_var_graph_type == "Boxplot"){chart_type <- "box"}
-      plot_ly(x = eval(parse(text = paste0("data[,",column_name,"]"))),
-              type = chart_type,
-              name = column_name
-      )
-      
+      if (input$input_var_graph_type == "Histogram"){
+        plot_ly(x = points_serie,type = "histogram",name = column_name)
+      }
+      else if (input$input_var_graph_type == "Boxplot"){
+        plot_ly(x = points_serie,type = "box",name = column_name)
+      }
+      else if (input$input_var_graph_type == "Autocorrelation"){
+        req(is.numeric(points_serie))
+        acf_object <- acf(points_serie,lag.max = 100)
+        data_acf <- cbind(acf_object$lag,acf_object$acf) %>% as.data.table() %>% setnames(c("Lag","ACF"))
+        plot_ly(x = data_acf$Lag, y = data_acf$ACF, type = "bar")
+        
+      }
       
     })
     

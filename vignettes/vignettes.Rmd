@@ -18,7 +18,7 @@ library(shinyML)
 
 ## Description
 
-  `shinyML` is a Shiny application that helps you to easily compare supervised machine learning regression models. The two main fuctions of this package are `shiny_h2o` and `shiny_spark` which leaves the choice for the user to train and test models on H2O or Spark framework. 
+  `shinyML` is a Shiny application that helps you to easily compare supervised machine learning regression models. The two main fuctions of this package are `shinyML_regression` and `shinyML_classification` which leaves the choice for the user to train and test models on H2O or Spark framework. 
   
   
 <center>
@@ -26,17 +26,21 @@ library(shinyML)
 </center>
 
 
-  Once you get your data stored on a data.table or data.frame object, you can just use one line of code to run `shiny_h2o` and `shiny_spark` functions and deploy a the Shiny App as below. This app can be shared your colleagues if you put `share_app` argument to `TRUE` and select a port that is free on your server. 
+  Once you get your data stored on a data.table or data.frame object, you can just use one line of code to run `shinyML_regression` or `shinyML_classification` functions in order to automatically deploy an interactive shiny app.  This app can be shared your colleagues if you put `share_app` argument to `TRUE` and select a port that is free on your server. 
 
 ```{r example, eval=FALSE, message=FALSE, out.width=600, out.height=400}
 
 library(shinyML)
-longley2 <- longley %>% mutate(Year = as.Date(as.character(Year),format = "%Y"))
-shiny_h2o(data =longley2,x = c("GNP_deflator","Unemployed" ,"Armed_Forces","Employed"),y = "GNP",date_column = "Year",share_app = TRUE,port = 3951)
+
+# An example of regression task 
+shinyML_regression(data = iris,y = "Petal.Width",framework = "h2o")
+
+# An example of classification task  
+shinyML_classification(data = iris,y = "Species",framework = "h2o")
 ```
 
 ### Explore input dataset before running the models...
-  Before running machine learning models, it can be useful to inspect the distribution of each variable and to have an insight of dependencies between explicative variables. Both`shiny_h2o` and `shiny_spark` functions allows to check classes of explicative variables, plot histograms of each distribution and show correlation matrix between all variables. This tabs can be used to determine if some variable are strongly correlated to another and eventually removed from the training phase.You can also plot variation of every variable as a function of another using the "Explore dataset" tab. 
+  Before running machine learning models, it can be useful to inspect the distribution of each variable and to have an insight of dependencies between explanatory variables. Both`shinyML_regression` and `shinyML_classification` functions allows to check classes of explanatory variables, plot histograms of each distribution and show correlation matrix between all variables. This tabs can be used to determine if some variable are strongly correlated to another and eventually removed from the training phase.You can also plot variation of every variable as a function of another using the "Explore dataset" tab. 
 
 <center>
 ![An example of output of shinyML](explore_data.gif)
@@ -46,8 +50,8 @@ shiny_h2o(data =longley2,x = c("GNP_deflator","Unemployed" ,"Armed_Forces","Empl
 
 ## Runing the app...
 
-  When the shiny has been launched, you can manually adjust main parameters of supervised models (such as generalized linear regression, Random forest, Neural Network, Gradient Boosting ...) by moving the coresponding cursors. 
-In addition to hyper-parameters setting for each model, you can adjust train and test period and choose which variables you want to keep during the training phase. 
+  Once the shiny app has been launched, you can manually adjust main parameters of regression or classification supervised models (such as generalized linear regression, Logistic regression, Naive Bayes, Random forest, Neural Network, Gradient Boosting ...) by moving the corresponding cursors. 
+In addition to hyper-parameters setting for each model, you can adjust train and test period and choose which explanatory variables you want to keep during the training phase. 
 
 
 <center>
@@ -69,10 +73,9 @@ In addition to hyper-parameters setting for each model, you can adjust train and
 ## Run autoML alogrithm to find automatically configure the best machine learning regression model associated to your dataset 
 
 
-  AutoML algorithm will automatically find the best algorithm to suit your regression task: as soon as the maximum time for searching will be reached, you get a message box indicating which machine learning model has been choosed to suit you regression task and specifying all corresponding hyper-parameter values.   
+  AutoML algorithm will automatically find the best algorithm to suit your regression or classification task: as soon as the maximum time for searching will be reached, you'll get a message box indicating which machine learning model has been chosen to suit your task and specifying all corresponding hyper-parameter values.   
 
-  The only setting that must be adjusted by the user is the maximum time authorized for searching. 
-Please notice that this functionality is for the moment only available on `spark_h2o` function. 
+  The only settings that must be adjusted by the user are the value of searching time and the model families authorized during the training phase. Please notice that this functionality is for the moment only available using H2O framework. 
 
 <center>
 ![Run autoML algorithm to compare machine learning techniques](auto_ML.gif)

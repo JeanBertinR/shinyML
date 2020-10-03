@@ -1,6 +1,6 @@
 Package: shinyML
 Type: Package
-Title: Compare H20 or Spark Supervised Regression and Classification Models Using Shiny App
+Title: Compare Supervised Machine Learning Models Using Shiny App
 Version: 1.0.0
 Author: Jean Bertin
 Maintainer: Jean Bertin <jean.bertin@mines-paris.org>
@@ -26,7 +26,8 @@ Imports:
     ggplot2,
     shinycssloaders,
     lubridate,
-    lifecycle
+    lifecycle,
+    graphics
 Suggests: 
     knitr,
     rmarkdown,

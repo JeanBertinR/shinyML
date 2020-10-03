@@ -5,6 +5,7 @@
 * A new function `shinyML_classification` has been implemented to train and test machine learning models for **classification tasks** : classification results can be viewed through confusion matrix charts in addition to existing  available item on old pacakge versions . 
 * When the framework is set to **H2O** for `shinyML_regression` or `shinyML_classification` function, authorized model families for auto ML searching can be manually specified. 
 * Two new **info cards** have been set on the upper part to precise the type of machine learning task (regression or classification) and the dimension of input dataset. 
+* **Autocorrelation plots** are now available for numerical variables on **Variable summary** tab
 
 ## Breaking changes 
 * User interface completely changed on shiny apps for both `shinyML_regression` and `shinyML_classification` functions : `argonDash` and `argonR` shiny API have been used to make user experience even more friendly.

@@ -1,4 +1,4 @@
-Compare H20 or Spark Supervised Regression Models Using Shiny App
+Compare Supervised Machine Learning Models Using Shiny App
 ================
 
 <img src="vignettes/logo_shinyML.jpg" width=200 align="right" />
@@ -15,11 +15,13 @@ v3](https://img.shields.io/badge/License-GPL%20v3-red.svg)](https://www.gnu.org/
 Status](https://travis-ci.org/JeanBertinR/shinyML.svg?branch=master)](https://travis-ci.org/JeanBertinR/shinyML)
 [![AppVeyor build
 status](https://ci.appveyor.com/api/projects/status/github/JeanBertinR/shinyML?branch=master&svg=true)](https://ci.appveyor.com/project/JeanBertinR/shinyML)
+[![Lifecycle
+Status](https://img.shields.io/badge/lifecycle-maturing-blue.svg)](https://www.tidyverse.org/lifecycle/)
 
 # shinyML
 
 Implement in one line of code a shareable web app to compare supervised
-machine learning regression models\!
+machine learning regression and classification models\!
 
 <p align="center">
 
