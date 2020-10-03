@@ -7,7 +7,7 @@ Maintainer: Jean Bertin <jean.bertin@mines-paris.org>
 Description: Implementation of a shiny app to easily compare supervised machine learning model performances. 
     You provide the data and configure each model parameter directly on the shiny app.  
     Different supervised learning algorithms can be tested either on Spark or H2O frameworks to suit your regression and classification tasks.
-    Implementation of available machine learning models on R has been done by Brett Lantz (2013, ISBN:9781782162148).
+    Implementation of available machine learning models on R has been done by Lantz (2013, ISBN:9781782162148).
 License: GPL-3
 Encoding: UTF-8
 Imports:
