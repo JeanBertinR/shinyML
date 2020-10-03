@@ -7,7 +7,7 @@
 #' 
 #' @param y the categorical output variable to predict (must correspond to one data column)
 #' 
-#' @param framework the machine learning framework choosed to train and test models (either h2o or Spark). h2o by default
+#' @param framework the machine learning framework chosen to train and test models (either h2o or Spark). h2o by default
 #' 
 #' @param share_app a logical value indicating whether the app must be shared on local LAN 
 #' 

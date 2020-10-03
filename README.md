@@ -62,7 +62,7 @@ shinyML_classification(data = iris,y = "Species",framework = "h2o")
 
 Please note that `shinyML_regression` and `shinyML_classification` will
 automatically detect if you input dataset contains time-based column:
-train/test splitting will be adapted to time-serie forecasting.
+train/test splitting will be adapted to time-series forecasting.
 
 ``` r
 # An example of time-series forecasting
@@ -88,7 +88,7 @@ tab.
 
 </p>
 
-### Test different machine learning techiques and hyper-parameters configurations with just a few clicks
+### Test different machine learning techniques and hyper-parameters configurations with just a few clicks
 
 To test supervised machine learning models on `shinyML` package, the
 first step consist in choosing separating train and test period from
@@ -99,7 +99,7 @@ textbox. You are then free to select hyper-parameters configuration for
 your favorite machine learning model.  
 Note that hidden layers of deep learning technique can be set inside the
 corresponding text box: the default c(200,200) configuration corresponds
-to a two hiden-layers neural network, with neurons for each layers.
+to a two hidden-layers neural network, with neurons for each layers.
 
 <p align="center">
 
@@ -124,7 +124,7 @@ You will see a validation message box once all models have been trained:
 at that point, you can have an overview of your results comparing
 variables importances and error metrics like MAPE or RMSE.
 
-### Run autoML alogrithm to find automatically configure the best machine learning regression model associated to your dataset
+### Run autoML algorithm to find automatically configure the best machine learning regression model associated to your dataset
 
 `AutoML` algorithm will automatically find the best algorithm to suit
 your regression task: the user will be informed of the machine learning

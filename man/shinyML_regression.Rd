@@ -18,7 +18,7 @@ The dataset must be a data.frame or a data.table and can contain time-based colu
 
 \item{y}{the numerical output variable to forecast (must correspond to one data column)}
 
-\item{framework}{the machine learning framework choosed to train and test models (either h2o or Spark). h2o by default}
+\item{framework}{the machine learning framework chosen to train and test models (either h2o or Spark). h2o by default}
 
 \item{share_app}{a logical value indicating whether the app must be shared on local LAN}
 

@@ -18,7 +18,7 @@ library(shinyML)
 
 ## Description
 
-  `shinyML` is a Shiny application that helps you to easily compare supervised machine learning regression models. The two main fuctions of this package are `shinyML_regression` and `shinyML_classification` which leaves the choice for the user to train and test models on H2O or Spark framework. 
+  `shinyML` is a Shiny application that helps you to easily compare supervised machine learning regression models. The two main functions of this package are `shinyML_regression` and `shinyML_classification` which leaves the choice for the user to train and test models on H2O or Spark framework. 
   
   
 <center>
@@ -48,7 +48,7 @@ shinyML_classification(data = iris,y = "Species",framework = "h2o")
 
 
 
-## Runing the app...
+## Running the app...
 
   Once the shiny app has been launched, you can manually adjust main parameters of regression or classification supervised models (such as generalized linear regression, Logistic regression, Naive Bayes, Random forest, Neural Network, Gradient Boosting ...) by moving the corresponding cursors. 
 In addition to hyper-parameters setting for each model, you can adjust train and test period and choose which explanatory variables you want to keep during the training phase. 
@@ -70,7 +70,7 @@ In addition to hyper-parameters setting for each model, you can adjust train and
   You will see a validation message box once all models have been trained: at that point, you can have an overview of your results comparing variables importances and error metrics like MAPE  or RMSE.
 
 
-## Run autoML alogrithm to find automatically configure the best machine learning regression model associated to your dataset 
+## Run autoML algorithm to find automatically configure the best machine learning regression model associated to your dataset 
 
 
   AutoML algorithm will automatically find the best algorithm to suit your regression or classification task: as soon as the maximum time for searching will be reached, you'll get a message box indicating which machine learning model has been chosen to suit your task and specifying all corresponding hyper-parameter values.   
