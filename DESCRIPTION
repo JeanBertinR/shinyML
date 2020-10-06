@@ -15,7 +15,6 @@ Imports:
     argonDash,
     argonR,
     shinyjs,
-    shinydashboard,
     h2o,
     shinyWidgets,
     dygraphs,

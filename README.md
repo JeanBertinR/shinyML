@@ -29,8 +29,9 @@ machine learning regression and classification models\!
 
 </p>
 
-With `shinyML`, you can compare your favorite regression models issued
-from H2O or Spark frameworks without any effort.
+With `shinyML`, you can compare your favorite regression or
+classification models issued from H2O or Spark frameworks without any
+effort.
 
 ### Installation
 
@@ -61,11 +62,13 @@ shinyML_classification(data = iris,y = "Species",framework = "h2o")
 ```
 
 Please note that `shinyML_regression` and `shinyML_classification` will
-automatically detect if you input dataset contains time-based column:
-train/test splitting will be adapted to time-series forecasting.
+automatically detect if you input dataset contains time-based column: in
+that case, train/test splitting will be adapted to time-series
+forecasting.
 
 ``` r
 # An example of time-series forecasting
+longley2 <- longley %>% mutate(Year = as.Date(as.character(Year),format = "%Y"))
 shinyML_regression(data = longley2,y = "Population",framework = "h2o")
 ```
 

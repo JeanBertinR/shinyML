@@ -29,7 +29,7 @@ knitr::opts_chunk$set(echo = TRUE)
   <img src="vignettes/shinyML.png">
 </p>
 
-  With `shinyML`, you can compare your favorite regression models issued from H2O or Spark frameworks without any effort. 
+  With `shinyML`, you can compare your favorite regression or classification models issued from H2O or Spark frameworks without any effort. 
 
 
 
@@ -63,10 +63,11 @@ shinyML_regression(data = iris,y = "Petal.Width",framework = "h2o")
 shinyML_classification(data = iris,y = "Species",framework = "h2o")
 ```
 
-  Please note that `shinyML_regression` and `shinyML_classification` will automatically detect if you input dataset contains time-based column: train/test splitting will be adapted to time-series forecasting. 
+  Please note that `shinyML_regression` and `shinyML_classification` will automatically detect if you input dataset contains time-based column: in that case, train/test splitting will be adapted to time-series forecasting. 
   
 ```{r time-series example, eval=FALSE, message=FALSE, out.width=600, out.height=400}
 # An example of time-series forecasting
+longley2 <- longley %>% mutate(Year = as.Date(as.character(Year),format = "%Y"))
 shinyML_regression(data = longley2,y = "Population",framework = "h2o")
 
 ```
