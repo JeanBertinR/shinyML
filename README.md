@@ -100,7 +100,7 @@ For that, you will just need to use shiny app buttons corresponding to your para
   <img src="vignettes/all_models.gif">
 </p>
 
-  You will see a **validation message box** once all models have been trained: at that point, you can have an overview of your results comparing variables importances and error metrics like **MAPE** or *RMSE**.
+  You will see a **validation message box** once all models have been trained: at that point, you can have an overview of your results comparing variables importances and error metrics like **MAPE** or **RMSE**.
 
 ### Run autoML algorithm to find automatically configure the best machine learning regression model associated to your dataset 
 
