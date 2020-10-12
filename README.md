@@ -6,7 +6,6 @@ output: github_document
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
-
 ```
 
 <img src="vignettes/logo_shinyML.jpg" width=200 align="right" />
