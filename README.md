@@ -3,12 +3,7 @@ title: "Compare Supervised Machine Learning Models Using Shiny App"
 output: github_document
 ---
 
-
-```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = TRUE)
-```
-
-<img src="vignettes/logo_shinyML.jpg" width=200 align="right" />
+<img src="vignettes/logo_shinyML.jpg" width=150 align="right" />
 
 [![CRAN Status Badge](http://www.r-pkg.org/badges/version/shinyML)](https://CRAN.R-project.org/package=shinyML)
 [![CRAN Downloads Badge](https://cranlogs.r-pkg.org/badges/shinyML)](https://CRAN.R-project.org/package=shinyML)
