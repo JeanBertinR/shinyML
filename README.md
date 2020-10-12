@@ -1,7 +1,5 @@
----
-title: "Compare Supervised Machine Learning Models Using Shiny App"
-output: github_document
----
+Compare Supervised Machine Learning Models Using Shiny App
+================
 
 <img src="vignettes/logo_shinyML.jpg" width=180 align="right" />
 
