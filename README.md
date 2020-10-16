@@ -103,7 +103,7 @@ You are then free to **select hyper-parameters configuration** for your
 favorite machine learning model.  
 Note that hidden layers of deep learning technique can be set inside the
 corresponding text box: the default c(200,200) configuration corresponds
-to a two hidden-layers neural network, with neurons for each layers.
+to a two hidden-layers neural network, with 200 neurons for each layer.
 
 <p align="center">
 
