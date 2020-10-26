@@ -221,7 +221,7 @@ shinyML_regression <- function(data = data,y,framework = "h2o", share_app = FALS
                                                    ),
                                                    argonColumn(width = 8,
                                                                div(align = "center",
-                                                                   radioButtons(inputId = "input_var_graph_type",label = "",choices = c("Boxplot","Histogram","Autocorrelation"),selected = "Boxplot",inline = T)
+                                                                   radioButtons(inputId = "input_var_graph_type",label = "",choices = c("Histogram","Boxplot","Autocorrelation"),selected = "Histogram",inline = T)
                                                                ),
                                                                div(align = "center",uiOutput("message_autocorrelation")),
                                                                withSpinner(plotlyOutput("variable_boxplot", height = "100%", width = "100%")))
@@ -756,7 +756,7 @@ shinyML_regression <- function(data = data,y,framework = "h2o", share_app = FALS
     output$message_autocorrelation <- renderUI({
       
       points_serie <-eval(parse(text = paste0("data[,",colnames(data)[input$variables_class_input_rows_selected],"]"))) 
-      if (input$input_var_graph_type == "Autocorrelation" & !is.numeric(points_serie)){
+      if (input$input_var_graph_type %in% c("Histogram","Autocorrelation") & !is.numeric(points_serie)){
         argonH1("Only available for numerical variables",display = 4)
       }
     })
@@ -931,7 +931,15 @@ shinyML_regression <- function(data = data,y,framework = "h2o", share_app = FALS
       points_serie <-eval(parse(text = paste0("data[,",column_name,"]"))) 
         
       if (input$input_var_graph_type == "Histogram"){
-        plot_ly(x = points_serie,type = "histogram",name = column_name)
+        req(is.numeric(points_serie))
+        ggplotly(
+          ggplot(data = data,aes(x = eval(parse(text = column_name)),fill = column_name))+
+            xlab(column_name)+
+            geom_histogram(aes(y=..density..), colour="black", fill="#FCADB3",bins = 30)+
+            geom_density(alpha = 0.4,size = 1.3) +
+            scale_fill_manual(values="#56B4E9")+
+            theme_bw(),tooltip = "density"
+        ) %>% hide_legend()
         }
       else if (input$input_var_graph_type == "Boxplot"){
         plot_ly(x = points_serie,type = "box",name = column_name)
