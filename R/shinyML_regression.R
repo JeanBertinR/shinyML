@@ -44,6 +44,9 @@ shinyML_regression <- function(data = data,y,framework = "h2o", share_app = FALS
   
   ## ---------------------------------------------------------------------------- INITIALISATION  -----------------------------------
   
+  # Ensure reproducibility
+  set.seed(123)
+  
   # Return an error if framework is not h2o or spark 
   if(!(framework %in% c("h2o","spark"))){stop("framework must be selected between h2o or spark")}
   
@@ -1277,6 +1280,11 @@ shinyML_regression <- function(data = data,y,framework = "h2o", share_app = FALS
         
       })
       
+      # Define data train when time series option is not selected
+      data_train_not_time_serie <- reactive({
+        data %>% sample_frac(as.numeric(as.character(gsub("%","",input$percentage_selector)))*0.01)
+      })
+      
       # Define a list of object related to model results (specific for H2O framework)
       table_forecast <- reactive({
         
@@ -1297,7 +1305,7 @@ shinyML_regression <- function(data = data,y,framework = "h2o", share_app = FALS
           
           req(!is.null(input$percentage_selector))
           
-          data_train <- data %>% sample_frac(as.numeric(as.character(gsub("%","",input$percentage_selector)))*0.01)
+          data_train <- data_train_not_time_serie()
           data_test <- data %>% anti_join(data_train,by = colnames(data))
           data_results <- data_test
           
@@ -1342,7 +1350,7 @@ shinyML_regression <- function(data = data,y,framework = "h2o", share_app = FALS
                            lambda = parameter$reg_param_glm,
                            alpha = parameter$alpha_param_glm,
                            max_iterations = parameter$max_iter_glm,
-                           seed = 1
+                           seed = 123
             )
             t2 <- Sys.time()
             time_glm <- data.frame(`Training time` =  paste0(round(t2 - t1,1)," seconds"), Model = "Generalized linear regression")
@@ -1364,7 +1372,7 @@ shinyML_regression <- function(data = data,y,framework = "h2o", share_app = FALS
                                     sample_rate = parameter$subsampling_rate_random_forest,
                                     max_depth = parameter$max_depth_random_forest,
                                     nbins = parameter$n_bins_random_forest,
-                                    seed = 1
+                                    seed = 123
             )
             t2 <- Sys.time()
             time_random_forest <- data.frame(`Training time` =  paste0(round(t2 - t1,1)," seconds"), Model = "Random forest")
@@ -1387,7 +1395,7 @@ shinyML_regression <- function(data = data,y,framework = "h2o", share_app = FALS
                                     epochs = parameter$epochs_neural_net,
                                     rate = parameter$rate_neural_net,
                                     reproducible = T,
-                                    seed = 1
+                                    seed = 123
             )
             t2 <- Sys.time()
             
@@ -1410,7 +1418,7 @@ shinyML_regression <- function(data = data,y,framework = "h2o", share_app = FALS
                            max_depth = parameter$max_depth_gbm,
                            learn_rate = parameter$learn_rate_gbm,
                            min_rows = 2,
-                           seed = 1
+                           seed = 123
             )
             t2 <- Sys.time()
             time_gbm <- data.frame(`Training time` =  paste0(round(t2 - t1,1)," seconds"), Model = "Gradient boosted trees")
@@ -1432,7 +1440,7 @@ shinyML_regression <- function(data = data,y,framework = "h2o", share_app = FALS
                                      y = y,
                                      training_frame = data_h2o_train,
                                      max_runtime_secs = parameter$run_time_auto_ml,
-                                     seed = 1
+                                     seed = 123
                                      
             )
             
@@ -1548,6 +1556,11 @@ shinyML_regression <- function(data = data,y,framework = "h2o", share_app = FALS
         
       })
       
+      # Define data train when time series option is not selected
+      data_train_not_time_serie <- reactive({
+        data %>% sample_frac(as.numeric(as.character(gsub("%","",input$percentage_selector)))*0.01)
+      })
+      
       # Define a list of object related to model results (specific for Spark framework)
       table_forecast <- reactive({
         
@@ -1566,7 +1579,7 @@ shinyML_regression <- function(data = data,y,framework = "h2o", share_app = FALS
           
           req(!is.null(input$percentage_selector))
           
-          data_train <- data %>% sample_frac(as.numeric(as.character(gsub("%","",input$percentage_selector)))*0.01)
+          data_train <- data_train_not_time_serie()
           data_test <- data %>% anti_join(data_train, by = colnames(data))
           data_results <- data_test
           
