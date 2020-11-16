@@ -8,6 +8,8 @@ Description: Implementation of a shiny app to easily compare supervised machine 
     You provide the data and configure each model parameter directly on the shiny app.  
     Different supervised learning algorithms can be tested either on Spark or H2O frameworks to suit your regression and classification tasks.
     Implementation of available machine learning models on R has been done by Lantz (2013, ISBN:9781782162148).
+URL: https://jeanbertinr.github.io/shinyMLpackage/
+BugReports: https://github.com/JeanBertinR/shinyML/issues
 License: GPL-3
 Encoding: UTF-8
 Imports:

@@ -45,7 +45,7 @@ install.packages("shinyML")
 You can also install the latest development version from **github**:
 
 ``` r
-devtools::install_github("JeanBertinR/shinyML", ref="develop")
+devtools::install_github("JeanBertinR/shinyML")
 ```
 
 ### Getting started: create the shinyML web app in just one list of code
