@@ -1570,6 +1570,8 @@ shinyML_regression <- function(data = data,y,framework = "h2o", share_app = FALS
         if (input$checkbox_time_series == TRUE){
           req(!is.null(test_1$date))
           req(!is.null(test_2$date))
+          data_train <- data.table()
+          data_test <- data.table()
           
           data_results <- eval(parse(text = paste0("data[",input$time_serie_select_column,">'",test_1$date,"',][",input$time_serie_select_column,"< '",test_2$date,"',]")))
           
