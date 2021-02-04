@@ -189,7 +189,7 @@ shinyML_regression <- function(data = data,y,framework = "h2o", share_app = FALS
           HTML("This section allows to plot variation of each variable as a function of another, to check classes of explicative variables, to plot histograms of each distribution and show correlation matrix between all variables.<br><br> 
           Please note that this section can be used to determine if some variable are strongly correlated to another and eventually removed from the training phase.")
         )
-        ),
+    ),
     br(),
     argonRow(
       argonColumn(width = 9,
@@ -763,7 +763,7 @@ shinyML_regression <- function(data = data,y,framework = "h2o", share_app = FALS
         argonH1("Only available for numerical variables",display = 4)
       }
     })
-
+    
     # Make glm parameters correspond to cursors and radiobuttons choices when user click on "Run generalized linear regression" button 
     observeEvent(input$run_glm,{
       
@@ -932,7 +932,7 @@ shinyML_regression <- function(data = data,y,framework = "h2o", share_app = FALS
       
       column_name <- colnames(data)[input$variables_class_input_rows_selected]
       points_serie <-eval(parse(text = paste0("data[,",column_name,"]"))) 
-        
+      
       if (input$input_var_graph_type == "Histogram"){
         req(is.numeric(points_serie))
         ggplotly(
@@ -943,18 +943,18 @@ shinyML_regression <- function(data = data,y,framework = "h2o", share_app = FALS
             scale_fill_manual(values="#56B4E9")+
             theme_bw(),tooltip = "density"
         ) %>% hide_legend()
-        }
+      }
       else if (input$input_var_graph_type == "Boxplot"){
         plot_ly(x = points_serie,type = "box",name = column_name)
-        }
+      }
       else if (input$input_var_graph_type == "Autocorrelation"){
         req(is.numeric(points_serie))
         acf_object <- acf(points_serie,lag.max = 100)
         data_acf <- cbind(acf_object$lag,acf_object$acf) %>% as.data.table() %>% setnames(c("Lag","ACF"))
         plot_ly(x = data_acf$Lag, y = data_acf$ACF, type = "bar")
-
-        }
-
+        
+      }
+      
     })
     
     # Define plotly chart to explore dependencies between variables 
@@ -1005,7 +1005,7 @@ shinyML_regression <- function(data = data,y,framework = "h2o", share_app = FALS
       
       if (input$checkbox_time_series == TRUE){
         req(!is.null(input$time_serie_select_column))
-        data_output_curve <- eval(parse(text = paste0("table_forecast()[['results']][,.(",input$time_serie_select_column,",",y,")]")))
+        data_output_curve <- table_forecast()[['results']] %>% select(-input$input_variables)
         
       }
       
@@ -1326,12 +1326,17 @@ shinyML_regression <- function(data = data,y,framework = "h2o", share_app = FALS
         if (length(var_input_list) != 0){
           
           if (input$checkbox_time_series == TRUE){
-            data_h2o_train <- as.h2o(eval(parse(text = paste0("data[",input$time_serie_select_column,"<='",test_1$date,"',][",input$time_serie_select_column,">='",train_1$date,"',]"))))
-            data_h2o_test <- as.h2o(eval(parse(text = paste0("data[",input$time_serie_select_column,">'",test_1$date,"',][",input$time_serie_select_column,"< '",test_2$date,"',]"))))
-            
+            data_h2o_train <- as.h2o(eval(parse(text = paste0("data[",input$time_serie_select_column,"<='",test_1$date,"',][",input$time_serie_select_column,">='",train_1$date,"',][, !'",input$time_serie_select_column,"']"))))
+            data_h2o_test <- as.h2o(eval(parse(text = paste0("data[",input$time_serie_select_column,">'",test_1$date,"',][",input$time_serie_select_column,"< '",test_2$date,"',][, !'",input$time_serie_select_column,"']"))))
           }
           
           else if (input$checkbox_time_series == FALSE){
+            
+            if (length(dates_variable_list()) >= 1){
+              data_train <- eval(parse(text = paste0("data_train[, !'",dates_variable_list()[1] ,"']")))
+              data_test <- eval(parse(text = paste0("data_test[, !'",dates_variable_list()[1],"']")))
+            } 
+            
             data_h2o_train <- as.h2o(data_train)
             data_h2o_test <- as.h2o(data_test)
           }
