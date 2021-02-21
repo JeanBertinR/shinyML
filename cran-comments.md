@@ -1,3 +1,13 @@
+## New patch version of shinyML package
+This is a new patch version (1.0.1) of the shinyML package (I've fixed bugs without adding any significant new features). 
+In this new version I have:
+
+* Changed the style of histogram plots on both `shinyML_regression` and `shinyML_classification` functions and added the density curve on this chart
+
+* Forced reproducibility of machine learning results on both `shinyML_regression` and `shinyML_classification` functions
+
+* Fixed a bug to make `shinyML_regression` and `shinyML_classification` functions work with POSIXct input data column
+
 ## New major version of shinyML package
 This is a new major version (1.0.0) of the shinyML package. 
 In this new version I have:

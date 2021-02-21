@@ -1,3 +1,11 @@
+# shinyML 1.0.0 (2021-02-21)
+
+## New features
+* **Histogram plots** on `shiny_h2o` and `shiny_spark` functions now integrate density curves. 
+* `shiny_h2o` and `shiny_spark` functions ensure **reproducibility** of results when user reproduce the same parameters for a given machine learning model
+* `shiny_h2o` and `shiny_spark` functions now work with an input dataset that contains a POSIXct column
+
+
 # shinyML 1.0.0 (2020-10-02)
 
 ## New features
