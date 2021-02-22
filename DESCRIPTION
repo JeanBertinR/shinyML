@@ -1,7 +1,7 @@
 Package: shinyML
 Type: Package
 Title: Compare Supervised Machine Learning Models Using Shiny App
-Version: 1.0.0
+Version: 1.0.1
 Author: Jean Bertin
 Maintainer: Jean Bertin <jean.bertin@mines-paris.org>
 Description: Implementation of a shiny app to easily compare supervised machine learning model performances. 
@@ -27,7 +27,6 @@ Imports:
     ggplot2,
     shinycssloaders,
     lubridate,
-    lifecycle,
     graphics
 Suggests: 
     knitr,

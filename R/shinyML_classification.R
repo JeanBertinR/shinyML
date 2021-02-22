@@ -25,7 +25,7 @@
 #' @importFrom tidyr gather everything
 #' @importFrom DT renderDT DTOutput datatable
 #' @importFrom h2o h2o.init as.h2o h2o.deeplearning h2o.varimp h2o.predict h2o.gbm h2o.naiveBayes h2o.randomForest h2o.automl h2o.clusterStatus
-#' @importFrom plotly plotlyOutput renderPlotly ggplotly plot_ly layout add_trace
+#' @importFrom plotly plotlyOutput renderPlotly ggplotly plot_ly layout add_trace hide_legend
 #' @importFrom shinyWidgets materialSwitch switchInput sendSweetAlert knobInput awesomeCheckbox actionBttn prettyCheckboxGroup
 #' @importFrom shinyjs useShinyjs hideElement
 #' @importFrom stats predict reorder cor acf
@@ -130,7 +130,8 @@ shinyML_classification <- function(data = data,y,framework = "h2o", share_app = 
   ACTUAL <- NULL
   Freq <- NULL 
   Error <- NULL 
-  predicted_label <- NULL 
+  predicted_label <- NULL
+  `..density..` <- NULL
   
   ## ---------------------------------------------------------------------------- UI  -----------------------------------
   
