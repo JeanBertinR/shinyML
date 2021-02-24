@@ -17,7 +17,7 @@ knitr::opts_chunk$set(echo = TRUE)
 [![License: GPL v3](https://img.shields.io/badge/License-GPL%20v3-red.svg)](https://www.gnu.org/licenses/gpl-3.0)
 [![Travis-CI Build Status](https://travis-ci.org/JeanBertinR/shinyML.svg?branch=master)](https://travis-ci.org/JeanBertinR/shinyML)
 [![AppVeyor build status](https://ci.appveyor.com/api/projects/status/github/JeanBertinR/shinyML?branch=master&svg=true)](https://ci.appveyor.com/project/JeanBertinR/shinyML)
-[![Lifecycle Status](https://img.shields.io/badge/lifecycle-maturing-blue.svg)](https://www.tidyverse.org/lifecycle/)
+[![Lifecycle Status](https://img.shields.io/badge/lifecycle-maturing-blue.svg)](https://lifecycle.r-lib.org/articles/stages.html)
 
 
 
@@ -112,4 +112,4 @@ For that, you will just need to use shiny app buttons corresponding to your para
 </p>
 
 
-  For more information take a look at the [package vignette](vignettes/vignettes.Rmd).
+  For more information take a look at the [package vignette](vignettes/vignettes.html).

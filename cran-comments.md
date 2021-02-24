@@ -1,3 +1,10 @@
+## Resubmission
+This is a resubmission. In this version I have:
+
+* Changed invalid URL on Readme.md ( https://www.tidyverse.org/lifecycle/) to the appropriate one (https://lifecycle.r-lib.org/articles/stages.html)
+
+* Added files contained in vignettes folder to .Rbuidignore in order to decrease the size of installed package under 5 MB
+
 ## New patch version of shinyML package
 This is a new patch version (1.0.1) of the shinyML package (I've fixed bugs without adding any significant new features). 
 In this new version I have:

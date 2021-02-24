@@ -16,18 +16,15 @@ Status](https://travis-ci.org/JeanBertinR/shinyML.svg?branch=master)](https://tr
 [![AppVeyor build
 status](https://ci.appveyor.com/api/projects/status/github/JeanBertinR/shinyML?branch=master&svg=true)](https://ci.appveyor.com/project/JeanBertinR/shinyML)
 [![Lifecycle
-Status](https://img.shields.io/badge/lifecycle-maturing-blue.svg)](https://www.tidyverse.org/lifecycle/)
+Status](https://img.shields.io/badge/lifecycle-maturing-blue.svg)](https://lifecycle.r-lib.org/articles/stages.html)
 
 # shinyML
 
 Implement in one line of code a shareable web app to compare
 **supervised machine learning models** for regression and classification
-tasks\!
-
+tasks!
 <p align="center">
-
 <img src="vignettes/shinyML.png">
-
 </p>
 
 With `shinyML`, you can compare your favorite regression or
@@ -87,9 +84,7 @@ of every variable as a function of another using the **“Explore
 dataset”** tab.
 
 <p align="center">
-
 <img src="vignettes/explore_data.gif">
-
 </p>
 
 ### Test different machine learning techniques and hyper-parameters configurations with just a few clicks
@@ -104,11 +99,8 @@ favorite machine learning model.
 Note that hidden layers of deep learning technique can be set inside the
 corresponding text box: the default c(200,200) configuration corresponds
 to a two hidden-layers neural network, with 200 neurons for each layer.
-
 <p align="center">
-
 <img src="vignettes/one_model.gif">
-
 </p>
 
 ### Run at the same time all machine learning techniques to compare variable importances and error metrics
@@ -116,12 +108,9 @@ to a two hidden-layers neural network, with 200 neurons for each layer.
 You can easily use `shinyML` package to compare **different machine
 learning techniques with your own hyper-parameters configuration**. For
 that, you will just need to use shiny app buttons corresponding to your
-parameters and click then to **“Run tuned models \!”**
-
+parameters and click then to **“Run tuned models !”**
 <p align="center">
-
 <img src="vignettes/all_models.gif">
-
 </p>
 
 You will see a **validation message box** once all models have been
@@ -138,12 +127,9 @@ of the **machine learning model** that has been selected and know
 
 The only setting that must be adjusted by the user is the **maximum time
 authorized for searching**.
-
 <p align="center">
-
 <img src="vignettes/auto_ML.gif">
-
 </p>
 
 For more information take a look at the [package
-vignette](vignettes/vignettes.Rmd).
+vignette](vignettes/vignettes.html).
