@@ -12,3 +12,4 @@
 ^vignettes/one_model\.gif$
 ^vignettes/logo_shinyML\.jpg$
 ^vignettes/shinyML\.png$
+^CRAN-RELEASE$
