@@ -132,4 +132,4 @@ authorized for searching**.
 </p>
 
 For more information take a look at the [package
-vignette](vignettes/vignettes.Rmd).
+vignette](https://github.com/JeanBertinR/shinyML/blob/master/vignettes/vignettes.Rmd).

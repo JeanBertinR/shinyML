@@ -112,4 +112,4 @@ For that, you will just need to use shiny app buttons corresponding to your para
 </p>
 
 
-  For more information take a look at the [package vignette](vignettes/vignettes.Rmd).
+  For more information take a look at the [package vignette](https://github.com/JeanBertinR/shinyML/blob/master/vignettes/vignettes.Rmd).
