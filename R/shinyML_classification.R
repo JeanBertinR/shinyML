@@ -20,7 +20,8 @@
 #' library(shinyML)
 #' shinyML_classification(data = iris,y = "Species",framework = "h2o")
 #'}
-#' @import shiny argonDash argonR dygraphs data.table ggplot2 shinycssloaders sparklyr
+#' @import shiny argonDash argonR dygraphs ggplot2 shinycssloaders sparklyr
+#' @importFrom data.table as.data.table data.table setnames
 #' @importFrom dplyr %>% select mutate group_by ungroup summarise arrange rename select_if row_number sample_frac anti_join n
 #' @importFrom tidyr gather everything
 #' @importFrom DT renderDT DTOutput datatable

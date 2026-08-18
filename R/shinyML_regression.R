@@ -25,7 +25,8 @@
 #' longley2 <- longley %>% mutate(Year = as.Date(as.character(Year),format = "%Y"))
 #' shinyML_regression(data = longley2,y = "Population",framework = "h2o")
 #'}
-#' @import shiny argonDash argonR dygraphs data.table ggplot2 shinycssloaders sparklyr
+#' @import shiny argonDash argonR dygraphs ggplot2 shinycssloaders sparklyr
+#' @importFrom data.table as.data.table data.table setnames
 #' @importFrom dplyr %>% select mutate group_by summarise arrange rename select_if row_number sample_frac anti_join
 #' @importFrom tidyr gather everything
 #' @importFrom DT renderDT DTOutput datatable
